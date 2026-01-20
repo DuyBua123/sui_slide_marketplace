@@ -1,6 +1,6 @@
 import {
     Bold, Italic, Underline, AlignLeft, AlignCenter, AlignRight,
-    Minus, Plus, ChevronDown, Sparkles
+    Minus, Plus, ChevronDown, Sparkles, Wand2
 } from 'lucide-react';
 import { useSlideStore } from '../../store/useSlideStore';
 
@@ -27,7 +27,7 @@ const textEffects = [
 /**
  * Enhanced Text Toolbar - Canva-style with all text controls
  */
-export const TextToolbar = ({ element }) => {
+export const TextToolbar = ({ element, onAnimateClick }) => {
     const updateElement = useSlideStore((state) => state.updateElement);
 
     if (!element || element.type !== 'text') return null;
@@ -245,6 +245,18 @@ export const TextToolbar = ({ element }) => {
                 </select>
                 <Sparkles className="w-3 h-3 absolute right-1.5 top-1/2 -translate-y-1/2 pointer-events-none text-gray-400" />
             </div>
+
+            <div className="w-px h-6 bg-white/10" />
+
+            {/* Animate Button */}
+            <button
+                onClick={onAnimateClick}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded hover:bg-white/10 transition-colors"
+                title="Animate"
+            >
+                <Wand2 className="w-3.5 h-3.5" />
+                <span className="text-xs font-medium">Animate</span>
+            </button>
 
             <div className="w-px h-6 bg-white/10" />
 

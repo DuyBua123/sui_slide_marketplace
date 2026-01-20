@@ -11,39 +11,136 @@ const CANVAS_HEIGHT = 540;
 
 /**
  * URLImage component - loads image from URL and renders on Konva
+ * Enhanced with loading states, error handling, and IPFS support
  */
 const URLImage = ({ element, onSelect, onDragMove, onDragEnd, onTransformEnd, readOnly }) => {
     const [image, setImage] = useState(null);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState(false);
+    const [retryCount, setRetryCount] = useState(0);
     const imageRef = useRef(null);
 
     useEffect(() => {
-        const img = new window.Image();
-        img.crossOrigin = 'anonymous';
-        img.src = element.src;
-        img.onload = () => setImage(img);
-        img.onerror = () => console.error('Failed to load image:', element.src);
-    }, [element.src]);
+        setLoading(true);
+        setError(false);
 
-    if (!image) {
+        const img = new window.Image();
+
+        // Only use crossOrigin for external URLs (IPFS)
+        if (element.src.startsWith('http')) {
+            img.crossOrigin = 'anonymous';
+        }
+
+        const loadImage = () => {
+            img.src = element.src;
+
+            img.onload = () => {
+                setImage(img);
+                setLoading(false);
+                setError(false);
+            };
+
+            img.onerror = (err) => {
+                console.error('Failed to load image:', element.src, err);
+                setLoading(false);
+                setError(true);
+
+                // Retry once after 1 second for IPFS images
+                if (retryCount < 1 && element.src.includes('ipfs')) {
+                    setTimeout(() => {
+                        setRetryCount(prev => prev + 1);
+                        setLoading(true);
+                        loadImage();
+                    }, 1000);
+                }
+            };
+        };
+
+        loadImage();
+
+        return () => {
+            img.onload = null;
+            img.onerror = null;
+        };
+    }, [element.src, retryCount]);
+
+    // Loading state - gray placeholder with loading animation
+    if (loading) {
         return (
-            <Rect
-                id={element.id}
-                x={element.x}
-                y={element.y}
-                width={element.width || 200}
-                height={element.height || 150}
-                fill="#374151"
-                stroke="#6b7280"
-                strokeWidth={2}
-                cornerRadius={8}
-                draggable={!readOnly}
-                onClick={onSelect}
-                onTap={onSelect}
-                onDragEnd={onDragEnd}
-            />
+            <>
+                <Rect
+                    id={element.id}
+                    x={element.x}
+                    y={element.y}
+                    width={element.width || 200}
+                    height={element.height || 150}
+                    fill="#374151"
+                    stroke="#6b7280"
+                    strokeWidth={2}
+                    cornerRadius={8}
+                    draggable={!readOnly}
+                    onClick={onSelect}
+                    onTap={onSelect}
+                    onDragEnd={onDragEnd}
+                />
+                <Text
+                    x={element.x}
+                    y={element.y + (element.height || 150) / 2 - 10}
+                    width={element.width || 200}
+                    text="Loading..."
+                    fontSize={14}
+                    fill="#9ca3af"
+                    align="center"
+                    listening={false}
+                />
+            </>
         );
     }
 
+    // Error state - red placeholder with error message
+    if (error) {
+        return (
+            <>
+                <Rect
+                    id={element.id}
+                    x={element.x}
+                    y={element.y}
+                    width={element.width || 200}
+                    height={element.height || 150}
+                    fill="#7f1d1d"
+                    stroke="#dc2626"
+                    strokeWidth={2}
+                    cornerRadius={8}
+                    draggable={!readOnly}
+                    onClick={onSelect}
+                    onTap={onSelect}
+                    onDragEnd={onDragEnd}
+                />
+                <Text
+                    x={element.x}
+                    y={element.y + (element.height || 150) / 2 - 20}
+                    width={element.width || 200}
+                    text="Image load failed"
+                    fontSize={14}
+                    fill="#fca5a5"
+                    align="center"
+                    listening={false}
+                />
+                <Text
+                    x={element.x}
+                    y={element.y + (element.height || 150) / 2 + 5}
+                    width={element.width || 200}
+                    text="Click to retry"
+                    fontSize={11}
+                    fill="#fca5a5"
+                    align="center"
+                    listening={false}
+                />
+            </>
+        );
+    }
+
+    // Success - render actual image
     return (
         <KonvaImage
             ref={imageRef}
@@ -142,6 +239,13 @@ export const Canvas = ({ readOnly = false }) => {
         transformerRef.current.nodes(nodes);
         transformerRef.current.getLayer()?.batchDraw();
     }, [selectedId, selectedIds, elements, readOnly, currentSlideIndex]);
+
+    // Expose stage globally for export functions
+    useEffect(() => {
+        if (stageRef.current) {
+            window.__slideStage = stageRef.current;
+        }
+    }, [stageRef.current]);
 
     const handleStageClick = (e) => {
         if (readOnly) return;
@@ -472,6 +576,24 @@ export const Canvas = ({ readOnly = false }) => {
                                 fill={background}
                                 listening={false}
                             />
+
+                            {/* Background Image */}
+                            {currentSlide?.backgroundImage && (
+                                <URLImage
+                                    element={{
+                                        src: currentSlide.backgroundImage,
+                                        x: 0,
+                                        y: 0,
+                                        width: CANVAS_WIDTH,
+                                        height: CANVAS_HEIGHT,
+                                    }}
+                                    onSelect={() => { }}
+                                    onDragMove={() => { }}
+                                    onDragEnd={() => { }}
+                                    onTransformEnd={() => { }}
+                                    readOnly={true}
+                                />
+                            )}
 
                             {/* Smart Guidelines */}
                             {showGuidelines.vertical && (

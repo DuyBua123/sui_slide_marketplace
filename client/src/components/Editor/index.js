@@ -24,5 +24,10 @@ export { UploadsPanel } from './UploadsPanel';
 export { DesignPanel } from './DesignPanel';
 export { TemplateGallery } from './TemplateGallery';
 export { BrandPanel } from './BrandPanel';
+export { AnimatePanel } from './AnimatePanel';
+export { ClickOrderModal } from './ClickOrderModal';
+export { ChartsPanel } from './ChartsPanel';
+export { ChartDataModal } from './ChartDataModal';
+export { ShareModal } from './ShareModal';
 
 

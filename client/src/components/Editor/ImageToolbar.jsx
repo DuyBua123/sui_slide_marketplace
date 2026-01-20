@@ -1,12 +1,12 @@
 import { useRef } from 'react';
-import { Upload, FlipHorizontal, FlipVertical } from 'lucide-react';
+import { Upload, FlipHorizontal, FlipVertical, Wand2 } from 'lucide-react';
 import { useSlideStore } from '../../store/useSlideStore';
 import { uploadToPinata } from '../../utils/pinata';
 
 /**
  * Image toolbar - shown when image is selected
  */
-export const ImageToolbar = ({ element }) => {
+export const ImageToolbar = ({ element, onAnimateClick }) => {
     const fileInputRef = useRef(null);
     const updateElement = useSlideStore((state) => state.updateElement);
 
@@ -81,6 +81,19 @@ export const ImageToolbar = ({ element }) => {
                 title="Flip Vertical"
             >
                 <FlipVertical className="w-4 h-4" />
+            </button>
+
+            {/* Divider */}
+            <div className="w-px h-6 bg-white/10" />
+
+            {/* Animate Button */}
+            <button
+                onClick={onAnimateClick}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded hover:bg-white/10 transition-colors"
+                title="Animate"
+            >
+                <Wand2 className="w-3.5 h-3.5" />
+                <span className="text-xs font-medium">Animate</span>
             </button>
 
             {/* Divider */}

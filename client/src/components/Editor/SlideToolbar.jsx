@@ -1,4 +1,4 @@
-import { Palette, Film } from 'lucide-react';
+import { Palette, Film, Image } from 'lucide-react';
 import { useSlideStore } from '../../store/useSlideStore';
 
 const backgroundColors = [
@@ -23,9 +23,21 @@ export const SlideToolbar = () => {
         currentSlideIndex,
         setSlideBackground,
         setSlideTransition,
+        setSlideBackgroundImage,
     } = useSlideStore();
 
     const currentSlide = slides[currentSlideIndex];
+
+    const handleImageUpload = (e) => {
+        const file = e.target.files?.[0];
+        if (file) {
+            const reader = new FileReader();
+            reader.onload = (event) => {
+                setSlideBackgroundImage(event.target.result);
+            };
+            reader.readAsDataURL(file);
+        }
+    };
 
     return (
         <div className="flex items-center gap-2 bg-gray-900/80 backdrop-blur-sm rounded-lg p-1 border border-white/10">
@@ -39,8 +51,8 @@ export const SlideToolbar = () => {
                             key={color}
                             onClick={() => setSlideBackground(color)}
                             className={`w-6 h-6 rounded border-2 transition-all ${currentSlide?.background === color
-                                    ? 'border-blue-500 scale-110'
-                                    : 'border-transparent hover:border-white/30'
+                                ? 'border-blue-500 scale-110'
+                                : 'border-transparent hover:border-white/30'
                                 }`}
                             style={{ background: color }}
                         />
@@ -52,6 +64,16 @@ export const SlideToolbar = () => {
                         className="w-6 h-6 rounded cursor-pointer"
                         title="Custom Color"
                     />
+                    {/* Upload Background Image */}
+                    <label className="w-6 h-6 rounded border-2 border-transparent hover:border-white/30 flex items-center justify-center cursor-pointer bg-gray-700" title="Upload Background Image">
+                        <Image className="w-4 h-4 text-gray-400" />
+                        <input
+                            type="file"
+                            accept="image/*"
+                            onChange={handleImageUpload}
+                            className="hidden"
+                        />
+                    </label>
                 </div>
             </div>
 

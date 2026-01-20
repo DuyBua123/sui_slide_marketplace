@@ -143,6 +143,16 @@ export const useSlideStore = create(
         set({ slides: newSlides });
       },
 
+      setSlideBackgroundImage: (imageUrl) => {
+        const { slides, currentSlideIndex } = get();
+        const newSlides = [...slides];
+        newSlides[currentSlideIndex] = {
+          ...newSlides[currentSlideIndex],
+          backgroundImage: imageUrl,
+        };
+        set({ slides: newSlides });
+      },
+
       // ============ Element Management ============
 
       get elements() {
