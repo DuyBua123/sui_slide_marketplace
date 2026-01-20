@@ -1,6 +1,7 @@
 import { ConnectButton } from "@mysten/dapp-kit";
 import { useNavigate } from "react-router-dom";
 import { useCurrentAccount } from "@mysten/dapp-kit";
+import { ROUTE } from "../constant/routeConfig";
 // const PACKAGE_ID = "0x97cb4929d1cee71ca55e58882e7c4958eef360c3b9c1b0ea7eae3ccc5d151909";
 // const TODO_TYPE = `${PACKAGE_ID}::todo_app::Todo`;
 // const client = new SuiClient({
@@ -35,21 +36,24 @@ export const Home = () => {
           <div>
             {account ? (
               <button
-                onClick={() => navigate("/my-slide")}
+                onClick={() => navigate(ROUTE.MYSLIDE)}
                 className="cursor-pointer relative group overflow-hidden bg-white text-black px-8 py-3 rounded-xl font-bold transition-all duration-300 hover:shadow-[0_0_20px_rgba(255,255,255,0.3)] active:scale-95 flex items-center gap-2"
               >
                 <span>My Dashboard</span>
               </button>
             ) : (
               <button
-                onClick={() => navigate("/sign-in")}
+                onClick={() => navigate(ROUTE.SIGN_IN)}
                 className="cursor-pointer bg-blue-600 hover:bg-blue-500 text-white px-8 py-3 rounded-xl font-semibold transition-all duration-200 shadow-lg shadow-blue-500/20 active:scale-95"
               >
                 Connect Wallet
               </button>
             )}
           </div>
-          <button className="cursor-pointer px-8 py-3 rounded-xl bg-white/5 border border-white/10 hover:bg-white/10 transition-all font-medium">
+          <button
+            onClick={() => navigate(ROUTE.MARKET)}
+            className="cursor-pointer px-8 py-3 rounded-xl bg-white/5 border border-white/10 hover:bg-white/10 transition-all font-medium"
+          >
             Explore Marketplace
           </button>
         </div>

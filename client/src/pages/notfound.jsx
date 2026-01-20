@@ -1,4 +1,5 @@
 import { useNavigate } from "react-router-dom";
+import { ROUTE } from "../constant/routeConfig";
 
 export const NotFound = () => {
   const navigate = useNavigate();
@@ -30,7 +31,7 @@ export const NotFound = () => {
 
         <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
           <button
-            onClick={() => navigate("/")}
+            onClick={() => navigate(ROUTE.HOME)}
             className="cursor-pointer px-8 py-3 bg-white/5 border border-white/10 hover:bg-white/10 text-white rounded-xl font-bold transition-all"
           >
             Quay lại trang chủ
