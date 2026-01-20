@@ -6,6 +6,7 @@ import { SignUp } from "../pages/signup";
 import { Slide } from "../pages/slide";
 import { MarketDetail } from "../pages/marketDetail";
 import { MySlide } from "../pages/mySlide";
+import { Editor } from "../pages/editor/Editor";
 
 export const publicRoutes = [
   { path: "/", component: Home }, // trang chủ
@@ -17,6 +18,8 @@ export const publicRoutes = [
 ];
 
 export const privateRoutes = [
-  { path: "/slide/:id", component: Slide, isHeaderFooter: false }, // trang tạo, chỉnh sửa slide
+  { path: "/editor", component: Editor, isHeaderFooter: false }, // trang tạo slide mới
+  { path: "/editor/:id", component: Editor, isHeaderFooter: false }, // trang chỉnh sửa slide
+  { path: "/slide/:id", component: Slide, isHeaderFooter: false }, // trang xem slide (presentation)
   { path: "/my-slide", component: MySlide }, // trang xem slide sở hữu
 ];

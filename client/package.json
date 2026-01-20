@@ -14,10 +14,14 @@
     "@mysten/sui": "^1.45.2",
     "@tailwindcss/vite": "^4.1.18",
     "@tanstack/react-query": "^5.90.18",
+    "konva": "^10.2.0",
     "react": "^19.2.0",
     "react-dom": "^19.2.0",
+    "react-konva": "^19.2.1",
     "react-router-dom": "^7.12.0",
-    "tailwindcss": "^4.1.18"
+    "tailwindcss": "^4.1.18",
+    "uuid": "^13.0.0",
+    "zustand": "^5.0.10"
   },
   "devDependencies": {
     "@eslint/js": "^9.39.1",
