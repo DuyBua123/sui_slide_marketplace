@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { ArrowLeft, FileText, Expand, Share2, Play, Users } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useSlideStore } from '../../store/useSlideStore';
+import { ShareModal } from './ShareModal';
 
 /**
  * Top Header - Canva style with File, Resize, Share, Present
@@ -9,6 +10,7 @@ import { useSlideStore } from '../../store/useSlideStore';
 export const TopHeader = ({ projectId, onSave }) => {
     const navigate = useNavigate();
     const { title, setTitle } = useSlideStore();
+    const [showShareModal, setShowShareModal] = useState(false);
 
     return (
         <div className="h-10 bg-[#0d0d0d] border-b border-white/5 flex items-center justify-between px-3">
@@ -47,7 +49,10 @@ export const TopHeader = ({ projectId, onSave }) => {
 
             {/* Right: Share + Present */}
             <div className="flex items-center gap-2">
-                <button className="flex items-center gap-1.5 px-3 py-1.5 bg-white/5 hover:bg-white/10 rounded-lg text-xs font-medium transition-colors">
+                <button
+                    onClick={() => setShowShareModal(true)}
+                    className="flex items-center gap-1.5 px-3 py-1.5 bg-white/5 hover:bg-white/10 rounded-lg text-xs font-medium transition-colors"
+                >
                     <Users className="w-3.5 h-3.5" />
                     Share
                 </button>
@@ -60,6 +65,12 @@ export const TopHeader = ({ projectId, onSave }) => {
                     Present
                 </button>
             </div>
+
+            {/* Share Modal */}
+            <ShareModal
+                isOpen={showShareModal}
+                onClose={() => setShowShareModal(false)}
+            />
         </div>
     );
 };

@@ -311,6 +311,18 @@ export const Slide = () => {
                   (document.documentElement.classList.contains("dark") ? "#1a1a2e" : "#ffffff")
                 }
               />
+              {/* Background Image */}
+              {currentSlide?.backgroundImage && (
+                <URLImage
+                  element={{
+                    src: currentSlide.backgroundImage,
+                    x: 0,
+                    y: 0,
+                    width: CANVAS_WIDTH,
+                    height: CANVAS_HEIGHT,
+                  }}
+                />
+              )}
               {currentSlide?.elements?.map(renderElement)}
             </Layer>
           </Stage>
@@ -427,11 +439,18 @@ export const Slide = () => {
               <button
                 key={index}
                 onClick={() => setCurrentIndex(index)}
+<<<<<<< HEAD
                 className={`w-3 h-3 rounded-full transition-all ${
                   index === currentIndex
                     ? "bg-blue-500 scale-125 shadow-[0_0_10px_rgba(59,130,246,0.5)]"
                     : "bg-white/40 hover:bg-white/60 dark:bg-white/30 dark:hover:bg-white/50"
                 }`}
+=======
+                className={`w-3 h-3 rounded-full transition-all ${index === currentIndex
+                  ? 'bg-blue-500 scale-125'
+                  : 'bg-white/30 hover:bg-white/50'
+                  }`}
+>>>>>>> 2565ee7 (feat: Multi-slide editor)
               />
             ))}
           </div>

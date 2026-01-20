@@ -1,16 +1,16 @@
-import { useRef } from "react";
-import { Upload, FlipHorizontal, FlipVertical } from "lucide-react";
-import { useSlideStore } from "../../store/useSlideStore";
-import { uploadToPinata } from "../../utils/pinata";
+import { useRef } from 'react';
+import { Upload, FlipHorizontal, FlipVertical, Wand2 } from 'lucide-react';
+import { useSlideStore } from '../../store/useSlideStore';
+import { uploadToPinata } from '../../utils/pinata';
 
 /**
  * Image toolbar - shown when image is selected
  */
-export const ImageToolbar = ({ element }) => {
+export const ImageToolbar = ({ element, onAnimateClick }) => {
   const fileInputRef = useRef(null);
   const updateElement = useSlideStore((state) => state.updateElement);
 
-  if (!element || element.type !== "image") return null;
+  if (!element || element.type !== 'image') return null;
 
   const handleChange = (key, value) => {
     updateElement(element.id, { [key]: value });
@@ -22,24 +22,24 @@ export const ImageToolbar = ({ element }) => {
 
     try {
       const result = await uploadToPinata(file, file.name);
-      handleChange("src", result.url);
+      handleChange('src', result.url);
     } catch (error) {
       // Fallback to local
       const reader = new FileReader();
       reader.onload = (event) => {
-        handleChange("src", event.target?.result);
+        handleChange('src', event.target?.result);
       };
       reader.readAsDataURL(file);
     }
-    e.target.value = "";
+    e.target.value = '';
   };
 
   const toggleFlipX = () => {
-    handleChange("flipX", !element.flipX);
+    handleChange('flipX', !element.flipX);
   };
 
   const toggleFlipY = () => {
-    handleChange("flipY", !element.flipY);
+    handleChange('flipY', !element.flipY);
   };
 
   return (
@@ -66,11 +66,10 @@ export const ImageToolbar = ({ element }) => {
       {/* Flip Horizontal */}
       <button
         onClick={toggleFlipX}
-        className={`p-2 rounded-md transition-all ${
-          element.flipX
-            ? "bg-blue-100 dark:bg-blue-600 text-blue-600 dark:text-white shadow-inner"
-            : "text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-white/10"
-        }`}
+        className={`p-2 rounded-md transition-all ${element.flipX
+            ? 'bg-blue-100 dark:bg-blue-600 text-blue-600 dark:text-white shadow-inner'
+            : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-white/10'
+          }`}
         title="Flip Horizontal"
       >
         <FlipHorizontal className="w-4 h-4" />
@@ -79,11 +78,10 @@ export const ImageToolbar = ({ element }) => {
       {/* Flip Vertical */}
       <button
         onClick={toggleFlipY}
-        className={`p-2 rounded-md transition-all ${
-          element.flipY
-            ? "bg-blue-100 dark:bg-blue-600 text-blue-600 dark:text-white shadow-inner"
-            : "text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-white/10"
-        }`}
+        className={`p-2 rounded-md transition-all ${element.flipY
+            ? 'bg-blue-100 dark:bg-blue-600 text-blue-600 dark:text-white shadow-inner'
+            : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-white/10'
+          }`}
         title="Flip Vertical"
       >
         <FlipVertical className="w-4 h-4" />
@@ -91,6 +89,22 @@ export const ImageToolbar = ({ element }) => {
 
       {/* Divider */}
       <div className="w-px h-6 bg-gray-200 dark:bg-white/10 mx-1" />
+
+      {/* Animate Button */}
+      {onAnimateClick && (
+        <>
+          <button
+            onClick={onAnimateClick}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded hover:bg-white/10 transition-colors"
+            title="Animate"
+          >
+            <Wand2 className="w-3.5 h-3.5" />
+            <span className="text-xs font-medium">Animate</span>
+          </button>
+
+          <div className="w-px h-6 bg-white/10" />
+        </>
+      )}
 
       {/* Opacity Control */}
       <div className="flex items-center gap-3 px-3">
@@ -104,7 +118,7 @@ export const ImageToolbar = ({ element }) => {
             max="1"
             step="0.1"
             value={element.opacity ?? 1}
-            onChange={(e) => handleChange("opacity", parseFloat(e.target.value))}
+            onChange={(e) => handleChange('opacity', parseFloat(e.target.value))}
             className="w-20 h-1.5 bg-gray-300 dark:bg-gray-700 rounded-lg appearance-none cursor-pointer accent-blue-600"
           />
           <span className="text-[11px] font-mono font-bold text-blue-600 dark:text-blue-400 w-9 text-right">

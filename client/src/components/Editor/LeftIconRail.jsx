@@ -1,5 +1,5 @@
 import {
-    LayoutTemplate, Shapes, Type, Palette, Upload, PenTool
+    LayoutTemplate, Shapes, Type, Palette, Upload, PenTool, BarChart3
 } from 'lucide-react';
 
 /**
@@ -12,6 +12,7 @@ export const LeftIconRail = ({ activeTab, onTabChange }) => {
         { id: 'text', icon: Type, label: 'Text' },
         { id: 'brand', icon: Palette, label: 'Brand' },
         { id: 'uploads', icon: Upload, label: 'Uploads' },
+        { id: 'charts', icon: BarChart3, label: 'Charts' },
         { id: 'draw', icon: PenTool, label: 'Draw' },
     ];
 
@@ -26,8 +27,8 @@ export const LeftIconRail = ({ activeTab, onTabChange }) => {
                         key={tab.id}
                         onClick={() => onTabChange(tab.id)}
                         className={`group relative w-10 h-10 rounded-lg flex items-center justify-center transition-all ${isActive
-                                ? 'bg-white/10 text-white'
-                                : 'text-gray-500 hover:bg-white/5 hover:text-gray-300'
+                            ? 'bg-white/10 text-white'
+                            : 'text-gray-500 hover:bg-white/5 hover:text-gray-300'
                             }`}
                         title={tab.label}
                     >

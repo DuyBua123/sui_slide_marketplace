@@ -1,5 +1,5 @@
 import { Upload, Video, Folder, Wand2 } from 'lucide-react';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { uploadFileToIPFS } from '../../utils/pinata';
 import { useSlideStore } from '../../store/useSlideStore';
 
@@ -18,12 +18,15 @@ export const UploadsPanel = () => {
 
         setUploading(true);
         try {
-            const ipfsUrl = await uploadFileToIPFS(file);
+            const result = await uploadFileToIPFS(file);
+
+            // CRITICAL FIX: Extract URL string from Pinata response object
+            const imageUrl = typeof result === 'object' ? result.url : result;
 
             // Add to uploads list
             const newUpload = {
                 id: Date.now().toString(),
-                url: ipfsUrl,
+                url: imageUrl, // Now storing string URL instead of object
                 name: file.name,
                 type: file.type.startsWith('image/') ? 'image' : 'video',
                 uploadedAt: new Date().toISOString(),
@@ -45,8 +48,11 @@ export const UploadsPanel = () => {
 
     const handleAddToCanvas = (upload) => {
         if (upload.type === 'image') {
+            // Safely extract URL if it's an object (backward compatibility)
+            const imageUrl = typeof upload.url === 'object' ? upload.url.url : upload.url;
+
             addElement('image', {
-                src: upload.url,
+                src: imageUrl,
                 x: 100,
                 y: 100,
                 width: 200,
@@ -55,8 +61,8 @@ export const UploadsPanel = () => {
         }
     };
 
-    // Load uploads from localStorage on mount
-    useState(() => {
+    // Load uploads from localStorage on mount - FIXED: was useState, should be useEffect
+    useEffect(() => {
         const savedUploads = JSON.parse(localStorage.getItem('uploads') || '[]');
         setUploads(savedUploads);
     }, []);
@@ -91,8 +97,8 @@ export const UploadsPanel = () => {
                 <button
                     onClick={() => setActiveTab('images')}
                     className={`px-4 py-2 text-sm font-medium transition-colors ${activeTab === 'images'
-                            ? 'text-purple-400 border-b-2 border-purple-400'
-                            : 'text-gray-400 hover:text-white'
+                        ? 'text-purple-400 border-b-2 border-purple-400'
+                        : 'text-gray-400 hover:text-white'
                         }`}
                 >
                     Images
@@ -100,8 +106,8 @@ export const UploadsPanel = () => {
                 <button
                     onClick={() => setActiveTab('videos')}
                     className={`px-4 py-2 text-sm font-medium transition-colors ${activeTab === 'videos'
-                            ? 'text-purple-400 border-b-2 border-purple-400'
-                            : 'text-gray-400 hover:text-white'
+                        ? 'text-purple-400 border-b-2 border-purple-400'
+                        : 'text-gray-400 hover:text-white'
                         }`}
                 >
                     Videos
@@ -109,8 +115,8 @@ export const UploadsPanel = () => {
                 <button
                     onClick={() => setActiveTab('folders')}
                     className={`px-4 py-2 text-sm font-medium transition-colors ${activeTab === 'folders'
-                            ? 'text-purple-400 border-b-2 border-purple-400'
-                            : 'text-gray-400 hover:text-white'
+                        ? 'text-purple-400 border-b-2 border-purple-400'
+                        : 'text-gray-400 hover:text-white'
                         }`}
                 >
                     Folders

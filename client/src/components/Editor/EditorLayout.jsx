@@ -13,6 +13,8 @@ import { TextPanel } from './TextPanel';
 import { UploadsPanel } from './UploadsPanel';
 import { DesignPanel } from './DesignPanel';
 import { BrandPanel } from './BrandPanel';
+import { AnimatePanel } from './AnimatePanel';
+import { ChartsPanel } from './ChartsPanel';
 import { SellSlideModal } from './SellSlideModal';
 import { MintSlideModal } from './MintSlideModal';
 import { useSlideStore, useTemporalStore } from '../../store/useSlideStore';
@@ -152,13 +154,18 @@ export const EditorLayout = () => {
         setSuiObjectId(txDigest);
     };
 
+    // Handle animate button click
+    const handleAnimateClick = () => {
+        setActiveTab('animate');
+    };
+
     // Render contextual toolbar
     const renderContextualToolbar = () => {
         if (selectedElement?.type === 'text') {
-            return <TextToolbar element={selectedElement} />;
+            return <TextToolbar element={selectedElement} onAnimateClick={handleAnimateClick} />;
         }
         if (selectedElement?.type === 'image') {
-            return <ImageToolbar element={selectedElement} />;
+            return <ImageToolbar element={selectedElement} onAnimateClick={handleAnimateClick} />;
         }
         return <SlideToolbar />;
     };
@@ -188,6 +195,8 @@ export const EditorLayout = () => {
                             {activeTab === 'uploads' && <UploadsPanel />}
                             {activeTab === 'design' && <DesignPanel />}
                             {activeTab === 'brand' && <BrandPanel />}
+                            {activeTab === 'animate' && <AnimatePanel />}
+                            {activeTab === 'charts' && <ChartsPanel />}
                         </div>
                     </div>
                 )}
