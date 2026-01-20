@@ -6,17 +6,19 @@ import { SignUp } from "../pages/signup";
 import { Slide } from "../pages/slide";
 import { MarketDetail } from "../pages/marketDetail";
 import { MySlide } from "../pages/mySlide";
+import { ROUTE } from "../constant/routeConfig";
 
 export const publicRoutes = [
-  { path: "/", component: Home }, // trang chủ
-  { path: "/market", component: Market }, // trang market
-  { path: "/market/:id", component: MarketDetail }, // trang thông tin chi tiết sản phầm/slide
-  { path: "/sign-in", component: SignIn, isHeaderFooter: false }, // trang đăng nhập
+  { path: ROUTE.HOME, component: Home }, // trang chủ
+  { path: "/home", component: Home },
+  { path: ROUTE.MARKET, component: Market }, // trang market
+  { path: `${ROUTE.MARKET_DETAIL}/:id`, component: MarketDetail }, // trang thông tin chi tiết sản phầm/slide
+  { path: ROUTE.SIGN_IN, component: SignIn, isHeaderFooter: false }, // trang đăng nhập
   // { path: "/sign-up", component: SignUp, isHeaderFooter: false }, // trang đăng ký
   { path: "*", component: NotFound, isHeaderFooter: false }, // trang not found
 ];
 
 export const privateRoutes = [
-  { path: "/slide/:id", component: Slide, isHeaderFooter: false }, // trang tạo, chỉnh sửa slide
-  { path: "/my-slide", component: MySlide }, // trang xem slide sở hữu
+  { path: `${ROUTE.SLIDE}/:id`, component: Slide, isHeaderFooter: false }, // trang chỉnh sửa slide
+  { path: ROUTE.MYSLIDE, component: MySlide }, // trang xem slide sở hữu
 ];

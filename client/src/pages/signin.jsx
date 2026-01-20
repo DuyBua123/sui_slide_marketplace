@@ -1,6 +1,7 @@
 import { ConnectButton, useCurrentAccount } from "@mysten/dapp-kit";
 import { useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
+import { ROUTE } from "../constant/routeConfig";
 
 export const SignIn = () => {
   const account = useCurrentAccount();
@@ -8,7 +9,7 @@ export const SignIn = () => {
 
   useEffect(() => {
     if (account) {
-      navigate("/");
+      navigate(ROUTE.HOME);
     }
   }, [account, navigate]);
 
@@ -35,7 +36,7 @@ export const SignIn = () => {
             </svg>
           </div>
 
-          <Link to="/" className="group flex items-center gap-0.5 no-underline">
+          <Link to={ROUTE.HOME} className="group flex items-center gap-0.5 no-underline">
             <h2 className="text-3xl font-extrabold tracking-tighter transition-all duration-300">
               <span className="text-white group-hover:text-blue-400 transition-colors">
                 Slide
