@@ -2,6 +2,8 @@ import { useRef, useEffect, useState, useCallback } from 'react';
 import { Stage, Layer, Rect, Circle, Line, Text, Transformer, Image as KonvaImage } from 'react-konva';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useSlideStore } from '../../store/useSlideStore';
+import { FloatingElementMenu } from './FloatingElementMenu';
+import { Ruler } from './Ruler';
 
 // Aspect ratio 16:9
 const CANVAS_WIDTH = 960;
@@ -385,6 +387,22 @@ export const Canvas = ({ readOnly = false }) => {
                         fill={element.fill}
                         width={element.width}
                         align={element.align || 'left'}
+                        // Advanced text properties
+                        letterSpacing={element.letterSpacing || 0}
+                        lineHeight={element.lineHeight || 1.2}
+                        textDecoration={element.textDecoration || ''}
+                        opacity={element.opacity ?? 1}
+                        // Shadow effect
+                        shadowEnabled={element.shadowEnabled || false}
+                        shadowColor={element.shadowColor || '#000000'}
+                        shadowBlur={element.shadowBlur || 10}
+                        shadowOffsetX={element.shadowOffsetX || 5}
+                        shadowOffsetY={element.shadowOffsetY || 5}
+                        shadowOpacity={element.shadowOpacity || 0.5}
+                        // Stroke/Outline effect  
+                        strokeEnabled={element.strokeEnabled || false}
+                        stroke={element.stroke || '#000000'}
+                        strokeWidth={element.strokeWidth || 2}
                         onDblClick={(e) => handleTextDblClick(e, element)}
                         onDblTap={(e) => handleTextDblClick(e, element)}
                     />

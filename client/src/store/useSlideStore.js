@@ -198,6 +198,19 @@ export const useSlideStore = create(
         });
       },
 
+      duplicateElement: (id) => {
+        const { slides, currentSlideIndex, addElement } = get();
+        const element = slides[currentSlideIndex].elements.find((el) => el.id === id);
+        if (!element) return;
+
+        const { id: _, ...elementProps } = element;
+        addElement(element.type, {
+          ...elementProps,
+          x: element.x + 20,
+          y: element.y + 20,
+        });
+      },
+
       deleteSelectedElements: () => {
         const { slides, currentSlideIndex, selectedId, selectedIds } = get();
         const idsToDelete = selectedIds.length > 0 ? selectedIds : (selectedId ? [selectedId] : []);
