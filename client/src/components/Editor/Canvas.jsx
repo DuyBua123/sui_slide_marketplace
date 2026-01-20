@@ -1,16 +1,9 @@
-import { useRef, useEffect, useState, useCallback } from "react";
-import {
-  Stage,
-  Layer,
-  Rect,
-  Circle,
-  Line,
-  Text,
-  Transformer,
-  Image as KonvaImage,
-} from "react-konva";
-import { motion, AnimatePresence } from "framer-motion";
-import { useSlideStore } from "../../store/useSlideStore";
+import { useRef, useEffect, useState, useCallback } from 'react';
+import { Stage, Layer, Rect, Circle, Line, Text, Transformer, Image as KonvaImage } from 'react-konva';
+import { motion, AnimatePresence } from 'framer-motion';
+import { useSlideStore } from '../../store/useSlideStore';
+import { FloatingElementMenu } from './FloatingElementMenu';
+import { Ruler } from './Ruler';
 
 // Aspect ratio 16:9
 const CANVAS_WIDTH = 960;
@@ -25,10 +18,10 @@ const URLImage = ({ element, onSelect, onDragMove, onDragEnd, onTransformEnd, re
 
   useEffect(() => {
     const img = new window.Image();
-    img.crossOrigin = "anonymous";
+    img.crossOrigin = 'anonymous';
     img.src = element.src;
     img.onload = () => setImage(img);
-    img.onerror = () => console.error("Failed to load image:", element.src);
+    img.onerror = () => console.error('Failed to load image:', element.src);
   }, [element.src]);
 
   if (!image) {
@@ -83,14 +76,14 @@ const slideTransitions = {
     exit: { opacity: 0, transition: { duration: 0.2 } },
   },
   pushLeft: {
-    initial: { x: "100%", opacity: 0 },
-    animate: { x: 0, opacity: 1, transition: { duration: 0.4, ease: "easeOut" } },
-    exit: { x: "-100%", opacity: 0, transition: { duration: 0.3 } },
+    initial: { x: '100%', opacity: 0 },
+    animate: { x: 0, opacity: 1, transition: { duration: 0.4, ease: 'easeOut' } },
+    exit: { x: '-100%', opacity: 0, transition: { duration: 0.3 } },
   },
   pushRight: {
-    initial: { x: "-100%", opacity: 0 },
-    animate: { x: 0, opacity: 1, transition: { duration: 0.4, ease: "easeOut" } },
-    exit: { x: "100%", opacity: 0, transition: { duration: 0.3 } },
+    initial: { x: '-100%', opacity: 0 },
+    animate: { x: 0, opacity: 1, transition: { duration: 0.4, ease: 'easeOut' } },
+    exit: { x: '100%', opacity: 0, transition: { duration: 0.3 } },
   },
   scale: {
     initial: { scale: 0.8, opacity: 0 },
@@ -122,8 +115,8 @@ export const Canvas = ({ readOnly = false }) => {
 
   const currentSlide = slides[currentSlideIndex];
   const elements = currentSlide?.elements || [];
-  const background = currentSlide?.background || "#1a1a2e";
-  const transition = currentSlide?.transition || "fade";
+  const background = currentSlide?.background || '#1a1a2e';
+  const transition = currentSlide?.transition || 'fade';
 
   // Responsive scaling
   useEffect(() => {
@@ -135,8 +128,8 @@ export const Canvas = ({ readOnly = false }) => {
       }
     };
     handleResize();
-    window.addEventListener("resize", handleResize);
-    return () => window.removeEventListener("resize", handleResize);
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
   }, []);
 
   // Update transformer when selection changes
@@ -221,7 +214,7 @@ export const Canvas = ({ readOnly = false }) => {
       rotation: node.rotation(),
     };
 
-    if (element.type === "text") {
+    if (element.type === 'text') {
       // TRUE FONT RESIZING: Calculate new fontSize from scale
       const oldFontSize = element.fontSize || 24;
       const newFontSize = Math.round(oldFontSize * scaleY);
@@ -232,12 +225,12 @@ export const Canvas = ({ readOnly = false }) => {
       // Reset scale to 1 (font size handles the sizing now)
       node.scaleX(1);
       node.scaleY(1);
-    } else if (element.type === "rect" || element.type === "image") {
+    } else if (element.type === 'rect' || element.type === 'image') {
       updates.width = Math.max(20, node.width() * scaleX);
       updates.height = Math.max(20, node.height() * scaleY);
       node.scaleX(1);
       node.scaleY(1);
-    } else if (element.type === "circle") {
+    } else if (element.type === 'circle') {
       updates.radius = Math.max(10, element.radius * Math.max(scaleX, scaleY));
       node.scaleX(1);
       node.scaleY(1);
@@ -268,7 +261,7 @@ export const Canvas = ({ readOnly = false }) => {
       stage.getLayer()?.batchDraw();
 
       // Create textarea overlay
-      const textarea = document.createElement("textarea");
+      const textarea = document.createElement('textarea');
       document.body.appendChild(textarea);
 
       const areaPosition = {
@@ -277,37 +270,37 @@ export const Canvas = ({ readOnly = false }) => {
       };
 
       textarea.value = element.text;
-      textarea.style.position = "fixed";
+      textarea.style.position = 'fixed';
       textarea.style.top = `${areaPosition.y}px`;
       textarea.style.left = `${areaPosition.x}px`;
       textarea.style.width = `${(element.width || 200) * scale + 10}px`;
-      textarea.style.height = "auto";
+      textarea.style.height = 'auto';
       textarea.style.minHeight = `${(element.fontSize || 24) * scale * 1.5}px`;
       textarea.style.fontSize = `${(element.fontSize || 24) * scale}px`;
-      textarea.style.fontFamily = element.fontFamily || "Arial";
-      textarea.style.fontWeight = element.fontWeight || "normal";
-      textarea.style.fontStyle = element.fontStyle || "normal";
-      textarea.style.color = element.fill || "#ffffff";
-      textarea.style.background = "rgba(0,0,0,0.8)";
-      textarea.style.border = "2px solid #3b82f6";
-      textarea.style.borderRadius = "4px";
-      textarea.style.padding = "8px";
-      textarea.style.outline = "none";
-      textarea.style.resize = "none";
-      textarea.style.overflow = "hidden";
-      textarea.style.lineHeight = "1.2";
-      textarea.style.zIndex = "10000";
-      textarea.style.transformOrigin = "left top";
+      textarea.style.fontFamily = element.fontFamily || 'Arial';
+      textarea.style.fontWeight = element.fontWeight || 'normal';
+      textarea.style.fontStyle = element.fontStyle || 'normal';
+      textarea.style.color = element.fill || '#ffffff';
+      textarea.style.background = 'rgba(0,0,0,0.8)';
+      textarea.style.border = '2px solid #3b82f6';
+      textarea.style.borderRadius = '4px';
+      textarea.style.padding = '8px';
+      textarea.style.outline = 'none';
+      textarea.style.resize = 'none';
+      textarea.style.overflow = 'hidden';
+      textarea.style.lineHeight = '1.2';
+      textarea.style.zIndex = '10000';
+      textarea.style.transformOrigin = 'left top';
 
       textarea.focus();
       textarea.select();
 
       // Auto-resize textarea
       const adjustHeight = () => {
-        textarea.style.height = "auto";
-        textarea.style.height = textarea.scrollHeight + "px";
+        textarea.style.height = 'auto';
+        textarea.style.height = textarea.scrollHeight + 'px';
       };
-      textarea.addEventListener("input", adjustHeight);
+      textarea.addEventListener('input', adjustHeight);
       adjustHeight();
 
       const finishEditing = () => {
@@ -322,13 +315,13 @@ export const Canvas = ({ readOnly = false }) => {
         stage.getLayer()?.batchDraw();
       };
 
-      textarea.addEventListener("blur", finishEditing);
-      textarea.addEventListener("keydown", (e) => {
-        if (e.key === "Escape") {
+      textarea.addEventListener('blur', finishEditing);
+      textarea.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape') {
           textarea.value = element.text; // Revert
           textarea.blur();
         }
-        if (e.key === "Enter" && !e.shiftKey) {
+        if (e.key === 'Enter' && !e.shiftKey) {
           e.preventDefault();
           textarea.blur();
         }
@@ -353,7 +346,7 @@ export const Canvas = ({ readOnly = false }) => {
     };
 
     switch (element.type) {
-      case "rect":
+      case 'rect':
         return (
           <Rect
             {...commonProps}
@@ -365,7 +358,7 @@ export const Canvas = ({ readOnly = false }) => {
             cornerRadius={element.cornerRadius}
           />
         );
-      case "circle":
+      case 'circle':
         return (
           <Circle
             {...commonProps}
@@ -375,7 +368,7 @@ export const Canvas = ({ readOnly = false }) => {
             strokeWidth={element.strokeWidth}
           />
         );
-      case "line":
+      case 'line':
         return (
           <Line
             {...commonProps}
@@ -386,25 +379,38 @@ export const Canvas = ({ readOnly = false }) => {
             lineJoin="round"
           />
         );
-      case "text":
+      case 'text':
         return (
           <Text
             {...commonProps}
             text={element.text}
             fontSize={element.fontSize || 24}
-            fontFamily={element.fontFamily || "Arial"}
-            fontStyle={
-              `${element.fontWeight === "bold" ? "bold" : ""} ${element.fontStyle || ""}`.trim() ||
-              "normal"
-            }
+            fontFamily={element.fontFamily || 'Arial'}
+            fontStyle={`${element.fontWeight === 'bold' ? 'bold' : ''} ${element.fontStyle || ''}`.trim() || 'normal'}
             fill={element.fill}
             width={element.width}
-            align={element.align || "left"}
+            align={element.align || 'left'}
+            // Advanced text properties
+            letterSpacing={element.letterSpacing || 0}
+            lineHeight={element.lineHeight || 1.2}
+            textDecoration={element.textDecoration || ''}
+            opacity={element.opacity ?? 1}
+            // Shadow effect
+            shadowEnabled={element.shadowEnabled || false}
+            shadowColor={element.shadowColor || '#000000'}
+            shadowBlur={element.shadowBlur || 10}
+            shadowOffsetX={element.shadowOffsetX || 5}
+            shadowOffsetY={element.shadowOffsetY || 5}
+            shadowOpacity={element.shadowOpacity || 0.5}
+            // Stroke/Outline effect  
+            strokeEnabled={element.strokeEnabled || false}
+            stroke={element.stroke || '#000000'}
+            strokeWidth={element.strokeWidth || 2}
             onDblClick={(e) => handleTextDblClick(e, element)}
             onDblTap={(e) => handleTextDblClick(e, element)}
           />
         );
-      case "image":
+      case 'image':
         return (
           <URLImage
             key={element.id}
@@ -449,7 +455,7 @@ export const Canvas = ({ readOnly = false }) => {
           style={{
             width: CANVAS_WIDTH * scale,
             height: CANVAS_HEIGHT * scale,
-            boxShadow: "0 0 60px rgba(59, 130, 246, 0.15)",
+            boxShadow: '0 0 60px rgba(59, 130, 246, 0.15)',
           }}
         >
           <Stage
@@ -458,7 +464,7 @@ export const Canvas = ({ readOnly = false }) => {
             height={CANVAS_HEIGHT}
             scaleX={scale}
             scaleY={scale}
-            style={{ background, cursor: readOnly ? "default" : "crosshair" }}
+            style={{ background, cursor: readOnly ? 'default' : 'crosshair' }}
             onClick={handleStageClick}
             onTap={handleStageClick}
           >
