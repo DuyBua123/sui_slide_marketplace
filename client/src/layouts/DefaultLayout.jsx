@@ -5,6 +5,7 @@ import { useEffect, useState } from "react";
 
 export const DefaultLayout = () => {
   const [isVisible, setIsVisible] = useState(false);
+
   useEffect(() => {
     const toggleVisibility = () => {
       if (window.scrollY > 100) {
@@ -13,22 +14,18 @@ export const DefaultLayout = () => {
         setIsVisible(false);
       }
     };
-
     window.addEventListener("scroll", toggleVisibility);
     return () => window.removeEventListener("scroll", toggleVisibility);
   }, []);
 
   const scrollToTop = () => {
-    window.scrollTo({
-      top: 0,
-      behavior: "smooth",
-    });
+    window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
   return (
-    <div className="min-h-screen w-full relative bg-[#050505] text-white overflow-x-hidden">
+    <div className="min-h-screen w-full relative bg-white dark:bg-[#050505] text-gray-900 dark:text-white overflow-x-hidden transition-colors duration-500">
       <div
-        className="absolute top-0 left-1/2 -translate-x-1/2 opacity-30 pointer-events-none"
+        className="absolute top-0 left-1/2 -translate-x-1/2 opacity-20 dark:opacity-30 pointer-events-none w-full h-[500px]"
         style={{
           background: "radial-gradient(circle at 50% 0%, #3b82f6 0%, transparent 70%)",
           filter: "blur(80px)",
@@ -36,9 +33,9 @@ export const DefaultLayout = () => {
       />
 
       <div
-        className="absolute inset-0 z-0 opacity-20 pointer-events-none"
+        className="absolute inset-0 z-0 opacity-[0.05] dark:opacity-20 pointer-events-none"
         style={{
-          backgroundImage: `radial-gradient(#ffffff 1px, transparent 1px)`,
+          backgroundImage: `radial-gradient(currentColor 1px, transparent 1px)`,
           backgroundSize: "40px 40px",
         }}
       />
@@ -53,11 +50,14 @@ export const DefaultLayout = () => {
 
       <button
         onClick={scrollToTop}
-        className={`cursor-pointer fixed bottom-8 right-8 z-50 p-3 rounded-full bg-blue-600/20 border border-blue-500/30 text-blue-400 backdrop-blur-md transition-all duration-300 hover:bg-blue-600 hover:text-white hover:scale-105 shadow-lg shadow-blue-500/20 ${
-          isVisible
-            ? "opacity-100 translate-y-0"
-            : "opacity-0 translate-y-10 pointer-events-none"
-        }`}
+        className={`cursor-pointer fixed bottom-8 right-8 z-50 p-3 rounded-full 
+          bg-white/80 dark:bg-blue-600/20 border border-gray-200 dark:border-blue-500/30 
+          text-blue-600 dark:text-blue-400 backdrop-blur-md transition-all duration-300 
+          hover:bg-blue-600 hover:text-white hover:scale-105 shadow-xl ${
+            isVisible
+              ? "opacity-100 translate-y-0"
+              : "opacity-0 translate-y-10 pointer-events-none"
+          }`}
       >
         <svg
           xmlns="http://www.w3.org/2000/svg"
