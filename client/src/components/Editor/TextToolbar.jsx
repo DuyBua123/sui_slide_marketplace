@@ -1,27 +1,36 @@
 import {
-  Bold, Italic, Underline, AlignLeft, AlignCenter, AlignRight,
-  Minus, Plus, ChevronDown, Sparkles, Wand2
-} from 'lucide-react';
-import { useSlideStore } from '../../store/useSlideStore';
+  Bold,
+  Italic,
+  Underline,
+  AlignLeft,
+  AlignCenter,
+  AlignRight,
+  Minus,
+  Plus,
+  ChevronDown,
+  Sparkles,
+  Wand2,
+} from "lucide-react";
+import { useSlideStore } from "../../store/useSlideStore";
 
 const fontFamilies = [
-  'Arial',
-  'Arial Black',
-  'Georgia',
-  'Times New Roman',
-  'Courier New',
-  'Verdana',
-  'Impact',
-  'Comic Sans MS',
-  'Helvetica',
-  'Palatino',
+  "Arial",
+  "Arial Black",
+  "Georgia",
+  "Times New Roman",
+  "Courier New",
+  "Verdana",
+  "Impact",
+  "Comic Sans MS",
+  "Helvetica",
+  "Palatino",
 ];
 
 const textEffects = [
-  { id: 'none', label: 'None' },
-  { id: 'shadow', label: 'Shadow' },
-  { id: 'outline', label: 'Outline' },
-  { id: 'lift', label: 'Lift' },
+  { id: "none", label: "None" },
+  { id: "shadow", label: "Shadow" },
+  { id: "outline", label: "Outline" },
+  { id: "lift", label: "Lift" },
 ];
 
 /**
@@ -30,62 +39,65 @@ const textEffects = [
 export const TextToolbar = ({ element, onAnimateClick }) => {
   const updateElement = useSlideStore((state) => state.updateElement);
 
-  if (!element || element.type !== 'text') return null;
+  if (!element || element.type !== "text") return null;
 
   const handleChange = (key, value) => {
     updateElement(element.id, { [key]: value });
   };
 
   const toggleBold = () => {
-    handleChange('fontWeight', element.fontWeight === 'bold' ? 'normal' : 'bold');
+    handleChange("fontWeight", element.fontWeight === "bold" ? "normal" : "bold");
   };
 
   const toggleItalic = () => {
-    handleChange('fontStyle', element.fontStyle === 'italic' ? 'normal' : 'italic');
+    handleChange("fontStyle", element.fontStyle === "italic" ? "normal" : "italic");
   };
 
   const toggleUnderline = () => {
-    handleChange('textDecoration', element.textDecoration === 'underline' ? 'none' : 'underline');
+    handleChange(
+      "textDecoration",
+      element.textDecoration === "underline" ? "none" : "underline",
+    );
   };
 
   const adjustFontSize = (delta) => {
     const currentSize = element.fontSize || 24;
     const newSize = Math.max(8, Math.min(200, currentSize + delta));
-    handleChange('fontSize', newSize);
+    handleChange("fontSize", newSize);
   };
 
   const handleEffectChange = (effectId) => {
-    if (effectId === 'none') {
-      handleChange('shadowEnabled', false);
-      handleChange('strokeEnabled', false);
-    } else if (effectId === 'shadow') {
-      handleChange('shadowEnabled', true);
-      handleChange('shadowColor', '#000000');
-      handleChange('shadowBlur', 10);
-      handleChange('shadowOffsetX', 5);
-      handleChange('shadowOffsetY', 5);
-      handleChange('shadowOpacity', 0.5);
-    } else if (effectId === 'outline') {
-      handleChange('strokeEnabled', true);
-      handleChange('stroke', '#000000');
-      handleChange('strokeWidth', 2);
-    } else if (effectId === 'lift') {
-      handleChange('shadowEnabled', true);
-      handleChange('shadowColor', '#000000');
-      handleChange('shadowBlur', 20);
-      handleChange('shadowOffsetX', 0);
-      handleChange('shadowOffsetY', 8);
-      handleChange('shadowOpacity', 0.3);
+    if (effectId === "none") {
+      handleChange("shadowEnabled", false);
+      handleChange("strokeEnabled", false);
+    } else if (effectId === "shadow") {
+      handleChange("shadowEnabled", true);
+      handleChange("shadowColor", "#000000");
+      handleChange("shadowBlur", 10);
+      handleChange("shadowOffsetX", 5);
+      handleChange("shadowOffsetY", 5);
+      handleChange("shadowOpacity", 0.5);
+    } else if (effectId === "outline") {
+      handleChange("strokeEnabled", true);
+      handleChange("stroke", "#000000");
+      handleChange("strokeWidth", 2);
+    } else if (effectId === "lift") {
+      handleChange("shadowEnabled", true);
+      handleChange("shadowColor", "#000000");
+      handleChange("shadowBlur", 20);
+      handleChange("shadowOffsetX", 0);
+      handleChange("shadowOffsetY", 8);
+      handleChange("shadowOpacity", 0.3);
     }
   };
 
   return (
-    <div className="flex items-center gap-1 bg-gray-900/80 backdrop-blur-sm rounded-lg p-1 border border-white/10">
+    <div className="flex items-center gap-1 bg-white/90 dark:bg-gray-900/80 backdrop-blur-sm rounded-lg p-1 border border-gray-200 dark:border-white/10 shadow-lg dark:shadow-none">
       {/* Font Family */}
       <select
-        value={element.fontFamily || 'Arial'}
-        onChange={(e) => handleChange('fontFamily', e.target.value)}
-        className="bg-gray-800 border border-white/10 rounded px-2 py-1.5 text-xs focus:outline-none focus:border-blue-500 min-w-[110px]"
+        value={element.fontFamily || "Arial"}
+        onChange={(e) => handleChange("fontFamily", e.target.value)}
+        className="bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-white/10 rounded px-2 py-1.5 text-xs text-gray-900 dark:text-white focus:outline-none focus:border-purple-500 min-w-[110px] cursor-pointer"
       >
         {fontFamilies.map((font) => (
           <option key={font} value={font} style={{ fontFamily: font }}>
@@ -94,13 +106,13 @@ export const TextToolbar = ({ element, onAnimateClick }) => {
         ))}
       </select>
 
-      <div className="w-px h-6 bg-white/10" />
+      <div className="w-px h-6 bg-gray-200 dark:bg-white/10" />
 
       {/* Font Size */}
       <div className="flex items-center gap-1">
         <button
           onClick={() => adjustFontSize(-2)}
-          className="p-1 hover:bg-white/10 rounded transition-colors"
+          className="cursor-pointer p-1 text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-white/10 rounded transition-colors"
           title="Decrease font size"
         >
           <Minus className="w-3 h-3" />
@@ -108,134 +120,137 @@ export const TextToolbar = ({ element, onAnimateClick }) => {
         <input
           type="number"
           value={Math.round(element.fontSize || 24)}
-          onChange={(e) => handleChange('fontSize', parseInt(e.target.value) || 24)}
-          className="w-12 bg-gray-800 border border-white/10 rounded px-2 py-1 text-xs text-center focus:outline-none focus:border-blue-500"
+          onChange={(e) => handleChange("fontSize", parseInt(e.target.value) || 24)}
+          className="w-12 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-white/10 rounded px-2 py-1 text-xs text-center text-gray-900 dark:text-white focus:outline-none focus:border-purple-500"
         />
         <button
           onClick={() => adjustFontSize(2)}
-          className="p-1 hover:bg-white/10 rounded transition-colors"
+          className="cursor-pointer p-1 text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-white/10 rounded transition-colors"
           title="Increase font size"
         >
           <Plus className="w-3 h-3" />
         </button>
       </div>
 
-      <div className="w-px h-6 bg-white/10" />
+      <div className="w-px h-6 bg-gray-200 dark:bg-white/10" />
 
       {/* Text Color */}
-      <div className="relative">
+      <div className="relative flex items-center px-1">
         <input
           type="color"
-          value={element.fill || '#ffffff'}
-          onChange={(e) => handleChange('fill', e.target.value)}
-          className="w-7 h-7 rounded cursor-pointer border border-white/20"
+          value={element.fill || "#000000"}
+          onChange={(e) => handleChange("fill", e.target.value)}
+          className="w-6 h-6 rounded cursor-pointer border border-gray-200 dark:border-white/20 bg-transparent"
           title="Text Color"
         />
       </div>
 
-      <div className="w-px h-6 bg-white/10" />
+      <div className="w-px h-6 bg-gray-200 dark:bg-white/10" />
 
       {/* Bold, Italic, Underline */}
-      <button
-        onClick={toggleBold}
-        className={`p-1.5 rounded transition-colors ${element.fontWeight === 'bold' ? 'bg-blue-600 text-white' : 'hover:bg-white/10'
+      <div className="flex items-center gap-0.5">
+        <button
+          onClick={toggleBold}
+          className={`cursor-pointer p-1.5 rounded transition-colors ${
+            element.fontWeight === "bold"
+              ? "bg-purple-600 text-white"
+              : "text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-white/10"
           }`}
-        title="Bold"
-      >
-        <Bold className="w-3.5 h-3.5" />
-      </button>
+          title="Bold"
+        >
+          <Bold className="w-3.5 h-3.5" />
+        </button>
 
-      <button
-        onClick={toggleItalic}
-        className={`p-1.5 rounded transition-colors ${element.fontStyle === 'italic' ? 'bg-blue-600 text-white' : 'hover:bg-white/10'
+        <button
+          onClick={toggleItalic}
+          className={`cursor-pointer p-1.5 rounded transition-colors ${
+            element.fontStyle === "italic"
+              ? "bg-purple-600 text-white"
+              : "text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-white/10"
           }`}
-        title="Italic"
-      >
-        <Italic className="w-3.5 h-3.5" />
-      </button>
+          title="Italic"
+        >
+          <Italic className="w-3.5 h-3.5" />
+        </button>
 
-      <button
-        onClick={toggleUnderline}
-        className={`p-1.5 rounded transition-colors ${element.textDecoration === 'underline' ? 'bg-blue-600 text-white' : 'hover:bg-white/10'
+        <button
+          onClick={toggleUnderline}
+          className={`cursor-pointer p-1.5 rounded transition-colors ${
+            element.textDecoration === "underline"
+              ? "bg-purple-600 text-white"
+              : "text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-white/10"
           }`}
-        title="Underline"
-      >
-        <Underline className="w-3.5 h-3.5" />
-      </button>
+          title="Underline"
+        >
+          <Underline className="w-3.5 h-3.5" />
+        </button>
+      </div>
 
-      <div className="w-px h-6 bg-white/10" />
+      <div className="w-px h-6 bg-gray-200 dark:bg-white/10" />
 
       {/* Alignment */}
       <div className="flex items-center gap-0.5">
-        <button
-          onClick={() => handleChange('align', 'left')}
-          className={`p-1.5 rounded transition-colors ${(element.align || 'left') === 'left' ? 'bg-blue-600 text-white' : 'hover:bg-white/10'
-            }`}
-          title="Align Left"
-        >
-          <AlignLeft className="w-3.5 h-3.5" />
-        </button>
-        <button
-          onClick={() => handleChange('align', 'center')}
-          className={`p-1.5 rounded transition-colors ${element.align === 'center' ? 'bg-blue-600 text-white' : 'hover:bg-white/10'
-            }`}
-          title="Align Center"
-        >
-          <AlignCenter className="w-3.5 h-3.5" />
-        </button>
-        <button
-          onClick={() => handleChange('align', 'right')}
-          className={`p-1.5 rounded transition-colors ${element.align === 'right' ? 'bg-blue-600 text-white' : 'hover:bg-white/10'
-            }`}
-          title="Align Right"
-        >
-          <AlignRight className="w-3.5 h-3.5" />
-        </button>
+        {["left", "center", "right"].map((align) => {
+          const Icon =
+            align === "left" ? AlignLeft : align === "center" ? AlignCenter : AlignRight;
+          const isActive = (element.align || "left") === align;
+          return (
+            <button
+              key={align}
+              onClick={() => handleChange("align", align)}
+              className={`cursor-pointer p-1.5 rounded transition-colors ${
+                isActive
+                  ? "bg-purple-600 text-white"
+                  : "text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-white/10"
+              }`}
+              title={`Align ${align.charAt(0).toUpperCase() + align.slice(1)}`}
+            >
+              <Icon className="w-3.5 h-3.5" />
+            </button>
+          );
+        })}
       </div>
 
-      <div className="w-px h-6 bg-white/10" />
+      <div className="w-px h-6 bg-gray-200 dark:bg-white/10" />
 
-      {/* Letter Spacing */}
-      <div className="flex items-center gap-1.5 px-2">
-        <span className="text-[10px] text-gray-400">Letter</span>
-        <input
-          type="range"
-          min="-50"
-          max="200"
-          value={element.letterSpacing || 0}
-          onChange={(e) => handleChange('letterSpacing', parseInt(e.target.value))}
-          className="w-16 h-1"
-          title="Letter Spacing"
-        />
-        <span className="text-[10px] text-gray-500 w-6 text-right">{element.letterSpacing || 0}</span>
+      {/* Spacing Controls */}
+      <div className="flex items-center gap-3 px-2">
+        <div className="flex items-center gap-2">
+          <span className="text-[10px] font-bold text-gray-400 uppercase tracking-tighter">
+            Letter
+          </span>
+          <input
+            type="range"
+            min="-5"
+            max="20"
+            value={element.letterSpacing || 0}
+            onChange={(e) => handleChange("letterSpacing", parseInt(e.target.value))}
+            className="w-12 h-1 accent-purple-600"
+          />
+        </div>
+        <div className="flex items-center gap-2">
+          <span className="text-[10px] font-bold text-gray-400 uppercase tracking-tighter">
+            Line
+          </span>
+          <input
+            type="range"
+            min="0.8"
+            max="2.5"
+            step="0.1"
+            value={element.lineHeight || 1.2}
+            onChange={(e) => handleChange("lineHeight", parseFloat(e.target.value))}
+            className="w-12 h-1 accent-purple-600"
+          />
+        </div>
       </div>
 
-      <div className="w-px h-6 bg-white/10" />
-
-      {/* Line Height */}
-      <div className="flex items-center gap-1.5 px-2">
-        <span className="text-[10px] text-gray-400">Line</span>
-        <input
-          type="range"
-          min="0.5"
-          max="3"
-          step="0.1"
-          value={element.lineHeight || 1.2}
-          onChange={(e) => handleChange('lineHeight', parseFloat(e.target.value))}
-          className="w-16 h-1"
-          title="Line Height"
-        />
-        <span className="text-[10px] text-gray-500 w-6 text-right">{(element.lineHeight || 1.2).toFixed(1)}</span>
-      </div>
-
-      <div className="w-px h-6 bg-white/10" />
+      <div className="w-px h-6 bg-gray-200 dark:bg-white/10" />
 
       {/* Effects */}
-      <div className="relative">
+      <div className="relative group">
         <select
           onChange={(e) => handleEffectChange(e.target.value)}
-          className="bg-gray-800 border border-white/10 rounded pl-2 pr-6 py-1.5 text-xs focus:outline-none focus:border-blue-500 appearance-none cursor-pointer"
-          title="Text Effects"
+          className="bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-white/10 rounded pl-2 pr-6 py-1.5 text-xs text-gray-900 dark:text-white focus:outline-none focus:border-purple-500 appearance-none cursor-pointer"
         >
           {textEffects.map((effect) => (
             <option key={effect.id} value={effect.id}>
@@ -243,40 +258,41 @@ export const TextToolbar = ({ element, onAnimateClick }) => {
             </option>
           ))}
         </select>
-        <Sparkles className="w-3 h-3 absolute right-1.5 top-1/2 -translate-y-1/2 pointer-events-none text-gray-400" />
+        <Sparkles className="w-3 h-3 absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none text-purple-500" />
       </div>
 
-      <div className="w-px h-6 bg-white/10" />
-
-      {/* Animate Button */}
       {onAnimateClick && (
         <>
+          <div className="w-px h-6 bg-gray-200 dark:bg-white/10" />
           <button
             onClick={onAnimateClick}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded hover:bg-white/10 transition-colors"
-            title="Animate"
+            className="cursor-pointer flex items-center gap-1.5 px-3 py-1.5 rounded text-gray-700 dark:text-gray-200 hover:bg-purple-50 dark:hover:bg-purple-500/10 hover:text-purple-600 dark:hover:text-purple-400 transition-all"
           >
             <Wand2 className="w-3.5 h-3.5" />
-            <span className="text-xs font-medium">Animate</span>
+            <span className="text-xs font-bold uppercase tracking-tight">Animate</span>
           </button>
-
-          <div className="w-px h-6 bg-white/10" />
         </>
       )}
 
+      <div className="w-px h-6 bg-gray-200 dark:bg-white/10" />
+
       {/* Opacity */}
-      <div className="flex items-center gap-1.5 px-2">
-        <span className="text-[10px] text-gray-400">Opacity</span>
+      <div className="flex items-center gap-2 px-2">
+        <span className="text-[10px] font-bold text-gray-400 uppercase tracking-tighter">
+          Opacity
+        </span>
         <input
           type="range"
           min="0"
           max="1"
           step="0.1"
           value={element.opacity ?? 1}
-          onChange={(e) => handleChange('opacity', parseFloat(e.target.value))}
-          className="w-16 h-1"
+          onChange={(e) => handleChange("opacity", parseFloat(e.target.value))}
+          className="w-12 h-1 accent-purple-600"
         />
-        <span className="text-[10px] text-gray-500 w-8 text-right">{Math.round((element.opacity ?? 1) * 100)}%</span>
+        <span className="text-[10px] font-bold text-gray-500 w-6 text-right">
+          {Math.round((element.opacity ?? 1) * 100)}
+        </span>
       </div>
     </div>
   );

@@ -58,7 +58,7 @@ export const SlideToolbar = () => {
             <button
               key={color}
               onClick={() => setSlideBackground(color)}
-              className={`w-6 h-6 rounded border-2 transition-all ${currentSlide?.background === color
+              className={`cursor-pointer w-6 h-6 rounded border-2 transition-all ${currentSlide?.background === color
                   ? 'border-blue-500 scale-110 shadow-sm'
                   : 'border-gray-100 dark:border-transparent hover:border-blue-300 dark:hover:border-white/30'
                 }`}

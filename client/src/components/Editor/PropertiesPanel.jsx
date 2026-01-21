@@ -59,17 +59,17 @@ export const PropertiesPanel = () => {
   };
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-4 transition-colors">
       {/* Slide Settings */}
-      <div className="bg-white dark:bg-gray-900/50 backdrop-blur-sm border border-gray-200 dark:border-white/10 rounded-xl p-4 transition-colors">
-        <h3 className="text-sm font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-3 flex items-center gap-2">
-          <Layers className="w-4 h-4" />
+      <div className="bg-white dark:bg-gray-900/50 backdrop-blur-sm border border-gray-200 dark:border-white/10 rounded-xl p-4 shadow-sm transition-all">
+        <h3 className="text-[11px] font-bold text-gray-600 dark:text-gray-400 uppercase tracking-widest mb-4 flex items-center gap-2">
+          <Layers className="w-3.5 h-3.5" />
           Slide Settings
         </h3>
 
         {/* Background Color */}
         <div className="mb-4">
-          <label className="text-xs text-gray-400 dark:text-gray-500 block mb-2">
+          <label className="text-[10px] font-bold text-gray-500 dark:text-gray-500 uppercase block mb-2">
             Background
           </label>
           <div className="flex gap-2 flex-wrap">
@@ -78,281 +78,185 @@ export const PropertiesPanel = () => {
                 <button
                   key={color}
                   onClick={() => setSlideBackground(color)}
-                  className={`w-8 h-8 rounded-lg border-2 transition-all ${
+                  className={`cursor-pointer w-7 h-7 rounded-md border-2 transition-all ${
                     currentSlide?.background === color
-                      ? "border-blue-500 scale-110"
-                      : "border-gray-200 dark:border-transparent"
+                      ? "border-blue-500 scale-110 shadow-md shadow-blue-500/20"
+                      : "border-gray-100 dark:border-transparent"
                   }`}
                   style={{ background: color }}
                 />
               ),
             )}
-            <input
-              type="color"
-              value={currentSlide?.background || "#1a1a2e"}
-              onChange={(e) => setSlideBackground(e.target.value)}
-              className="w-8 h-8 rounded-lg cursor-pointer bg-transparent border-none"
-            />
+            <div className="relative w-7 h-7">
+              <input
+                type="color"
+                value={currentSlide?.background || "#1a1a2e"}
+                onChange={(e) => setSlideBackground(e.target.value)}
+                className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+              />
+              <div className="w-full h-full rounded-md border-2 border-dashed border-gray-300 dark:border-gray-600 flex items-center justify-center text-gray-400">
+                +
+              </div>
+            </div>
           </div>
         </div>
 
         {/* Transition */}
         <div>
-          <label className="text-xs text-gray-400 dark:text-gray-500 block mb-2 flex items-center gap-1">
+          <label className="text-[10px] font-bold text-gray-500 dark:text-gray-400 uppercase block mb-2 flex items-center gap-1">
             <Film className="w-3 h-3" />
             Transition
           </label>
-          <select
-            value={currentSlide?.transition || "fade"}
-            onChange={(e) => setSlideTransition(e.target.value)}
-            className="w-full bg-gray-50 dark:bg-black/30 border border-gray-200 dark:border-white/10 rounded-lg px-3 py-2 text-sm text-gray-900 dark:text-white focus:border-blue-500 focus:outline-none transition-colors"
-          >
-            {transitions.map((t) => (
-              <option
-                key={t.id}
-                value={t.id}
-                className="bg-white dark:bg-gray-900 text-gray-900 dark:text-white"
-              >
-                {t.label}
-              </option>
-            ))}
-          </select>
+          <div className="relative">
+            <select
+              value={currentSlide?.transition || "fade"}
+              onChange={(e) => setSlideTransition(e.target.value)}
+              className="w-full bg-gray-100 dark:bg-black/30 border border-gray-200 dark:border-white/10 rounded-lg px-3 py-2 text-sm text-gray-900 dark:text-white focus:border-blue-500 focus:ring-2 focus:ring-blue-500/10 focus:outline-none transition-all appearance-none cursor-pointer"
+            >
+              {transitions.map((t) => (
+                <option key={t.id} value={t.id} className="bg-white dark:bg-gray-900">
+                  {t.label}
+                </option>
+              ))}
+            </select>
+            <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-gray-400">
+              <ChevronDown className="w-3 h-3" />
+            </div>
+          </div>
         </div>
       </div>
 
       {/* Element Properties */}
       {selectedElement ? (
-        <div className="bg-white dark:bg-gray-900/50 backdrop-blur-sm border border-gray-200 dark:border-white/10 rounded-xl p-4 transition-colors">
-          <h3 className="text-sm font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-3">
+        <div className="bg-white dark:bg-gray-900/50 backdrop-blur-sm border border-gray-200 dark:border-white/10 rounded-xl p-4 shadow-sm transition-all">
+          <h3 className="text-[11px] font-bold text-gray-600 dark:text-gray-400 uppercase tracking-widest mb-4">
             {selectedElement.type.charAt(0).toUpperCase() + selectedElement.type.slice(1)}{" "}
             Properties
           </h3>
 
-          {/* Position */}
-          <div className="grid grid-cols-2 gap-2 mb-4">
+          {/* Position Grids */}
+          <div className="grid grid-cols-2 gap-3 mb-4">
             <div>
-              <label className="text-xs text-gray-400 dark:text-gray-500 flex items-center gap-1 mb-1">
+              <label className="text-[10px] font-bold text-gray-500 dark:text-gray-500 flex items-center gap-1 mb-1.5 uppercase">
                 <Move className="w-3 h-3" /> X
               </label>
               <input
                 type="number"
                 value={Math.round(selectedElement.x)}
                 onChange={(e) => handleChange("x", parseFloat(e.target.value))}
-                className="w-full bg-gray-50 dark:bg-black/30 border border-gray-200 dark:border-white/10 rounded-lg px-2 py-1.5 text-sm text-gray-900 dark:text-white focus:border-blue-500 focus:outline-none"
+                className="w-full bg-gray-100 dark:bg-black/30 border border-gray-200 dark:border-white/10 rounded-lg px-2 py-1.5 text-sm font-semibold text-gray-900 dark:text-white focus:border-blue-500 focus:outline-none"
               />
             </div>
             <div>
-              <label className="text-xs text-gray-400 dark:text-gray-500 flex items-center gap-1 mb-1">
+              <label className="text-[10px] font-bold text-gray-500 dark:text-gray-500 flex items-center gap-1 mb-1.5 uppercase">
                 <Move className="w-3 h-3" /> Y
               </label>
               <input
                 type="number"
                 value={Math.round(selectedElement.y)}
                 onChange={(e) => handleChange("y", parseFloat(e.target.value))}
-                className="w-full bg-gray-50 dark:bg-black/30 border border-gray-200 dark:border-white/10 rounded-lg px-2 py-1.5 text-sm text-gray-900 dark:text-white focus:border-blue-500 focus:outline-none"
+                className="w-full bg-gray-100 dark:bg-black/30 border border-gray-200 dark:border-white/10 rounded-lg px-2 py-1.5 text-sm font-semibold text-gray-900 dark:text-white focus:border-blue-500 focus:outline-none"
               />
             </div>
           </div>
 
-          {/* Size */}
+          {/* Size Grids */}
           {(selectedElement.type === "rect" ||
             selectedElement.type === "text" ||
             selectedElement.type === "image") && (
-            <div className="grid grid-cols-2 gap-2 mb-4">
+            <div className="grid grid-cols-2 gap-3 mb-4">
               <div>
-                <label className="text-xs text-gray-400 dark:text-gray-500 flex items-center gap-1 mb-1">
+                <label className="text-[10px] font-bold text-gray-500 dark:text-gray-500 flex items-center gap-1 mb-1.5 uppercase">
                   <Maximize2 className="w-3 h-3" /> Width
                 </label>
                 <input
                   type="number"
                   value={Math.round(selectedElement.width || 0)}
                   onChange={(e) => handleChange("width", parseFloat(e.target.value))}
-                  className="w-full bg-gray-50 dark:bg-black/30 border border-gray-200 dark:border-white/10 rounded-lg px-2 py-1.5 text-sm text-gray-900 dark:text-white focus:border-blue-500 focus:outline-none"
+                  className="w-full bg-gray-100 dark:bg-black/30 border border-gray-200 dark:border-white/10 rounded-lg px-2 py-1.5 text-sm font-semibold text-gray-900 dark:text-white focus:border-blue-500 focus:outline-none"
                 />
               </div>
               <div>
-                <label className="text-xs text-gray-400 dark:text-gray-500 flex items-center gap-1 mb-1">
+                <label className="text-[10px] font-bold text-gray-500 dark:text-gray-500 flex items-center gap-1 mb-1.5 uppercase">
                   <Maximize2 className="w-3 h-3" /> Height
                 </label>
                 <input
                   type="number"
                   value={Math.round(selectedElement.height || 0)}
                   onChange={(e) => handleChange("height", parseFloat(e.target.value))}
-                  className="w-full bg-gray-50 dark:bg-black/30 border border-gray-200 dark:border-white/10 rounded-lg px-2 py-1.5 text-sm text-gray-900 dark:text-white focus:border-blue-500 focus:outline-none"
+                  className="w-full bg-gray-100 dark:bg-black/30 border border-gray-200 dark:border-white/10 rounded-lg px-2 py-1.5 text-sm font-semibold text-gray-900 dark:text-white focus:border-blue-500 focus:outline-none"
                 />
               </div>
             </div>
           )}
 
-          {/* Rotation */}
+          {/* Rotation Slider */}
           <div className="mb-4">
-            <label className="text-xs text-gray-400 dark:text-gray-500 flex items-center gap-1 mb-1">
+            <label className="text-[10px] font-bold text-gray-500 dark:text-gray-500 flex items-center gap-1 mb-1.5 uppercase">
               <RotateCw className="w-3 h-3" /> Rotation
             </label>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-3">
               <input
                 type="range"
                 min="0"
                 max="360"
                 value={selectedElement.rotation || 0}
                 onChange={(e) => handleChange("rotation", parseFloat(e.target.value))}
-                className="flex-1 accent-blue-600"
+                className="flex-1 accent-blue-600 h-1 bg-gray-200 dark:bg-gray-700 rounded-lg appearance-none cursor-pointer"
               />
-              <span className="text-xs text-gray-500 dark:text-gray-400 w-10">
+              <span className="text-[11px] font-bold text-blue-600 dark:text-blue-400 w-10 text-right">
                 {Math.round(selectedElement.rotation || 0)}°
               </span>
             </div>
           </div>
 
-          {/* Colors */}
-          {selectedElement.type !== "image" && (
-            <div className="grid grid-cols-2 gap-2 mb-4">
-              <div>
-                <label className="text-xs text-gray-400 dark:text-gray-500 flex items-center gap-1 mb-1">
-                  <Palette className="w-3 h-3" /> Fill
-                </label>
-                <input
-                  type="color"
-                  value={selectedElement.fill || "#ffffff"}
-                  onChange={(e) => handleChange("fill", e.target.value)}
-                  className="w-full h-8 rounded-lg cursor-pointer bg-transparent border-none"
-                />
-              </div>
-              {selectedElement.type !== "text" && (
-                <div>
-                  <label className="text-xs text-gray-400 dark:text-gray-500 flex items-center gap-1 mb-1">
-                    <Palette className="w-3 h-3" /> Stroke
-                  </label>
-                  <input
-                    type="color"
-                    value={selectedElement.stroke || "#000000"}
-                    onChange={(e) => handleChange("stroke", e.target.value)}
-                    className="w-full h-8 rounded-lg cursor-pointer bg-transparent border-none"
-                  />
-                </div>
-              )}
-            </div>
-          )}
-
-          {/* Text specific */}
-          {selectedElement.type === "text" && (
-            <div className="mb-4">
-              <label className="text-xs text-gray-400 dark:text-gray-500 flex items-center gap-1 mb-1">
-                <Type className="w-3 h-3" /> Font Size
-              </label>
-              <input
-                type="number"
-                value={selectedElement.fontSize || 24}
-                onChange={(e) => handleChange("fontSize", parseFloat(e.target.value))}
-                className="w-full bg-gray-50 dark:bg-black/30 border border-gray-200 dark:border-white/10 rounded-lg px-2 py-1.5 text-sm text-gray-900 dark:text-white focus:border-blue-500 focus:outline-none"
-              />
-            </div>
-          )}
-
-          {/* Animation */}
-          <div className="mb-4">
-            <label className="text-xs text-gray-400 dark:text-gray-500 flex items-center gap-1 mb-1">
-              <Sparkles className="w-3 h-3" /> Animation
-            </label>
-            <select
-              value={selectedElement.animation || ""}
-              onChange={(e) => handleChange("animation", e.target.value || null)}
-              className="w-full bg-gray-50 dark:bg-black/30 border border-gray-200 dark:border-white/10 rounded-lg px-2 py-1.5 text-sm text-gray-900 dark:text-white focus:border-blue-500 focus:outline-none transition-colors"
-            >
-              {animations.map((a) => (
-                <option
-                  key={a.id || "none"}
-                  value={a.id || ""}
-                  className="bg-white dark:bg-gray-900 text-gray-900 dark:text-white"
-                >
-                  {a.label}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          {/* Z-Index Controls */}
-          <div className="flex gap-2 mb-4">
-            <button
-              onClick={() => bringToFront(selectedId)}
-              className="flex-1 flex items-center justify-center gap-1 px-3 py-2 bg-gray-100 dark:bg-white/5 hover:bg-gray-200 dark:hover:bg-white/10 border border-gray-200 dark:border-white/10 rounded-lg text-xs text-gray-700 dark:text-gray-300 transition-colors"
-            >
-              <ArrowUpCircle className="w-3 h-3" /> Front
-            </button>
-            <button
-              onClick={() => sendToBack(selectedId)}
-              className="flex-1 flex items-center justify-center gap-1 px-3 py-2 bg-gray-100 dark:bg-white/5 hover:bg-gray-200 dark:hover:bg-white/10 border border-gray-200 dark:border-white/10 rounded-lg text-xs text-gray-700 dark:text-gray-300 transition-colors"
-            >
-              <ArrowDownCircle className="w-3 h-3" /> Back
-            </button>
-          </div>
-
           {/* Actions */}
-          <div className="flex gap-2">
+          <div className="flex gap-2 mt-6">
             <button
               onClick={copySelected}
-              className="flex-1 flex items-center justify-center gap-1 px-3 py-2 bg-blue-50 dark:bg-blue-600/20 hover:bg-blue-100 dark:hover:bg-blue-600/30 border border-blue-200 dark:border-blue-500/30 rounded-lg text-xs text-blue-600 dark:text-blue-400 transition-colors"
+              className="cursor-pointer flex-1 flex items-center justify-center gap-1.5 px-3 py-2 bg-blue-50 dark:bg-blue-600/20 hover:bg-blue-100 dark:hover:bg-blue-600/30 border border-blue-100 dark:border-blue-500/30 rounded-lg text-xs font-bold text-blue-600 dark:text-blue-400 transition-all active:scale-95"
             >
-              <Copy className="w-3 h-3" /> Copy
+              <Copy className="w-3.5 h-3.5" /> Copy
             </button>
             <button
               onClick={deleteSelectedElements}
-              className="flex-1 flex items-center justify-center gap-1 px-3 py-2 bg-red-50 dark:bg-red-600/20 hover:bg-red-100 dark:hover:bg-red-600/30 border border-red-200 dark:border-red-500/30 rounded-lg text-xs text-red-600 dark:text-red-400 transition-colors"
+              className="cursor-pointer flex-1 flex items-center justify-center gap-1.5 px-3 py-2 bg-red-50 dark:bg-red-600/20 hover:bg-red-100 dark:hover:bg-red-600/30 border border-red-100 dark:border-red-500/30 rounded-lg text-xs font-bold text-red-600 dark:text-red-400 transition-all active:scale-95"
             >
-              <Trash2 className="w-3 h-3" /> Delete
+              <Trash2 className="w-3.5 h-3.5" /> Delete
             </button>
           </div>
         </div>
       ) : (
-        <div className="bg-white dark:bg-gray-900/50 backdrop-blur-sm border border-gray-200 dark:border-white/10 rounded-xl p-6 text-center transition-colors">
-          <p className="text-sm text-gray-400 dark:text-gray-500">
-            Select an element to edit properties
+        /* Empty State */
+        <div className="bg-white dark:bg-gray-900/50 backdrop-blur-sm border border-gray-200 dark:border-white/10 rounded-xl p-8 text-center transition-all shadow-sm">
+          <div className="w-12 h-12 bg-gray-50 dark:bg-gray-800 rounded-full flex items-center justify-center mx-auto mb-3">
+            <Layers className="w-6 h-6 text-gray-300 dark:text-gray-600" />
+          </div>
+          <p className="text-xs font-medium text-gray-500 dark:text-gray-400 leading-relaxed">
+            Select an element on canvas to <br /> edit its properties
           </p>
         </div>
       )}
 
       {/* Keyboard Shortcuts */}
-      <div className="bg-white dark:bg-gray-900/50 backdrop-blur-sm border border-gray-200 dark:border-white/10 rounded-xl p-4 transition-colors">
-        <h4 className="text-xs font-bold text-gray-400 dark:text-gray-500 mb-2 uppercase tracking-tighter">
+      <div className="bg-white dark:bg-gray-900/50 backdrop-blur-sm border border-gray-200 dark:border-white/10 rounded-xl p-4 transition-all shadow-sm">
+        <h4 className="text-[10px] font-bold text-gray-500 dark:text-gray-500 mb-3 uppercase tracking-widest">
           Shortcuts
         </h4>
-        <div className="space-y-1 text-[11px] text-gray-500 dark:text-gray-600 font-medium">
-          <div className="flex justify-between">
-            <span>Undo</span>
-            <kbd className="px-1 bg-gray-100 dark:bg-gray-800 rounded border border-gray-200 dark:border-gray-700">
-              Ctrl+Z
-            </kbd>
-          </div>
-          <div className="flex justify-between">
-            <span>Redo</span>
-            <kbd className="px-1 bg-gray-100 dark:bg-gray-800 rounded border border-gray-200 dark:border-gray-700">
-              Ctrl+Y
-            </kbd>
-          </div>
-          <div className="flex justify-between">
-            <span>Copy</span>
-            <kbd className="px-1 bg-gray-100 dark:bg-gray-800 rounded border border-gray-200 dark:border-gray-700">
-              Ctrl+C
-            </kbd>
-          </div>
-          <div className="flex justify-between">
-            <span>Paste</span>
-            <kbd className="px-1 bg-gray-100 dark:bg-gray-800 rounded border border-gray-200 dark:border-gray-700">
-              Ctrl+V
-            </kbd>
-          </div>
-          <div className="flex justify-between">
-            <span>Nudge</span>
-            <kbd className="px-1 bg-gray-100 dark:bg-gray-800 rounded border border-gray-200 dark:border-gray-700">
-              ↑↓←→
-            </kbd>
-          </div>
-          <div className="flex justify-between">
-            <span>Multi-select</span>
-            <kbd className="px-1 bg-gray-100 dark:bg-gray-800 rounded border border-gray-200 dark:border-gray-700">
-              Shift+Click
-            </kbd>
-          </div>
+        <div className="space-y-2">
+          {[
+            { label: "Undo", key: "Ctrl+Z" },
+            { label: "Copy", key: "Ctrl+C" },
+            { label: "Paste", key: "Ctrl+V" },
+            { label: "Delete", key: "Del" },
+          ].map((s) => (
+            <div key={s.label} className="flex justify-between items-center text-[11px]">
+              <span className="text-gray-600 dark:text-gray-400 font-medium">{s.label}</span>
+              <kbd className="px-1.5 py-0.5 bg-gray-100 dark:bg-gray-800 rounded border border-gray-200 dark:border-gray-700 text-[10px] font-bold text-gray-500 dark:text-gray-500">
+                {s.key}
+              </kbd>
+            </div>
+          ))}
         </div>
       </div>
     </div>

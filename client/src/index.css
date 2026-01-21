@@ -1,6 +1,61 @@
 @import "tailwindcss";
 @custom-variant dark (&:where(.dark, .dark *));
 
+@layer base {
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: var(--sb-thumb) transparent;
+  }
+
+  :root {
+    --sb-thumb: #e2e8f0; /* gray-200 */
+  }
+
+  .dark {
+    --sb-thumb: #334155; /* slate-700 */
+  }
+
+  ::-webkit-scrollbar {
+    width: 5px;
+    height: 5px;
+  }
+
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    background: var(--sb-thumb);
+    border-radius: 10px;
+    transition: background 0.2s ease;
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    background: #cbd5e1; /* gray-300 */
+  }
+
+  .dark ::-webkit-scrollbar-thumb:hover {
+    background: #475569; /* slate-600 */
+  }
+
+  /* Canva-like: Chỉ hiện khi hover vào vùng chứa */
+  .hide-scrollbar-until-hover {
+    scrollbar-color: transparent transparent;
+  }
+
+  .hide-scrollbar-until-hover::-webkit-scrollbar-thumb {
+    background: transparent;
+  }
+
+  .hide-scrollbar-until-hover:hover {
+    scrollbar-color: var(--sb-thumb) transparent;
+  }
+
+  .hide-scrollbar-until-hover:hover::-webkit-scrollbar-thumb {
+    background: var(--sb-thumb);
+  }
+}
+
 html {
-  scroll-behaviour: smooth;
+  scroll-behavior: smooth;
 }
