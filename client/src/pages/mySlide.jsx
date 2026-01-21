@@ -1,27 +1,45 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useCurrentAccount } from "@mysten/dapp-kit";
+import { useMySlides } from "../hooks/useMySlides";
+import { useDeleteSlide } from "../hooks/useDeleteSlide";
+import { deleteLocalSlideRecord } from "../utils/deletedSlidesTracker";
 
 /**
- * My Slides Page - Gallery of user's owned slides
+ * My Slides Page - Gallery of user's owned slides (from blockchain + localStorage)
  */
 export const MySlide = () => {
   const navigate = useNavigate();
   const account = useCurrentAccount();
+  const { slides: blockchainSlides, isLoading: isLoadingBlockchain } = useMySlides();
+  const { deleteSlide, isLoading: isDeletingBlockchain } = useDeleteSlide();
   const [slides, setSlides] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [useBlockchain, setUseBlockchain] = useState(true);
 
-  // Load slides from localStorage (mock for blockchain)
+  // Load slides from both blockchain and localStorage
   useEffect(() => {
     const loadSlides = () => {
-      setIsLoading(true);
-      const savedSlides = JSON.parse(localStorage.getItem("slides") || "[]");
-      // Filter by owner (for now, show all local slides)
-      const userSlides = savedSlides.filter(
-        (s) => s.owner === account?.address || s.owner === "local",
-      );
-      setSlides(userSlides);
-      setIsLoading(false);
+      if (useBlockchain) {
+        // Using blockchain - show loading while blockchain is still fetching
+        if (isLoadingBlockchain) {
+          console.log('[MYSLIDES] Blockchain loading...');
+          setIsLoading(true);
+        } else {
+          console.log('[MYSLIDES] Using blockchain slides:', blockchainSlides);
+          setSlides(blockchainSlides);
+          setIsLoading(false);
+        }
+      } else {
+        // Using localStorage
+        console.log('[MYSLIDES] Using localStorage slides');
+        const savedSlides = JSON.parse(localStorage.getItem("slides") || "[]");
+        const userSlides = savedSlides.filter(
+          (s) => s.owner === account?.address || s.owner === "local",
+        );
+        setSlides(userSlides);
+        setIsLoading(false);
+      }
     };
 
     loadSlides();
@@ -35,14 +53,36 @@ export const MySlide = () => {
 
     window.addEventListener("storage", handleStorageChange);
     return () => window.removeEventListener("storage", handleStorageChange);
-  }, [account?.address]);
+  }, [account?.address, blockchainSlides, useBlockchain, isLoadingBlockchain]);
 
-  const handleDelete = (id) => {
+  const handleDelete = (slide) => {
     if (confirm("Are you sure you want to delete this slide?")) {
-      const savedSlides = JSON.parse(localStorage.getItem("slides") || "[]");
-      const updated = savedSlides.filter((s) => s.id !== id);
-      localStorage.setItem("slides", JSON.stringify(updated));
-      setSlides(slides.filter((s) => s.id !== id));
+      // Check if it's a blockchain slide
+      if (useBlockchain && slide.suiObjectId) {
+        console.log('[MYSLIDES] Deleting blockchain slide:', slide.suiObjectId);
+        deleteSlide({
+          slideObjectId: slide.suiObjectId,
+          onSuccess: (result) => {
+            console.log('[MYSLIDES] Blockchain slide deleted successfully');
+            console.log('[MYSLIDES] Transaction result:', result);
+            // Mark as deleted locally
+            deleteLocalSlideRecord(slide.suiObjectId);
+            // Remove from local state
+            setSlides(slides.filter((s) => s.id !== slide.id));
+          },
+          onError: (error) => {
+            console.error('[MYSLIDES] Failed to delete blockchain slide:', error);
+            alert('Failed to delete slide: ' + (error.message || error.toString()));
+          },
+        });
+      } else {
+        // Delete from localStorage
+        console.log('[MYSLIDES] Deleting local slide:', slide.id);
+        const savedSlides = JSON.parse(localStorage.getItem("slides") || "[]");
+        const updated = savedSlides.filter((s) => s.id !== slide.id);
+        localStorage.setItem("slides", JSON.stringify(updated));
+        setSlides(slides.filter((s) => s.id !== slide.id));
+      }
     }
   };
 
@@ -56,24 +96,52 @@ export const MySlide = () => {
             Manage and edit your slide presentations
           </p>
         </div>
-        <button
-          onClick={() => {
-            // Clear cached project to ensure fresh canvas
-            localStorage.removeItem('current_project');
-            navigate("/editor");
-          }}
-          className="cursor-pointer flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-500 hover:to-cyan-500 text-white rounded-xl font-semibold transition-all shadow-lg shadow-blue-500/25 active:scale-95"
-        >
-          <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={2}
-              d="M12 4v16m8-8H4"
-            />
-          </svg>
-          New Slide
-        </button>
+        <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 w-full sm:w-auto">
+          {/* Blockchain/localStorage toggle */}
+          <div className="flex items-center gap-2 px-4 py-2 bg-gray-100 dark:bg-gray-800/50 rounded-lg border border-gray-200 dark:border-white/10">
+            <span className="text-xs font-semibold text-gray-600 dark:text-gray-400">Source:</span>
+            <button
+              onClick={() => setUseBlockchain(true)}
+              className={`px-3 py-1 rounded-md text-xs font-semibold transition-colors ${
+                useBlockchain
+                  ? 'bg-blue-600 text-white'
+                  : 'text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700'
+              }`}
+              title="Load slides from blockchain"
+            >
+              Chain
+            </button>
+            <button
+              onClick={() => setUseBlockchain(false)}
+              className={`px-3 py-1 rounded-md text-xs font-semibold transition-colors ${
+                !useBlockchain
+                  ? 'bg-blue-600 text-white'
+                  : 'text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700'
+              }`}
+              title="Load slides from local storage"
+            >
+              Local
+            </button>
+          </div>
+          <button
+            onClick={() => {
+              // Clear cached project to ensure fresh canvas
+              localStorage.removeItem('current_project');
+              navigate("/editor");
+            }}
+            className="cursor-pointer flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-500 hover:to-cyan-500 text-white rounded-xl font-semibold transition-all shadow-lg shadow-blue-500/25 active:scale-95"
+          >
+            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M12 4v16m8-8H4"
+              />
+            </svg>
+            New Slide
+          </button>
+        </div>
       </div>
 
       {/* Loading state */}
@@ -197,9 +265,10 @@ export const MySlide = () => {
                     </svg>
                   </button>
                   <button
-                    onClick={() => handleDelete(slide.id)}
-                    className="cursor-pointer p-3 bg-red-600/90 hover:bg-red-500 text-white rounded-xl transition-colors shadow-lg"
+                    onClick={() => handleDelete(slide)}
+                    className="cursor-pointer p-3 bg-red-600/90 hover:bg-red-500 text-white rounded-xl transition-colors shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
                     title="Delete"
+                    disabled={isDeletingBlockchain}
                   >
                     <svg
                       className="w-5 h-5"

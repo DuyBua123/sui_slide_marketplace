@@ -19,6 +19,8 @@ import { SellSlideModal } from "./SellSlideModal";
 import { MintSlideModal } from "./MintSlideModal";
 import { useSlideStore, useTemporalStore } from "../../store/useSlideStore";
 import { useAutoSave } from "../../hooks/useAutoSave";
+import { useUpdateSlide } from "../../hooks/useUpdateSlide";
+import { saveSlideToBlockchain } from "../../services/blockchain/blockchainSave";
 
 /**
  * EditorLayout - Canva-style grid layout
@@ -35,6 +37,8 @@ export const EditorLayout = () => {
   const [currentSlideData, setCurrentSlideData] = useState(null);
   const [isMinted, setIsMinted] = useState(false);
   const [suiObjectId, setSuiObjectId] = useState(null);
+  const [blockchainSaveStatus, setBlockchainSaveStatus] = useState(null); // null | 'saving' | 'success' | 'error'
+  const [blockchainSaveError, setBlockchainSaveError] = useState(null);
 
   const {
     title,
@@ -54,6 +58,7 @@ export const EditorLayout = () => {
   } = useSlideStore();
 
   const { saveStatus } = useAutoSave(id, 2000);
+  const { updateSlide, isLoading: isUpdating } = useUpdateSlide();
 
   // Get selected element
   const currentSlide = slides[currentSlideIndex];
@@ -162,14 +167,57 @@ export const EditorLayout = () => {
   ]);
 
   const handleMintSuccess = ({ txDigest }) => {
+    console.log("[EDITOR] Mint Success - Object ID:", txDigest);
+    console.log("[EDITOR] Full transaction digest:", txDigest);
     setIsMinted(true);
     setSuiObjectId(txDigest);
+    console.log("[EDITOR] State updated - isMinted: true, suiObjectId:", txDigest);
   };
 
   // Handle animate button click
   const handleAnimateClick = () => {
     setActiveTab("animate");
   };
+
+  // Save changes to blockchain
+  const handleSaveToBlockchain = useCallback(async () => {
+    console.log("[BLOCKCHAIN] Save initiated - isMinted:", isMinted, "suiObjectId:", suiObjectId);
+    
+    if (!isMinted || !suiObjectId) {
+      console.warn("[BLOCKCHAIN] Cannot save - Slide must be minted first");
+      setBlockchainSaveError("Slide must be minted before saving to blockchain");
+      return;
+    }
+
+    setBlockchainSaveStatus("saving");
+    setBlockchainSaveError(null);
+
+    try {
+      console.log("[BLOCKCHAIN] Calling saveSlideToBlockchain with object ID:", suiObjectId);
+      const result = await saveSlideToBlockchain({
+        suiObjectId,
+        title,
+        slides,
+        onUpdate: updateSlide,
+      });
+
+      console.log("[BLOCKCHAIN] Save successful! Transaction digest:", result.txDigest);
+      console.log("[BLOCKCHAIN] Content URL:", result.contentUrl);
+      console.log("[BLOCKCHAIN] Full result:", result);
+      
+      setBlockchainSaveStatus("success");
+
+      // Reset success status after 3 seconds
+      setTimeout(() => {
+        setBlockchainSaveStatus(null);
+      }, 3000);
+    } catch (error) {
+      console.error("[BLOCKCHAIN] Save error:", error);
+      console.error("[BLOCKCHAIN] Error message:", error.message);
+      setBlockchainSaveError(error.message);
+      setBlockchainSaveStatus("error");
+    }
+  }, [isMinted, suiObjectId, title, slides, updateSlide]);
 
   // Render contextual toolbar
   const renderContextualToolbar = () => {
@@ -185,7 +233,15 @@ export const EditorLayout = () => {
   return (
     <div className="h-screen bg-[#f8f9fa] dark:bg-[#0a0a0f] text-gray-900 dark:text-white flex flex-col overflow-hidden transition-colors duration-300">
       {/* Top Header */}
-      <TopHeader projectId={id} />
+      <TopHeader 
+        projectId={id}
+        onSaveToBlockchain={handleSaveToBlockchain}
+        isMinted={isMinted}
+        blockchainSaveStatus={blockchainSaveStatus}
+        blockchainSaveError={blockchainSaveError}
+        isUpdating={isUpdating}
+        onMintClick={() => setShowMintModal(true)}
+      />
 
       {/* Contextual Toolbar */}
       <div className="h-14 bg-white dark:bg-[#0d0d0d] border-b border-gray-200 dark:border-white/5 flex items-center justify-center shadow-sm z-20 transition-colors">

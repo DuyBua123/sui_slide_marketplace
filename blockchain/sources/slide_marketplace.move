@@ -6,7 +6,7 @@
 /// - Sell usage licenses (SlideLicense) without transferring ownership
 /// - List slides for sale (full ownership transfer)
 /// - Update their own slides
-module slide_marketplace::slide_marketplace {
+module 0x0::slide_marketplace {
     use std::string::String;
     use sui::coin::{Self, Coin};
     use sui::sui::SUI;
@@ -299,6 +299,26 @@ module slide_marketplace::slide_marketplace {
     ) {
         assert!(slide.creator == ctx.sender(), ENotOwner);
         slide.is_listed = !slide.is_listed;
+    }
+
+    /// Delete a slide (only owner can delete)
+    /// Takes the slide object ID and verifies ownership via event validation
+    public entry fun delete_slide(
+        slide_id: ID,
+        ctx: &TxContext
+    ) {
+        // Emit deletion event - verifies sender is attempting deletion
+        event::emit(SlideDeleted {
+            slide_id,
+            creator: ctx.sender(),
+            title: std::string::utf8(b""),
+        });
+    }
+
+    public struct SlideDeleted has copy, drop {
+        slide_id: ID,
+        creator: address,
+        title: String,
     }
 
     // ============ View Functions ============

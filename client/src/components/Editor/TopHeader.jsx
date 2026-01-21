@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { ArrowLeft, FileText, Expand, Share2, Play, Users, Check, AlertCircle } from "lucide-react";
+import { ArrowLeft, FileText, Expand, Share2, Play, Users, Check, AlertCircle, Save, Clock } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useSlideStore } from "../../store/useSlideStore";
 import { useAutoSave } from "../../hooks/useAutoSave";
@@ -7,9 +7,18 @@ import { ShareModal } from "./ShareModal";
 import ThemeToggle from "../ThemeToggle";
 
 /**
- * Top Header - Canva style with File, Resize, Share, Present
+ * Top Header - Canva style with File, Resize, Share, Present, Save to Blockchain
  */
-export const TopHeader = ({ projectId, onSave }) => {
+export const TopHeader = ({ 
+  projectId, 
+  onSave,
+  onSaveToBlockchain,
+  isMinted,
+  blockchainSaveStatus,
+  blockchainSaveError,
+  isUpdating,
+  onMintClick 
+}) => {
   const navigate = useNavigate();
   const { title, setTitle } = useSlideStore();
   const [showShareModal, setShowShareModal] = useState(false);
@@ -127,14 +136,62 @@ export const TopHeader = ({ projectId, onSave }) => {
               Last saved {formatTime(lastSavedAt)}
             </div>
           )}
+
+          {/* Blockchain Save Status */}
+          {isMinted && (
+            <div className="mt-2 pt-2 border-t border-gray-200 dark:border-white/10">
+              {blockchainSaveStatus === 'saving' && (
+                <div className="flex items-center gap-1.5 text-blue-500 dark:text-blue-400 text-[10px] font-medium">
+                  <div className="w-2 h-2 rounded-full bg-blue-500 animate-pulse"></div>
+                  Saving to blockchain...
+                </div>
+              )}
+              {blockchainSaveStatus === 'success' && (
+                <div className="flex items-center gap-1.5 text-green-600 dark:text-green-400 text-[10px] font-medium">
+                  <Check className="w-3 h-3" />
+                  Saved to blockchain
+                </div>
+              )}
+              {blockchainSaveStatus === 'error' && (
+                <div className="flex items-center gap-1.5 text-red-600 dark:text-red-400 text-[10px] font-medium" title={blockchainSaveError}>
+                  <AlertCircle className="w-3 h-3" />
+                  Blockchain error
+                </div>
+              )}
+            </div>
+          )}
         </div>
       </div>
 
-      {/* Right: Tools + Share + Present */}
+      {/* Right: Tools + Mint + Save to Blockchain + Share + Present */}
       <div className="flex items-center gap-2">
         <div className="flex items-center mr-2 border-r border-gray-200 dark:border-white/10 pr-2 gap-1">
           <ThemeToggle />
         </div>
+
+        {/* Mint Button - Shows before minting */}
+        {!isMinted && onMintClick && (
+          <button
+            onClick={onMintClick}
+            title="Mint slide as NFT"
+            className="cursor-pointer flex items-center gap-1.5 px-4 py-1.5 bg-green-600 hover:bg-green-500 text-white rounded-lg text-[11px] font-bold uppercase tracking-tight transition-all active:scale-95 active:shadow-none"
+          >
+            Mint
+          </button>
+        )}
+
+        {/* Save to Blockchain Button */}
+        {isMinted && (
+          <button
+            onClick={onSaveToBlockchain}
+            disabled={isUpdating || blockchainSaveStatus === 'saving'}
+            title="Save slide changes to blockchain"
+            className="cursor-pointer flex items-center gap-1.5 px-3 py-1.5 bg-blue-600 hover:bg-blue-500 disabled:bg-blue-400 disabled:cursor-not-allowed text-white rounded-lg text-[11px] font-bold uppercase tracking-tight transition-all active:scale-95"
+          >
+            <Save className="w-3.5 h-3.5" />
+            {blockchainSaveStatus === 'saving' ? 'Saving...' : 'Save Chain'}
+          </button>
+        )}
 
         <button
           onClick={() => setShowShareModal(true)}
