@@ -1,11 +1,19 @@
-import { useState, useEffect, useRef, useCallback } from 'react';
+﻿import { useState, useEffect, useRef, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Stage, Layer, Rect, Circle, Line, Text, Image as KonvaImage } from 'react-konva';
 import { motion, AnimatePresence } from 'framer-motion';
+import Konva from 'konva';
+import { animationPresets } from '../components/Editor/animationPresets';
 import {
-  ChevronLeft, ChevronRight, X, Maximize, Minimize,
-  Play, Pause, Settings
-} from 'lucide-react';
+  ChevronLeft,
+  ChevronRight,
+  X,
+  Maximize,
+  Minimize,
+  Play,
+  Pause,
+  Settings,
+} from "lucide-react";
 
 const CANVAS_WIDTH = 960;
 const CANVAS_HEIGHT = 540;
@@ -19,14 +27,14 @@ const slideTransitions = {
     exit: { opacity: 0, transition: { duration: 0.3 } },
   },
   pushLeft: {
-    initial: { x: '100%', opacity: 0 },
-    animate: { x: 0, opacity: 1, transition: { duration: 0.5, ease: 'easeOut' } },
-    exit: { x: '-100%', opacity: 0, transition: { duration: 0.4 } },
+    initial: { x: "100%", opacity: 0 },
+    animate: { x: 0, opacity: 1, transition: { duration: 0.5, ease: "easeOut" } },
+    exit: { x: "-100%", opacity: 0, transition: { duration: 0.4 } },
   },
   pushRight: {
-    initial: { x: '-100%', opacity: 0 },
-    animate: { x: 0, opacity: 1, transition: { duration: 0.5, ease: 'easeOut' } },
-    exit: { x: '100%', opacity: 0, transition: { duration: 0.4 } },
+    initial: { x: "-100%", opacity: 0 },
+    animate: { x: 0, opacity: 1, transition: { duration: 0.5, ease: "easeOut" } },
+    exit: { x: "100%", opacity: 0, transition: { duration: 0.4 } },
   },
   scale: {
     initial: { scale: 0.5, opacity: 0 },
@@ -42,7 +50,7 @@ const URLImage = ({ element }) => {
   useEffect(() => {
     if (!element.src) return;
     const img = new window.Image();
-    img.crossOrigin = 'anonymous';
+    img.crossOrigin = "anonymous";
     img.src = element.src;
     img.onload = () => setImage(img);
   }, [element.src]);
@@ -51,6 +59,7 @@ const URLImage = ({ element }) => {
 
   return (
     <KonvaImage
+      id={element.id}
       x={element.x}
       y={element.y}
       width={element.width || 200}
@@ -68,6 +77,7 @@ export const Slide = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const containerRef = useRef(null);
+  const stageRef = useRef(null);
   const [presentation, setPresentation] = useState(null);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [scale, setScale] = useState(1);
@@ -76,59 +86,53 @@ export const Slide = () => {
   const [isAutoplay, setIsAutoplay] = useState(false);
   const [autoplayInterval, setAutoplayInterval] = useState(5);
   const [showSettings, setShowSettings] = useState(false);
+  const [clickSequence, setClickSequence] = useState(0);
+  const [animatedElements, setAnimatedElements] = useState(new Set());
   const controlsTimeout = useRef(null);
 
   // Load presentation
   useEffect(() => {
-    const savedSlides = JSON.parse(localStorage.getItem('slides') || '[]');
-    const slide = savedSlides.find((s) => s.id === id);
-    if (slide?.data) {
-      setPresentation(slide.data);
-    }
-  }, [id]);
+    const slides = JSON.parse(localStorage.getItem("slides") || "[]");
+    console.log('Loading presentation, id:', id);
+    console.log('Available slides:', slides.map(s => ({ id: s.id, title: s.title || s.data?.title })));
 
-  // Calculate scale for fullscreen
+    const found = slides.find((s) => s.id === id);
+
+    if (found?.data) {
+      console.log('Found presentation:', found.data.title);
+      setPresentation(found.data);
+    } else {
+      console.warn('Presentation not found for id:', id);
+      navigate("/my-slide");
+    }
+  }, [id, navigate]);
+
+  // Responsive scaling
   useEffect(() => {
     const handleResize = () => {
-      const container = containerRef.current;
-      if (container) {
-        const scaleX = window.innerWidth / CANVAS_WIDTH;
-        const scaleY = window.innerHeight / CANVAS_HEIGHT;
-        setScale(Math.min(scaleX, scaleY) * 0.95);
+      if (containerRef.current) {
+        const containerWidth = containerRef.current.offsetWidth;
+        const containerHeight = containerRef.current.offsetHeight;
+        const scaleX = containerWidth / CANVAS_WIDTH;
+        const scaleY = containerHeight / CANVAS_HEIGHT;
+        setScale(Math.min(scaleX, scaleY));
       }
     };
     handleResize();
-    window.addEventListener('resize', handleResize);
-    return () => window.removeEventListener('resize', handleResize);
-  }, [isFullscreen]);
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, []);
 
   // Keyboard navigation
   useEffect(() => {
     const handleKeyDown = (e) => {
-      switch (e.key) {
-        case 'ArrowRight':
-        case ' ':
-        case 'Enter':
-          nextSlide();
-          break;
-        case 'ArrowLeft':
-          prevSlide();
-          break;
-        case 'Escape':
-          if (isFullscreen) {
-            exitFullscreen();
-          } else {
-            navigate(-1);
-          }
-          break;
-        case 'f':
-        case 'F':
-          toggleFullscreen();
-          break;
-      }
+      if (e.key === "ArrowRight" || e.key === " ") nextSlide();
+      if (e.key === "ArrowLeft") prevSlide();
+      if (e.key === "Escape" && isFullscreen) exitFullscreen();
+      if (e.key === "f" || e.key === "F") toggleFullscreen();
     };
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
   }, [isFullscreen, currentIndex, presentation]);
 
   // Autoplay timer
@@ -153,8 +157,8 @@ export const Slide = () => {
       if (controlsTimeout.current) clearTimeout(controlsTimeout.current);
       controlsTimeout.current = setTimeout(() => setShowControls(false), 3000);
     };
-    window.addEventListener('mousemove', handleMouseMove);
-    return () => window.removeEventListener('mousemove', handleMouseMove);
+    window.addEventListener("mousemove", handleMouseMove);
+    return () => window.removeEventListener("mousemove", handleMouseMove);
   }, []);
 
   const nextSlide = () => {
@@ -186,12 +190,113 @@ export const Slide = () => {
     setIsFullscreen(false);
   };
 
+  // Play animation for an element
+  const playAnimation = useCallback((element) => {
+    if (!stageRef.current || !element.animation?.enabled) return;
+
+    const node = stageRef.current.findOne(`#${element.id}`);
+    if (!node) {
+      console.warn('Animation node not found:', element.id);
+      return;
+    }
+
+    const preset = animationPresets[element.animation.type];
+    if (!preset) return;
+
+    // Make element visible (important for both auto-play and click-sequenced)
+    node.visible(true);
+
+    // Apply initial state (setup) - this may set opacity to 0
+    if (preset.setup) {
+      preset.setup(node);
+    }
+
+    // Play animation using appropriate method
+    if (preset.konvaTween) {
+      // Konva Tween-based animation
+      const tweenConfig = preset.konvaTween(node, element.animation.duration || 1);
+      const tween = new Konva.Tween(tweenConfig);
+      tween.play();
+    } else if (preset.animate) {
+      // Custom animation function (e.g., typewriter)
+      // First make sure element is visible
+      node.opacity(1);
+      preset.animate(node, element.animation.duration || preset.defaultDuration);
+    }
+  }, []);
+
+  // Start animations when slide changes
+  useEffect(() => {
+    if (!stageRef.current || !presentation) return;
+
+    const currentSlide = presentation.slides[currentIndex];
+    if (!currentSlide?.elements) return;
+
+    // Reset state
+    setClickSequence(0);
+    setAnimatedElements(new Set());
+
+    // Wait for stage to render, then setup initial visibility and play animations
+    setTimeout(() => {
+      // First, hide all click-sequenced elements
+      currentSlide.elements.forEach(element => {
+        if (element.animation?.enabled && element.animation.appearOnClick) {
+          const node = stageRef.current.findOne(`#${element.id}`);
+          if (node) {
+            node.opacity(0);
+            node.visible(false);
+          }
+        }
+      });
+
+      // Then, play non-click animations
+      const nonClickElements = currentSlide.elements.filter(
+        el => el.animation?.enabled && !el.animation.appearOnClick
+      );
+
+      nonClickElements.forEach(element => {
+        playAnimation(element);
+        setAnimatedElements(prev => new Set([...prev, element.id]));
+      });
+    }, 100); // Reduced delay since we're just manipulating existing nodes
+  }, [currentIndex, presentation, playAnimation]);
+
+  // Handle click for sequenced animations
+  const handleSlideClick = useCallback(() => {
+    if (!presentation) return;
+
+    const currentSlide = presentation.slides[currentIndex];
+    if (!currentSlide?.elements) return;
+
+    // Get elements that have click animations and haven't been animated yet
+    const clickElements = currentSlide.elements
+      .filter(el =>
+        el.animation?.enabled &&
+        el.animation.appearOnClick &&
+        !animatedElements.has(el.id)
+      )
+      .sort((a, b) => (a.animation.clickOrder || 0) - (b.animation.clickOrder || 0));
+
+    if (clickElements.length === 0) {
+      // No more animations, go to next slide
+      nextSlide();
+      return;
+    }
+
+    // Play next animation in sequence
+    const nextElement = clickElements[0];
+    playAnimation(nextElement);
+    setAnimatedElements(prev => new Set([...prev, nextElement.id]));
+    setClickSequence(prev => prev + 1);
+  }, [presentation, currentIndex, clickSequence, playAnimation]);
+
   const renderElement = (element) => {
     switch (element.type) {
-      case 'rect':
+      case "rect":
         return (
           <Rect
             key={element.id}
+            id={element.id}
             x={element.x}
             y={element.y}
             width={element.width}
@@ -203,10 +308,11 @@ export const Slide = () => {
             rotation={element.rotation || 0}
           />
         );
-      case 'circle':
+      case "circle":
         return (
           <Circle
             key={element.id}
+            id={element.id}
             x={element.x}
             y={element.y}
             radius={element.radius}
@@ -216,10 +322,11 @@ export const Slide = () => {
             rotation={element.rotation || 0}
           />
         );
-      case 'line':
+      case "line":
         return (
           <Line
             key={element.id}
+            id={element.id}
             x={element.x}
             y={element.y}
             points={element.points}
@@ -230,10 +337,11 @@ export const Slide = () => {
             rotation={element.rotation || 0}
           />
         );
-      case 'text':
+      case "text":
         return (
           <Text
             key={element.id}
+            id={element.id}
             x={element.x}
             y={element.y}
             text={element.text}
@@ -245,7 +353,7 @@ export const Slide = () => {
             rotation={element.rotation || 0}
           />
         );
-      case 'image':
+      case "image":
         return <URLImage key={element.id} element={element} />;
       default:
         return null;
@@ -254,41 +362,37 @@ export const Slide = () => {
 
   if (!presentation) {
     return (
-      <div className="h-screen bg-black flex items-center justify-center">
+      <div className="min-h-screen bg-black/95 flex items-center justify-center">
         <div className="text-white text-xl">Loading presentation...</div>
       </div>
     );
   }
 
-  const slides = presentation.slides || [];
-  const currentSlide = slides[currentIndex];
-  const transition = currentSlide?.transition || 'fade';
-  const transitionVariant = slideTransitions[transition] || slideTransitions.fade;
+  const currentSlide = presentation.slides[currentIndex];
+  const transitionVariant = slideTransitions[currentSlide?.transition] || slideTransitions.fade;
 
   return (
     <div
       ref={containerRef}
-      className="h-screen bg-black flex items-center justify-center relative overflow-hidden"
+      className="min-h-screen bg-black/95 flex items-center justify-center relative overflow-hidden"
     >
-      {/* Slide Canvas */}
       <AnimatePresence mode="wait">
         <motion.div
           key={currentIndex}
           initial={transitionVariant.initial}
           animate={transitionVariant.animate}
           exit={transitionVariant.exit}
-          className="rounded-lg overflow-hidden shadow-2xl"
-          style={{
-            width: CANVAS_WIDTH * scale,
-            height: CANVAS_HEIGHT * scale,
-          }}
+          className="absolute inset-0 flex items-center justify-center"
         >
           <Stage
+            ref={stageRef}
             width={CANVAS_WIDTH}
             height={CANVAS_HEIGHT}
             scaleX={scale}
             scaleY={scale}
             style={{ background: currentSlide?.background || '#1a1a2e' }}
+            onClick={handleSlideClick}
+            onTap={handleSlideClick}
           >
             <Layer>
               <Rect
@@ -296,7 +400,8 @@ export const Slide = () => {
                 y={0}
                 width={CANVAS_WIDTH}
                 height={CANVAS_HEIGHT}
-                fill={currentSlide?.background || '#1a1a2e'}
+                fill={currentSlide?.background || "#1a1a2e"}
+                listening={false}
               />
               {currentSlide?.elements?.map(renderElement)}
             </Layer>
@@ -304,110 +409,94 @@ export const Slide = () => {
         </motion.div>
       </AnimatePresence>
 
-      {/* Controls Overlay */}
-      <motion.div
-        initial={false}
-        animate={{ opacity: showControls ? 1 : 0 }}
-        className="absolute inset-0 pointer-events-none"
-      >
-        {/* Top Bar */}
-        <div className="absolute top-0 left-0 right-0 p-4 flex justify-between items-center pointer-events-auto bg-gradient-to-b from-black/50 to-transparent">
-          <div className="text-white font-medium">
-            {presentation.title || 'Presentation'}
-          </div>
-          <div className="flex items-center gap-2">
-            {/* Settings */}
-            <button
-              onClick={() => setShowSettings(!showSettings)}
-              className="p-2 bg-white/10 hover:bg-white/20 rounded-lg transition-colors"
-            >
-              <Settings className="w-5 h-5" />
-            </button>
-            {/* Fullscreen */}
-            <button
-              onClick={toggleFullscreen}
-              className="p-2 bg-white/10 hover:bg-white/20 rounded-lg transition-colors"
-            >
-              {isFullscreen ? <Minimize className="w-5 h-5" /> : <Maximize className="w-5 h-5" />}
-            </button>
-            {/* Close */}
-            <button
-              onClick={() => navigate(-1)}
-              className="p-2 bg-white/10 hover:bg-white/20 rounded-lg transition-colors"
-            >
-              <X className="w-5 h-5" />
-            </button>
-          </div>
-        </div>
+      {/* Navigation Controls */}
+      {showControls && (
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          className="absolute bottom-8 left-1/2 -translate-x-1/2 flex items-center gap-4 bg-black/50 backdrop-blur-md rounded-full px-6 py-3"
+        >
+          {/* Previous */}
+          <button
+            onClick={prevSlide}
+            disabled={currentIndex === 0}
+            className="p-2 rounded-full hover:bg-white/10 disabled:opacity-30 disabled:cursor-not-allowed text-white transition-colors"
+          >
+            <ChevronLeft className="w-5 h-5" />
+          </button>
 
-        {/* Settings Panel */}
-        {showSettings && (
-          <div className="absolute top-16 right-4 bg-gray-900 border border-white/10 rounded-xl p-4 pointer-events-auto w-64">
-            <h3 className="text-sm font-medium mb-3">Autoplay Settings</h3>
-            <div className="flex items-center gap-2 mb-3">
-              <button
-                onClick={() => setIsAutoplay(!isAutoplay)}
-                className={`flex items-center gap-2 px-3 py-2 rounded-lg transition-colors ${isAutoplay ? 'bg-green-600' : 'bg-white/10 hover:bg-white/20'
-                  }`}
-              >
-                {isAutoplay ? <Pause className="w-4 h-4" /> : <Play className="w-4 h-4" />}
-                {isAutoplay ? 'Pause' : 'Autoplay'}
-              </button>
-            </div>
-            <div>
-              <label className="text-xs text-gray-400 block mb-1">Interval (seconds)</label>
+          {/* Slide Counter */}
+          <div className="text-white text-sm font-medium px-2">
+            {currentIndex + 1} / {presentation.slides.length}
+          </div>
+
+          {/* Next */}
+          <button
+            onClick={nextSlide}
+            disabled={currentIndex >= presentation.slides.length - 1}
+            className="p-2 rounded-full hover:bg-white/10 disabled:opacity-30 disabled:cursor-not-allowed text-white transition-colors"
+          >
+            <ChevronRight className="w-5 h-5" />
+          </button>
+
+          {/* Divider */}
+          <div className="w-px h-6 bg-white/20" />
+
+          {/* Autoplay */}
+          <button
+            onClick={() => setIsAutoplay(!isAutoplay)}
+            className={`p-2 rounded-full transition-colors ${isAutoplay ? "bg-blue-600 text-white" : "hover:bg-white/10 text-white"
+              }`}
+            title={isAutoplay ? "Stop Autoplay" : "Start Autoplay"}
+          >
+            {isAutoplay ? <Pause className="w-5 h-5" /> : <Play className="w-5 h-5" />}
+          </button>
+
+          {/* Settings */}
+          <button
+            onClick={() => setShowSettings(!showSettings)}
+            className="p-2 rounded-full hover:bg-white/10 text-white transition-colors"
+            title="Settings"
+          >
+            <Settings className="w-5 h-5" />
+          </button>
+
+          {/* Fullscreen */}
+          <button
+            onClick={toggleFullscreen}
+            className="p-2 rounded-full hover:bg-white/10 text-white transition-colors"
+          >
+            {isFullscreen ? <Minimize className="w-5 h-5" /> : <Maximize className="w-5 h-5" />}
+          </button>
+
+          {/* Exit */}
+          <button
+            onClick={() => navigate("/my-slide")}
+            className="p-2 rounded-full hover:bg-white/10 text-white transition-colors"
+          >
+            <X className="w-5 h-5" />
+          </button>
+        </motion.div>
+      )}
+
+      {/* Settings Panel */}
+      {showSettings && (
+        <div className="absolute top-8 right-8 bg-black/70 backdrop-blur-md rounded-lg p-4 text-white">
+          <h3 className="text-lg font-semibold mb-4">Settings</h3>
+          <div className="flex flex-col gap-3">
+            <label className="flex items-center justify-between gap-4">
+              <span className="text-sm">Autoplay Interval (seconds):</span>
               <input
                 type="number"
                 min="1"
-                max="30"
+                max="60"
                 value={autoplayInterval}
                 onChange={(e) => setAutoplayInterval(parseInt(e.target.value) || 5)}
-                className="w-full bg-black/30 border border-white/10 rounded-lg px-3 py-2 text-sm"
+                className="w-16 px-2 py-1 bg-white/10 rounded text-center"
               />
-            </div>
+            </label>
           </div>
-        )}
-
-        {/* Navigation Arrows */}
-        <button
-          onClick={prevSlide}
-          disabled={currentIndex === 0}
-          className="absolute left-4 top-1/2 -translate-y-1/2 p-3 bg-white/10 hover:bg-white/20 rounded-full transition-colors pointer-events-auto disabled:opacity-30"
-        >
-          <ChevronLeft className="w-8 h-8" />
-        </button>
-        <button
-          onClick={nextSlide}
-          disabled={currentIndex >= slides.length - 1}
-          className="absolute right-4 top-1/2 -translate-y-1/2 p-3 bg-white/10 hover:bg-white/20 rounded-full transition-colors pointer-events-auto disabled:opacity-30"
-        >
-          <ChevronRight className="w-8 h-8" />
-        </button>
-
-        {/* Bottom Progress */}
-        <div className="absolute bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-black/50 to-transparent pointer-events-auto">
-          <div className="flex items-center justify-center gap-2 mb-2">
-            {slides.map((_, index) => (
-              <button
-                key={index}
-                onClick={() => setCurrentIndex(index)}
-                className={`w-3 h-3 rounded-full transition-all ${index === currentIndex
-                    ? 'bg-blue-500 scale-125'
-                    : 'bg-white/30 hover:bg-white/50'
-                  }`}
-              />
-            ))}
-          </div>
-          <div className="text-center text-sm text-gray-400">
-            {currentIndex + 1} / {slides.length}
-          </div>
-        </div>
-      </motion.div>
-
-      {/* Keyboard hint */}
-      {showControls && (
-        <div className="absolute bottom-20 left-1/2 -translate-x-1/2 text-xs text-gray-500">
-          ← → Navigate • F Fullscreen • ESC Exit
         </div>
       )}
     </div>
@@ -415,3 +504,4 @@ export const Slide = () => {
 };
 
 export default Slide;
+

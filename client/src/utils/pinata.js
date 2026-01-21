@@ -156,8 +156,14 @@ export const getIPFSUrl = (hash) => {
     return `${PINATA_GATEWAY}/${hash}`;
 };
 
+/**
+ * Alias for backward compatibility
+ */
+export const uploadFileToIPFS = uploadToPinata;
+
 export default {
     uploadToPinata,
+    uploadFileToIPFS,
     uploadJSONToPinata,
     uploadDataUrlToPinata,
     getIPFSUrl,
