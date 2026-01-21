@@ -42,12 +42,14 @@ export const Home = () => {
                 <span>My Dashboard</span>
               </button>
             ) : (
-              <button
-                onClick={() => navigate(ROUTE.SIGN_IN)}
-                className="cursor-pointer bg-blue-600 hover:bg-blue-500 text-white px-8 py-3 rounded-xl font-semibold transition-all duration-200 shadow-lg shadow-blue-500/20 active:scale-95"
-              >
-                Connect Wallet
-              </button>
+              <div>
+                <button
+                  onClick={() => navigate(ROUTE.SIGN_IN)}
+                  className="cursor-pointer bg-blue-600 hover:bg-blue-500 text-white px-8 py-3 rounded-xl font-semibold transition-all duration-200 shadow-lg shadow-blue-500/20 active:scale-95"
+                >
+                  Connect Wallet
+                </button>
+              </div>
             )}
           </div>
           <button
