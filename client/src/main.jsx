@@ -5,6 +5,7 @@ import { createRoot } from "react-dom/client";
 import "./index.css";
 import "@mysten/dapp-kit/dist/index.css";
 import App from "./App.jsx";
+import { RegisterEnokiWallets } from "./services/enoki/RegisterEnokiWallets.jsx";
 
 // Config options for the networks you want to connect to
 const { networkConfig } = createNetworkConfig({
@@ -15,9 +16,10 @@ const queryClient = new QueryClient();
 createRoot(document.getElementById("root")).render(
   <QueryClientProvider client={queryClient}>
     <SuiClientProvider networks={networkConfig} defaultNetwork="testnet">
-      <WalletProvider autoConnect={true}>
-        <App />
-      </WalletProvider>
+        <RegisterEnokiWallets />
+        <WalletProvider autoConnect={true}>
+          <App />
+        </WalletProvider>
     </SuiClientProvider>
   </QueryClientProvider>,
 );
