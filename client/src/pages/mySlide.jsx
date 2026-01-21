@@ -13,14 +13,28 @@ export const MySlide = () => {
 
   // Load slides from localStorage (mock for blockchain)
   useEffect(() => {
-    setIsLoading(true);
-    const savedSlides = JSON.parse(localStorage.getItem("slides") || "[]");
-    // Filter by owner (for now, show all local slides)
-    const userSlides = savedSlides.filter(
-      (s) => s.owner === account?.address || s.owner === "local",
-    );
-    setSlides(userSlides);
-    setIsLoading(false);
+    const loadSlides = () => {
+      setIsLoading(true);
+      const savedSlides = JSON.parse(localStorage.getItem("slides") || "[]");
+      // Filter by owner (for now, show all local slides)
+      const userSlides = savedSlides.filter(
+        (s) => s.owner === account?.address || s.owner === "local",
+      );
+      setSlides(userSlides);
+      setIsLoading(false);
+    };
+
+    loadSlides();
+
+    // Listen for storage changes to refresh slides when returning from editor
+    const handleStorageChange = (e) => {
+      if (e.key === "slides" || e.key === "current_project") {
+        loadSlides();
+      }
+    };
+
+    window.addEventListener("storage", handleStorageChange);
+    return () => window.removeEventListener("storage", handleStorageChange);
   }, [account?.address]);
 
   const handleDelete = (id) => {
