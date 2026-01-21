@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { PlusCircle } from "lucide-react";
 import { useMintSlide } from "../../hooks/useMintSlide";
 import { uploadJSONToPinata, uploadDataUrlToPinata } from "../../utils/pinata";
 
@@ -65,11 +66,15 @@ export const MintSlideModal = ({ isOpen, onClose, slideData, onMintSuccess }) =>
 
       // Get the created object ID from transaction effects
       // This is a simplified version - in production you'd parse the effects
+      console.log("[MINT] Transaction Digest:", result.digest);
+      console.log("[MINT] Transaction Result:", result);
+      
       setObjectId(result.digest);
       setStep("success");
 
       // Callback to update parent with mint info
       if (onMintSuccess) {
+        console.log("[MINT] Calling onMintSuccess with txDigest:", result.digest);
         onMintSuccess({
           txDigest: result.digest,
           contentUrl,
@@ -247,12 +252,12 @@ export const MintSlideModal = ({ isOpen, onClose, slideData, onMintSuccess }) =>
                 <div className="relative group">
                   <input
                     type="number"
-                    step="0.1"
-                    min="0.1"
+                    step="0.0001"
+                    min="0.0001"
                     value={price}
                     onChange={(e) => setPrice(e.target.value)}
-                    className="w-full px-5 py-4 bg-white dark:bg-black/30 border-2 border-gray-100 dark:border-white/10 rounded-2xl text-gray-900 dark:text-white text-xl font-black focus:border-blue-500 dark:focus:border-cyan-500 focus:outline-none transition-all shadow-sm focus:shadow-blue-500/10"
-                    placeholder="1.0"
+                    className="w-full px-5 py-4 bg-white dark:bg-black/30 border-2 border-gray-100 dark:border-white/10 rounded-2xl text-gray-900 dark:text-white text-xl font-black focus:border-blue-500 dark:focus:border-cyan-500 focus:outline-none transition-all shadow-sm focus:shadow-blue-500/10 [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                    placeholder="0.0001"
                   />
                   <div className="absolute right-4 top-1/2 -translate-y-1/2 flex items-center gap-2 bg-gray-100 dark:bg-black/40 px-3 py-2 rounded-xl border border-gray-200 dark:border-white/5">
                     <svg
@@ -268,7 +273,7 @@ export const MintSlideModal = ({ isOpen, onClose, slideData, onMintSuccess }) =>
                   </div>
                 </div>
                 <p className="text-[11px] text-gray-400 dark:text-gray-500 mt-3 italic font-medium leading-relaxed">
-                  * This is the fixed price others pay to license your slide content.
+                  * This is the fixed price others pay to license your slide content. Minimum: 0.0001 SUI
                 </p>
               </div>
 
