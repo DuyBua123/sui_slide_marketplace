@@ -1,4 +1,4 @@
-import { uploadFileToIPFS } from '../services/pinata';
+import { uploadFileToIPFS } from './pinata';
 
 /**
  * Upload presentation JSON to IPFS

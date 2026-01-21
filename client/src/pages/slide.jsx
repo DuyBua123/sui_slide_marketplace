@@ -2,6 +2,8 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Stage, Layer, Rect, Circle, Line, Text, Image as KonvaImage } from 'react-konva';
 import { motion, AnimatePresence } from 'framer-motion';
+import Konva from 'konva';
+import { animationPresets } from '../components/Editor/animationPresets';
 import {
   ChevronLeft, ChevronRight, X, Maximize, Minimize,
   Play, Pause, Settings
@@ -51,6 +53,7 @@ const URLImage = ({ element }) => {
 
   return (
     <KonvaImage
+      id={element.id}
       x={element.x}
       y={element.y}
       width={element.width || 200}
@@ -68,6 +71,7 @@ export const Slide = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const containerRef = useRef(null);
+  const stageRef = useRef(null);
   const [presentation, setPresentation] = useState(null);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [scale, setScale] = useState(1);
@@ -76,6 +80,8 @@ export const Slide = () => {
   const [isAutoplay, setIsAutoplay] = useState(false);
   const [autoplayInterval, setAutoplayInterval] = useState(5);
   const [showSettings, setShowSettings] = useState(false);
+  const [clickSequence, setClickSequence] = useState(0);
+  const [animatedElements, setAnimatedElements] = useState(new Set());
   const controlsTimeout = useRef(null);
 
   // Load presentation
@@ -186,12 +192,107 @@ export const Slide = () => {
     setIsFullscreen(false);
   };
 
+  // Play animation for an element
+  const playAnimation = useCallback((element) => {
+    if (!stageRef.current || !element.animation?.enabled) return;
+
+    const node = stageRef.current.findOne(`#${element.id}`);
+    if (!node) {
+      console.warn('Animation node not found:', element.id);
+      return;
+    }
+
+    const preset = animationPresets[element.animation.type];
+    if (!preset) return;
+
+    // Make element visible (important for both auto-play and click-sequenced)
+    node.visible(true);
+
+    // Apply initial state (setup) - this may set opacity to 0
+    if (preset.setup) {
+      preset.setup(node);
+    }
+
+    // Play animation using appropriate method
+    if (preset.konvaTween) {
+      // Konva Tween-based animation
+      const tweenConfig = preset.konvaTween(node, element.animation.duration || 1);
+      const tween = new Konva.Tween(tweenConfig);
+      tween.play();
+    } else if (preset.animate) {
+      // Custom animation function (e.g., typewriter)
+      // First make sure element is visible
+      node.opacity(1);
+      preset.animate(node, element.animation.duration || preset.defaultDuration);
+    }
+  }, []);
+
+  // Start animations when slide changes
+  useEffect(() => {
+    if (!stageRef.current || !presentation) return;
+
+    const currentSlide = presentation.slides[currentIndex];
+    if (!currentSlide?.elements) return;
+
+    // Reset state
+    setClickSequence(0);
+    setAnimatedElements(new Set());
+
+    // Wait for stage to render, then setup initial visibility and play animations
+    setTimeout(() => {
+      // First, hide all click-sequenced elements
+      currentSlide.elements.forEach(element => {
+        if (element.animation?.enabled && element.animation.appearOnClick) {
+          const node = stageRef.current.findOne(`#${element.id}`);
+          if (node) {
+            node.opacity(0);
+            node.visible(false);
+          }
+        }
+      });
+
+      // Then, play non-click animations
+      const nonClickElements = currentSlide.elements.filter(
+        el => el.animation?.enabled && !el.animation.appearOnClick
+      );
+
+      nonClickElements.forEach(element => {
+        playAnimation(element);
+        setAnimatedElements(prev => new Set([...prev, element.id]));
+      });
+    }, 100); // Reduced delay since we're just manipulating existing nodes
+  }, [currentIndex, presentation, playAnimation]);
+
+  // Handle click for sequenced animations
+  const handleSlideClick = useCallback(() => {
+    if (!presentation) return;
+
+    const currentSlide = presentation.slides[currentIndex];
+    if (!currentSlide?.elements) return;
+
+    // Get click-sequenced elements
+    const clickElements = currentSlide.elements
+      .filter(el => el.animation?.enabled && el.animation.appearOnClick)
+      .sort((a, b) => (a.animation.clickOrder || 0) - (b.animation.clickOrder || 0));
+
+    if (clickSequence < clickElements.length) {
+      const nextElement = clickElements[clickSequence];
+      playAnimation(nextElement);
+      setAnimatedElements(prev => new Set([...prev, nextElement.id]));
+      setClickSequence(clickSequence + 1);
+    } else {
+      // All animations done, go to next slide
+      nextSlide();
+    }
+  }, [presentation, currentIndex, clickSequence, playAnimation]);
+
   const renderElement = (element) => {
     switch (element.type) {
       case 'rect':
         return (
           <Rect
             key={element.id}
+            id={element.id}
             x={element.x}
             y={element.y}
             width={element.width}
@@ -207,6 +308,7 @@ export const Slide = () => {
         return (
           <Circle
             key={element.id}
+            id={element.id}
             x={element.x}
             y={element.y}
             radius={element.radius}
@@ -220,6 +322,7 @@ export const Slide = () => {
         return (
           <Line
             key={element.id}
+            id={element.id}
             x={element.x}
             y={element.y}
             points={element.points}
@@ -234,6 +337,7 @@ export const Slide = () => {
         return (
           <Text
             key={element.id}
+            id={element.id}
             x={element.x}
             y={element.y}
             text={element.text}
@@ -284,11 +388,14 @@ export const Slide = () => {
           }}
         >
           <Stage
+            ref={stageRef}
             width={CANVAS_WIDTH}
             height={CANVAS_HEIGHT}
             scaleX={scale}
             scaleY={scale}
             style={{ background: currentSlide?.background || '#1a1a2e' }}
+            onClick={handleSlideClick}
+            onTap={handleSlideClick}
           >
             <Layer>
               <Rect

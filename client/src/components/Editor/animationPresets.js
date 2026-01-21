@@ -3,6 +3,8 @@
  * 8 Canva-style animation effects for text and elements
  */
 
+import Konva from 'konva';
+
 export const animationPresets = {
     typewriter: {
         name: 'Typewriter',
@@ -41,7 +43,7 @@ export const animationPresets = {
             duration,
             y: node.y(),
             opacity: 1,
-            easing: 'easeOutCubic',
+            easing: Konva.Easings.EaseOut,
             onFinish: () => node.opacity(1),
         }),
         setup: (node) => {
@@ -61,7 +63,7 @@ export const animationPresets = {
             duration,
             x: node.x(),
             opacity: 1,
-            easing: 'easeOutQuad',
+            easing: Konva.Easings.EaseOut,
         }),
         setup: (node, direction = 'left') => {
             node.x(direction === 'left' ? node.x() - 100 : node.x() + 100);
@@ -81,7 +83,7 @@ export const animationPresets = {
             scaleX: 1,
             scaleY: 1,
             opacity: 1,
-            easing: 'easeOutElastic',
+            easing: Konva.Easings.ElasticEaseOut,
         }),
         setup: (node) => {
             node.scaleX(0.3);
@@ -102,7 +104,7 @@ export const animationPresets = {
             scaleX: 1,
             scaleY: 1,
             opacity: 1,
-            easing: 'easeOutBack',
+            easing: Konva.Easings.BackEaseOut,
         }),
         setup: (node) => {
             node.scaleX(0);
@@ -122,7 +124,7 @@ export const animationPresets = {
             duration,
             scaleX: 1,
             opacity: 1,
-            easing: 'easeInOutCubic',
+            easing: Konva.Easings.EaseInOut,
         }),
         setup: (node) => {
             node.scaleX(0);
@@ -143,7 +145,7 @@ export const animationPresets = {
             scaleY: 1,
             rotation: 0,
             opacity: 1,
-            easing: 'easeOutQuint',
+            easing: Konva.Easings.StrongEaseOut,
         }),
         setup: (node) => {
             const originalRotation = node.rotation() || 0;
@@ -166,7 +168,7 @@ export const animationPresets = {
             opacity: 1,
             // Note: Konva doesn't support blur directly in Tween
             // This would need custom implementation
-            easing: 'easeInOutQuad',
+            easing: Konva.Easings.EaseInOut,
         }),
         setup: (node) => {
             node.opacity(0.3);
