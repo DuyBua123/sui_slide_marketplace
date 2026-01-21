@@ -3,11 +3,8 @@
  * 8 Canva-style animation effects for text and elements
  */
 
-<<<<<<< HEAD
 import Konva from 'konva';
 
-=======
->>>>>>> 2565ee7 (feat: Multi-slide editor)
 export const animationPresets = {
     typewriter: {
         name: 'Typewriter',
@@ -46,11 +43,7 @@ export const animationPresets = {
             duration,
             y: node.y(),
             opacity: 1,
-<<<<<<< HEAD
             easing: Konva.Easings.EaseOut,
-=======
-            easing: 'easeOutCubic',
->>>>>>> 2565ee7 (feat: Multi-slide editor)
             onFinish: () => node.opacity(1),
         }),
         setup: (node) => {
@@ -70,11 +63,7 @@ export const animationPresets = {
             duration,
             x: node.x(),
             opacity: 1,
-<<<<<<< HEAD
             easing: Konva.Easings.EaseOut,
-=======
-            easing: 'easeOutQuad',
->>>>>>> 2565ee7 (feat: Multi-slide editor)
         }),
         setup: (node, direction = 'left') => {
             node.x(direction === 'left' ? node.x() - 100 : node.x() + 100);
@@ -94,11 +83,7 @@ export const animationPresets = {
             scaleX: 1,
             scaleY: 1,
             opacity: 1,
-<<<<<<< HEAD
             easing: Konva.Easings.ElasticEaseOut,
-=======
-            easing: 'easeOutElastic',
->>>>>>> 2565ee7 (feat: Multi-slide editor)
         }),
         setup: (node) => {
             node.scaleX(0.3);
@@ -119,11 +104,7 @@ export const animationPresets = {
             scaleX: 1,
             scaleY: 1,
             opacity: 1,
-<<<<<<< HEAD
             easing: Konva.Easings.BackEaseOut,
-=======
-            easing: 'easeOutBack',
->>>>>>> 2565ee7 (feat: Multi-slide editor)
         }),
         setup: (node) => {
             node.scaleX(0);
@@ -143,11 +124,7 @@ export const animationPresets = {
             duration,
             scaleX: 1,
             opacity: 1,
-<<<<<<< HEAD
             easing: Konva.Easings.EaseInOut,
-=======
-            easing: 'easeInOutCubic',
->>>>>>> 2565ee7 (feat: Multi-slide editor)
         }),
         setup: (node) => {
             node.scaleX(0);
@@ -168,11 +145,7 @@ export const animationPresets = {
             scaleY: 1,
             rotation: 0,
             opacity: 1,
-<<<<<<< HEAD
             easing: Konva.Easings.StrongEaseOut,
-=======
-            easing: 'easeOutQuint',
->>>>>>> 2565ee7 (feat: Multi-slide editor)
         }),
         setup: (node) => {
             const originalRotation = node.rotation() || 0;
@@ -195,11 +168,7 @@ export const animationPresets = {
             opacity: 1,
             // Note: Konva doesn't support blur directly in Tween
             // This would need custom implementation
-<<<<<<< HEAD
             easing: Konva.Easings.EaseInOut,
-=======
-            easing: 'easeInOutQuad',
->>>>>>> 2565ee7 (feat: Multi-slide editor)
         }),
         setup: (node) => {
             node.opacity(0.3);
