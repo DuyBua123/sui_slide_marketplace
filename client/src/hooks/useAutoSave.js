@@ -6,7 +6,9 @@ import { useSlideStore } from '../store/useSlideStore';
  */
 export const useAutoSave = (projectId, debounceMs = 2000) => {
     const [saveStatus, setSaveStatus] = useState('idle'); // 'idle' | 'saving' | 'saved' | 'error'
+    const [lastSavedAt, setLastSavedAt] = useState(null);
     const timeoutRef = useRef(null);
+    const resetTimerRef = useRef(null);
     const lastSavedRef = useRef(null);
 
     const { slides, title } = useSlideStore();
@@ -62,10 +64,17 @@ export const useAutoSave = (projectId, debounceMs = 2000) => {
                 }
 
                 lastSavedRef.current = currentData;
+                const now = new Date();
                 setSaveStatus('saved');
+                setLastSavedAt(now);
 
                 // Reset to idle after 3 seconds
-                setTimeout(() => setSaveStatus('idle'), 3000);
+                if (resetTimerRef.current) {
+                    clearTimeout(resetTimerRef.current);
+                }
+                resetTimerRef.current = setTimeout(() => {
+                    setSaveStatus('idle');
+                }, 3000);
             } catch (error) {
                 console.error('Auto-save error:', error);
                 setSaveStatus('error');
@@ -76,10 +85,13 @@ export const useAutoSave = (projectId, debounceMs = 2000) => {
             if (timeoutRef.current) {
                 clearTimeout(timeoutRef.current);
             }
+            if (resetTimerRef.current) {
+                clearTimeout(resetTimerRef.current);
+            }
         };
     }, [slides, title, projectId, debounceMs]);
 
-    return { saveStatus };
+    return { saveStatus, lastSavedAt };
 };
 
 export default useAutoSave;
