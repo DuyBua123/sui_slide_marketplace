@@ -1,7 +1,7 @@
-import { useRef } from 'react';
-import { Upload, FlipHorizontal, FlipVertical, Wand2 } from 'lucide-react';
-import { useSlideStore } from '../../store/useSlideStore';
-import { uploadToPinata } from '../../utils/pinata';
+import { useRef } from "react";
+import { Upload, FlipHorizontal, FlipVertical, Wand2 } from "lucide-react";
+import { useSlideStore } from "../../store/useSlideStore";
+import { uploadToPinata } from "../../utils/pinata";
 
 /**
  * Image toolbar - shown when image is selected
@@ -10,7 +10,7 @@ export const ImageToolbar = ({ element, onAnimateClick }) => {
   const fileInputRef = useRef(null);
   const updateElement = useSlideStore((state) => state.updateElement);
 
-  if (!element || element.type !== 'image') return null;
+  if (!element || element.type !== "image") return null;
 
   const handleChange = (key, value) => {
     updateElement(element.id, { [key]: value });
@@ -22,34 +22,34 @@ export const ImageToolbar = ({ element, onAnimateClick }) => {
 
     try {
       const result = await uploadToPinata(file, file.name);
-      handleChange('src', result.url);
+      handleChange("src", result.url);
     } catch (error) {
       // Fallback to local
       const reader = new FileReader();
       reader.onload = (event) => {
-        handleChange('src', event.target?.result);
+        handleChange("src", event.target?.result);
       };
       reader.readAsDataURL(file);
     }
-    e.target.value = '';
+    e.target.value = "";
   };
 
   const toggleFlipX = () => {
-    handleChange('flipX', !element.flipX);
+    handleChange("flipX", !element.flipX);
   };
 
   const toggleFlipY = () => {
-    handleChange('flipY', !element.flipY);
+    handleChange("flipY", !element.flipY);
   };
 
   return (
-    <div className="flex items-center gap-1 bg-white/90 dark:bg-gray-900/80 backdrop-blur-md rounded-lg p-1.5 border border-gray-200 dark:border-white/10 shadow-xl transition-colors duration-500">
-      {/* Replace Image */}
+    <div className="flex items-center gap-1 bg-white/90 dark:bg-gray-900/90 backdrop-blur-xl rounded-2xl p-1.5 border border-gray-200 dark:border-white/10 shadow-[0_20px_50px_rgba(0,0,0,0.1)] transition-all duration-300">
+      {/* Replace Image Action */}
       <button
         onClick={() => fileInputRef.current?.click()}
-        className="flex items-center gap-1.5 px-3 py-1.5 bg-blue-600 hover:bg-blue-500 text-white rounded-md text-sm font-semibold transition-all active:scale-95 shadow-lg shadow-blue-500/20"
+        className="cursor-pointer flex items-center gap-2 px-3.5 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-sm font-bold transition-all active:scale-95 shadow-lg shadow-blue-500/25 group"
       >
-        <Upload className="w-4 h-4" />
+        <Upload className="w-4 h-4 group-hover:-translate-y-0.5 transition-transform" />
         Replace
       </button>
       <input
@@ -60,70 +60,74 @@ export const ImageToolbar = ({ element, onAnimateClick }) => {
         className="hidden"
       />
 
-      {/* Divider */}
-      <div className="w-px h-6 bg-gray-200 dark:bg-white/10 mx-1" />
+      {/* Vertical Divider */}
+      <div className="w-px h-8 bg-gray-200 dark:bg-white/10 mx-1.5" />
 
-      {/* Flip Horizontal */}
-      <button
-        onClick={toggleFlipX}
-        className={`p-2 rounded-md transition-all ${element.flipX
-            ? 'bg-blue-100 dark:bg-blue-600 text-blue-600 dark:text-white shadow-inner'
-            : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-white/10'
+      {/* Transform Group */}
+      <div className="flex items-center gap-1">
+        <button
+          onClick={toggleFlipX}
+          className={`cursor-pointer p-2 rounded-xl transition-all duration-200 ${
+            element.flipX
+              ? "bg-blue-100 dark:bg-blue-600 text-blue-700 dark:text-white shadow-inner"
+              : "text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-white/10"
           }`}
-        title="Flip Horizontal"
-      >
-        <FlipHorizontal className="w-4 h-4" />
-      </button>
+          title="Flip Horizontal"
+        >
+          <FlipHorizontal className="w-4.5 h-4.5" />
+        </button>
 
-      {/* Flip Vertical */}
-      <button
-        onClick={toggleFlipY}
-        className={`p-2 rounded-md transition-all ${element.flipY
-            ? 'bg-blue-100 dark:bg-blue-600 text-blue-600 dark:text-white shadow-inner'
-            : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-white/10'
+        <button
+          onClick={toggleFlipY}
+          className={`cursor-pointer p-2 rounded-xl transition-all duration-200 ${
+            element.flipY
+              ? "bg-blue-100 dark:bg-blue-600 text-blue-700 dark:text-white shadow-inner"
+              : "text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-white/10"
           }`}
-        title="Flip Vertical"
-      >
-        <FlipVertical className="w-4 h-4" />
-      </button>
+          title="Flip Vertical"
+        >
+          <FlipVertical className="w-4.5 h-4.5" />
+        </button>
+      </div>
 
-      {/* Divider */}
-      <div className="w-px h-6 bg-gray-200 dark:bg-white/10 mx-1" />
+      {/* Vertical Divider */}
+      <div className="w-px h-8 bg-gray-200 dark:bg-white/10 mx-1.5" />
 
-      {/* Animate Button */}
+      {/* Animation Trigger */}
       {onAnimateClick && (
         <>
           <button
             onClick={onAnimateClick}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded hover:bg-white/10 transition-colors"
-            title="Animate"
+            className="cursor-pointer flex items-center gap-2 px-3 py-2 rounded-xl text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-white/10 transition-all group"
           >
-            <Wand2 className="w-3.5 h-3.5" />
-            <span className="text-xs font-medium">Animate</span>
+            <Wand2 className="w-4 h-4 text-purple-500 group-hover:rotate-12 transition-transform" />
+            <span className="text-xs font-bold">Animate</span>
           </button>
-
-          <div className="w-px h-6 bg-white/10" />
+          <div className="w-px h-8 bg-gray-200 dark:bg-white/10 mx-1.5" />
         </>
       )}
 
-      {/* Opacity Control */}
-      <div className="flex items-center gap-3 px-3">
-        <span className="text-xs font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400">
-          Opacity
-        </span>
-        <div className="flex items-center gap-2 bg-gray-100 dark:bg-black/20 px-2 py-1 rounded-md border border-gray-200 dark:border-white/5">
+      {/* Opacity Control Slider */}
+      <div className="flex items-center gap-3 px-2">
+        <div className="flex flex-col -space-y-0.5">
+          <span className="text-[9px] font-black uppercase tracking-[0.1em] text-gray-400 dark:text-gray-500">
+            Opacity
+          </span>
+          <span className="text-[11px] font-mono font-black text-blue-600 dark:text-blue-400">
+            {Math.round((element.opacity ?? 1) * 100)}%
+          </span>
+        </div>
+
+        <div className="relative flex items-center bg-gray-100 dark:bg-white/5 px-3 py-2.5 rounded-xl border border-gray-200/50 dark:border-white/5 shadow-inner">
           <input
             type="range"
             min="0"
             max="1"
-            step="0.1"
+            step="0.01"
             value={element.opacity ?? 1}
-            onChange={(e) => handleChange('opacity', parseFloat(e.target.value))}
-            className="w-20 h-1.5 bg-gray-300 dark:bg-gray-700 rounded-lg appearance-none cursor-pointer accent-blue-600"
+            onChange={(e) => handleChange("opacity", parseFloat(e.target.value))}
+            className="w-24 h-1.5 bg-gray-300 dark:bg-gray-700 rounded-lg appearance-none cursor-pointer accent-blue-600 hover:accent-blue-500"
           />
-          <span className="text-[11px] font-mono font-bold text-blue-600 dark:text-blue-400 w-9 text-right">
-            {Math.round((element.opacity ?? 1) * 100)}%
-          </span>
         </div>
       </div>
     </div>

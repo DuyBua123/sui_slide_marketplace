@@ -52,7 +52,7 @@ export const Header = () => {
 
           <button
             onClick={() => setIsOpen(!isOpen)}
-            className="p-2 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white md:hidden transition-colors"
+            className="cursor-pointer p-2 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white md:hidden transition-colors"
           >
             <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               {isOpen ? (
