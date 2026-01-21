@@ -143,6 +143,16 @@ export const useSlideStore = create(
         set({ slides: newSlides });
       },
 
+      setSlideBackgroundImage: (imageUrl) => {
+        const { slides, currentSlideIndex } = get();
+        const newSlides = [...slides];
+        newSlides[currentSlideIndex] = {
+          ...newSlides[currentSlideIndex],
+          backgroundImage: imageUrl,
+        };
+        set({ slides: newSlides });
+      },
+
       // ============ Element Management ============
 
       get elements() {
@@ -195,6 +205,19 @@ export const useSlideStore = create(
           slides: newSlides,
           selectedId: selectedId === id ? null : selectedId,
           selectedIds: selectedIds.filter((sid) => sid !== id),
+        });
+      },
+
+      duplicateElement: (id) => {
+        const { slides, currentSlideIndex, addElement } = get();
+        const element = slides[currentSlideIndex].elements.find((el) => el.id === id);
+        if (!element) return;
+
+        const { id: _, ...elementProps } = element;
+        addElement(element.type, {
+          ...elementProps,
+          x: element.x + 20,
+          y: element.y + 20,
         });
       },
 

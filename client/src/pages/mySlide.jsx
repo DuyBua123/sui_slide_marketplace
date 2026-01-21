@@ -43,7 +43,11 @@ export const MySlide = () => {
           </p>
         </div>
         <button
-          onClick={() => navigate("/editor")}
+          onClick={() => {
+            // Clear cached project to ensure fresh canvas
+            localStorage.removeItem('current_project');
+            navigate("/editor");
+          }}
           className="cursor-pointer flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-500 hover:to-cyan-500 text-white rounded-xl font-semibold transition-all shadow-lg shadow-blue-500/25 active:scale-95"
         >
           <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
