@@ -1,6 +1,5 @@
-import { useState, useEffect, useCallback } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
-import { useCurrentAccount } from '@mysten/dapp-kit';
+import { useState, useEffect } from 'react';
+import { useParams } from 'react-router-dom';
 import { LeftIconRail } from './LeftIconRail';
 import { TopHeader } from './TopHeader';
 import { FilmstripBar } from './FilmstripBar';
@@ -25,15 +24,11 @@ import { useAutoSave } from '../../hooks/useAutoSave';
  * Grid structure: Icon Rail (48px) | Canvas + Sidebar | Filmstrip (80px)
  */
 export const EditorLayout = () => {
-    const navigate = useNavigate();
     const { id } = useParams();
-    const account = useCurrentAccount();
 
     const [activeTab, setActiveTab] = useState('elements');
     const [showSellModal, setShowSellModal] = useState(false);
     const [showMintModal, setShowMintModal] = useState(false);
-    const [currentSlideData, setCurrentSlideData] = useState(null);
-    const [isMinted, setIsMinted] = useState(false);
     const [suiObjectId, setSuiObjectId] = useState(null);
 
     const {
@@ -42,7 +37,6 @@ export const EditorLayout = () => {
         currentSlideIndex,
         selectedId,
         selectedIds,
-        exportToJSON,
         loadFromJSON,
         clearCanvas,
         setTitle,
@@ -53,7 +47,7 @@ export const EditorLayout = () => {
         nudgeSelected,
     } = useSlideStore();
 
-    const { saveStatus } = useAutoSave(id, 2000);
+    const { saveStatus, lastSavedTime, forceSave } = useAutoSave(id, 2000);
 
     // Get selected element
     const currentSlide = slides[currentSlideIndex];
@@ -73,10 +67,9 @@ export const EditorLayout = () => {
             const slide = savedSlides.find((s) => s.id === id);
             if (slide?.data) {
                 loadFromJSON(slide.data);
-                setCurrentSlideData(slide);
                 if (slide.suiObjectId) {
-                    setIsMinted(true);
-                    setSuiObjectId(slide.suiObjectId);
+                    // Use a separate effect to set the ID to avoid cascading renders
+                    setTimeout(() => setSuiObjectId(slide.suiObjectId), 0);
                 }
             }
         } else {
@@ -85,7 +78,7 @@ export const EditorLayout = () => {
                 try {
                     const data = JSON.parse(autoSaved);
                     if (data.slides) loadFromJSON(data);
-                } catch (e) {
+                } catch {
                     clearCanvas();
                 }
             } else {
@@ -150,7 +143,6 @@ export const EditorLayout = () => {
     }, [selectedId, selectedIds, canUndo, canRedo, undo, redo, deleteSelectedElements, clearSelection, copySelected, paste, nudgeSelected]);
 
     const handleMintSuccess = ({ txDigest }) => {
-        setIsMinted(true);
         setSuiObjectId(txDigest);
     };
 
@@ -173,7 +165,7 @@ export const EditorLayout = () => {
     return (
         <div className="h-screen bg-[#0a0a0f] text-white flex flex-col overflow-hidden">
             {/* Top Header */}
-            <TopHeader projectId={id} />
+            <TopHeader projectId={id} saveStatus={saveStatus} lastSavedTime={lastSavedTime} onBack={forceSave} />
 
             {/* Contextual Toolbar */}
             <div className="h-14 bg-[#0d0d0d] border-b border-white/5 flex items-center justify-center">
@@ -217,7 +209,7 @@ export const EditorLayout = () => {
             <MintSlideModal
                 isOpen={showMintModal}
                 onClose={() => setShowMintModal(false)}
-                slideData={currentSlideData}
+                slideData={{ title, slides }}
                 onMintSuccess={handleMintSuccess}
             />
 

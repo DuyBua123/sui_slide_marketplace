@@ -7,13 +7,13 @@ import {
  */
 export const LeftIconRail = ({ activeTab, onTabChange }) => {
     const tabs = [
-        { id: 'design', icon: LayoutTemplate, label: 'Design' },
+        // { id: 'design', icon: LayoutTemplate, label: 'Design' },
         { id: 'elements', icon: Shapes, label: 'Elements' },
         { id: 'text', icon: Type, label: 'Text' },
-        { id: 'brand', icon: Palette, label: 'Brand' },
+        // { id: 'brand', icon: Palette, label: 'Brand' },
         { id: 'uploads', icon: Upload, label: 'Uploads' },
-        { id: 'charts', icon: BarChart3, label: 'Charts' },
-        { id: 'draw', icon: PenTool, label: 'Draw' },
+        // { id: 'charts', icon: BarChart3, label: 'Charts' },
+        // { id: 'draw', icon: PenTool, label: 'Draw' },
     ];
 
     return (
