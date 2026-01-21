@@ -58,7 +58,40 @@ export const TopHeader = ({ projectId, onSave }) => {
                 </button>
 
                 <button
-                    onClick={() => projectId && navigate(`/slide/${projectId}`)}
+                    onClick={() => {
+                        if (!projectId) {
+                            // Auto-save with new ID before presenting
+                            const newId = crypto.randomUUID();
+                            const presentation = useSlideStore.getState().exportToJSON();
+
+                            // Save to localStorage
+                            const savedSlides = JSON.parse(localStorage.getItem('slides') || '[]');
+                            const existing = savedSlides.findIndex(s => s.id === newId);
+
+                            const slideData = {
+                                id: newId,
+                                data: presentation,
+                                title: presentation.title || 'Untitled Presentation',
+                                owner: 'local', // Mark as local slide
+                                createdAt: Date.now(),
+                                updatedAt: Date.now()
+                            };
+
+                            if (existing >= 0) {
+                                slideData.createdAt = savedSlides[existing].createdAt;
+                                savedSlides[existing] = slideData;
+                            } else {
+                                savedSlides.push(slideData);
+                            }
+
+                            localStorage.setItem('slides', JSON.stringify(savedSlides));
+
+                            // Navigate to presentation
+                            navigate(`/slide/${newId}`);
+                        } else {
+                            navigate(`/slide/${projectId}`);
+                        }
+                    }}
                     className="flex items-center gap-1.5 px-4 py-1.5 bg-purple-600 hover:bg-purple-500 rounded-lg text-xs font-semibold transition-colors"
                 >
                     <Play className="w-3.5 h-3.5" />
