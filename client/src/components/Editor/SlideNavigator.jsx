@@ -171,7 +171,7 @@ export const SlideNavigator = () => {
                     e.stopPropagation();
                     handleDuplicateSlide(e, index);
                   }}
-                  className="p-1.5 bg-white/90 dark:bg-white/20 hover:bg-white text-gray-900 dark:text-white rounded shadow-sm transition-colors"
+                  className="cursor-pointer p-1.5 bg-white/90 dark:bg-white/20 hover:bg-white text-gray-900 dark:text-white rounded shadow-sm transition-colors"
                   title="Duplicate"
                 >
                   <Copy className="w-3.5 h-3.5" />
@@ -182,7 +182,7 @@ export const SlideNavigator = () => {
                       e.stopPropagation();
                       handleDeleteSlide(e, index);
                     }}
-                    className="p-1.5 bg-red-500 dark:bg-red-500/50 hover:bg-red-600 text-white rounded shadow-sm transition-colors"
+                    className="cursor-pointer p-1.5 bg-red-500 dark:bg-red-500/50 hover:bg-red-600 text-white rounded shadow-sm transition-colors"
                     title="Delete"
                   >
                     <Trash2 className="w-3.5 h-3.5" />
@@ -209,7 +209,7 @@ export const SlideNavigator = () => {
           onClick={handleAddSlide}
           className="flex-shrink-0 w-32 h-[72px] rounded-lg border-2 border-dashed border-gray-200 dark:border-white/20 hover:border-purple-500/50 hover:bg-purple-50 dark:hover:bg-purple-500/10 transition-all flex flex-col items-center justify-center gap-1 group/add"
         >
-          <Plus className="w-6 h-6 text-gray-300 dark:text-gray-500 group-hover/add:text-purple-500 transition-colors" />
+          <Plus className="cursor-pointer w-6 h-6 text-gray-300 dark:text-gray-500 group-hover/add:text-purple-500 transition-colors" />
           <span className="text-[10px] font-bold text-gray-400 dark:text-gray-500 group-hover/add:text-purple-500 uppercase tracking-tighter">
             Add Slide
           </span>

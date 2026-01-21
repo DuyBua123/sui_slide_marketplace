@@ -421,7 +421,7 @@ export const Slide = () => {
           <button
             onClick={prevSlide}
             disabled={currentIndex === 0}
-            className="p-2 rounded-full hover:bg-white/10 disabled:opacity-30 disabled:cursor-not-allowed text-white transition-colors"
+            className="cursor-pointer p-2 rounded-full hover:bg-white/10 disabled:opacity-30 disabled:cursor-not-allowed text-white transition-colors"
           >
             <ChevronLeft className="w-5 h-5" />
           </button>
@@ -435,7 +435,7 @@ export const Slide = () => {
           <button
             onClick={nextSlide}
             disabled={currentIndex >= presentation.slides.length - 1}
-            className="p-2 rounded-full hover:bg-white/10 disabled:opacity-30 disabled:cursor-not-allowed text-white transition-colors"
+            className="cursor-pointer p-2 rounded-full hover:bg-white/10 disabled:opacity-30 disabled:cursor-not-allowed text-white transition-colors"
           >
             <ChevronRight className="w-5 h-5" />
           </button>
@@ -446,7 +446,7 @@ export const Slide = () => {
           {/* Autoplay */}
           <button
             onClick={() => setIsAutoplay(!isAutoplay)}
-            className={`p-2 rounded-full transition-colors ${isAutoplay ? "bg-blue-600 text-white" : "hover:bg-white/10 text-white"
+            className={`cursor-pointer p-2 rounded-full transition-colors ${isAutoplay ? "bg-blue-600 text-white" : "hover:bg-white/10 text-white"
               }`}
             title={isAutoplay ? "Stop Autoplay" : "Start Autoplay"}
           >
@@ -456,7 +456,7 @@ export const Slide = () => {
           {/* Settings */}
           <button
             onClick={() => setShowSettings(!showSettings)}
-            className="p-2 rounded-full hover:bg-white/10 text-white transition-colors"
+            className="cursor-pointer p-2 rounded-full hover:bg-white/10 text-white transition-colors"
             title="Settings"
           >
             <Settings className="w-5 h-5" />
@@ -465,7 +465,7 @@ export const Slide = () => {
           {/* Fullscreen */}
           <button
             onClick={toggleFullscreen}
-            className="p-2 rounded-full hover:bg-white/10 text-white transition-colors"
+            className="cursor-pointer p-2 rounded-full hover:bg-white/10 text-white transition-colors"
           >
             {isFullscreen ? <Minimize className="w-5 h-5" /> : <Maximize className="w-5 h-5" />}
           </button>
@@ -473,7 +473,7 @@ export const Slide = () => {
           {/* Exit */}
           <button
             onClick={() => navigate("/my-slide")}
-            className="p-2 rounded-full hover:bg-white/10 text-white transition-colors"
+            className="cursor-pointer p-2 rounded-full hover:bg-white/10 text-white transition-colors"
           >
             <X className="w-5 h-5" />
           </button>

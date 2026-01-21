@@ -108,7 +108,7 @@ export const Market = () => {
             <button
               key={f}
               onClick={() => setFilter(f)}
-              className={`px-4 py-3 rounded-xl font-medium capitalize transition-colors whitespace-nowrap ${
+              className={`cursor-pointer px-4 py-3 rounded-xl font-medium capitalize transition-colors whitespace-nowrap ${
                 filter === f
                   ? "bg-blue-600 text-white shadow-lg shadow-blue-500/30"
                   : "bg-gray-100 dark:bg-white/5 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-white/10"
@@ -228,14 +228,14 @@ export const Market = () => {
                     {accessStatus === "none" ? (
                       <button
                         onClick={() => handleBuyLicense(slide)}
-                        className="px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-lg text-sm font-medium transition-colors active:scale-95 shadow-lg shadow-blue-500/20"
+                        className="cursor-pointer px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-lg text-sm font-medium transition-colors active:scale-95 shadow-lg shadow-blue-500/20"
                       >
                         Buy License
                       </button>
                     ) : (
                       <button
                         onClick={() => navigate(`/slide/${slide.id}`)}
-                        className="px-4 py-2 bg-cyan-600 hover:bg-cyan-500 text-white rounded-lg text-sm font-medium transition-colors active:scale-95 shadow-lg shadow-cyan-500/20"
+                        className="cursor-pointer px-4 py-2 bg-cyan-600 hover:bg-cyan-500 text-white rounded-lg text-sm font-medium transition-colors active:scale-95 shadow-lg shadow-cyan-500/20"
                       >
                         View
                       </button>

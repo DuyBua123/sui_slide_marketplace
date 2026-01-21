@@ -95,7 +95,7 @@ export const MySlide = () => {
           </p>
           <button
             onClick={() => navigate("/editor")}
-            className="px-6 py-3 bg-blue-600 hover:bg-blue-500 text-white rounded-xl font-medium transition-colors shadow-lg shadow-blue-500/20"
+            className="cursor-pointer px-6 py-3 bg-blue-600 hover:bg-blue-500 text-white rounded-xl font-medium transition-colors shadow-lg shadow-blue-500/20"
           >
             Create First Slide
           </button>
