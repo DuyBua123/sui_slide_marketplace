@@ -18,7 +18,7 @@ export const Header = () => {
       )}
 
       <div className="w-full max-w-7xl bg-white/80 dark:bg-white/5 backdrop-blur-md border border-gray-200 dark:border-white/10 rounded-2xl px-4 md:px-6 py-3 flex items-center justify-between shadow-xl dark:shadow-2xl relative z-20 transition-colors duration-500">
-        <Link to={ROUTE.HOME} className="flex items-center gap-2 group">
+        <Link to={"/home"} className="flex items-center gap-2 group">
           <div className="w-8 h-8 bg-blue-500 rounded-lg flex items-center justify-center shadow-lg shadow-blue-500/20">
             <span className="text-white font-bold text-xl">S</span>
           </div>

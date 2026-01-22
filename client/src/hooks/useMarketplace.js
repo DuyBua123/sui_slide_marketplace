@@ -1,6 +1,7 @@
 import { useSignAndExecuteTransaction, useSuiClient } from '@mysten/dapp-kit';
 import { Transaction } from '@mysten/sui/transactions';
 import { useState, useEffect } from 'react';
+import { isSlideDeleted } from '../utils/deletedSlidesTracker';
 
 const PACKAGE_ID = import.meta.env.VITE_PACKAGE_ID || '0x0';
 
@@ -66,8 +67,8 @@ export const useMarketplaceSlides = () => {
                                         ) {
                                             const fields = obj.data.content.fields;
 
-                                            // Only include if is_listed is true
-                                            if (fields.is_listed) {
+                                            // Only include if is_listed is true and not deleted locally
+                                            if (fields.is_listed && !isSlideDeleted(slideId)) {
                                                 formattedSlides.push({
                                                     id: slideId,
                                                     title: fields.title || 'Untitled Slide',
@@ -128,6 +129,13 @@ export const useMarketplaceSlides = () => {
                                         ) {
                                             const fields = obj.data.content.fields;
                                             const slideFields = fields.slide || {};
+
+                                            // Skip if the underlying slide is deleted
+                                            const slideId = slideFields.id?.id || eventData.parsedJson?.slide_id;
+                                            if (slideId && isSlideDeleted(slideId)) {
+                                                console.log('Listing contains deleted slide:', slideId);
+                                                continue;
+                                            }
 
                                             formattedSlides.push({
                                                 id: listingId,
@@ -224,7 +232,8 @@ export const useMarketplaceSlides = () => {
                                     ) {
                                         const fields = obj.data.content.fields;
 
-                                        if (fields.is_listed) {
+                                        // Only include if is_listed is true and not deleted locally
+                                        if (fields.is_listed && !isSlideDeleted(slideId)) {
                                             formattedSlides.push({
                                                 id: slideId,
                                                 title: fields.title || 'Untitled Slide',
@@ -284,6 +293,13 @@ export const useMarketplaceSlides = () => {
                                     ) {
                                         const fields = obj.data.content.fields;
                                         const slideFields = fields.slide || {};
+
+                                        // Skip if the underlying slide is deleted
+                                        const slideId = slideFields.id?.id || eventData.parsedJson?.slide_id;
+                                        if (slideId && isSlideDeleted(slideId)) {
+                                            console.log('Listing contains deleted slide:', slideId);
+                                            continue;
+                                        }
 
                                         formattedSlides.push({
                                             id: listingId,
