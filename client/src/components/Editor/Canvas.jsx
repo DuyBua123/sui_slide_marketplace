@@ -436,7 +436,7 @@ export const Canvas = ({ readOnly = false }) => {
   return (
     <div
       ref={containerRef}
-      className="flex items-center justify-center bg-gray-950 rounded-xl p-4 overflow-hidden"
+      className="flex items-center justify-center bg-white rounded-xl p-4 overflow-hidden"
       style={{ minHeight: CANVAS_HEIGHT * scale + 40 }}
     >
       <AnimatePresence mode="wait">
@@ -445,11 +445,10 @@ export const Canvas = ({ readOnly = false }) => {
           initial={transitionVariant.initial}
           animate={transitionVariant.animate}
           exit={transitionVariant.exit}
-          className="shadow-2xl rounded-lg overflow-hidden"
+          className="rounded-lg overflow-hidden"
           style={{
             width: CANVAS_WIDTH * scale,
             height: CANVAS_HEIGHT * scale,
-            boxShadow: "0 0 60px rgba(59, 130, 246, 0.15)",
           }}
         >
           <Stage

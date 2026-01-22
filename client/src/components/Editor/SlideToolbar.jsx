@@ -2,14 +2,14 @@ import { Palette, Film, Image } from 'lucide-react';
 import { useSlideStore } from '../../store/useSlideStore';
 
 const backgroundColors = [
+  '#ffffff',
+  '#f8fafc',
+  '#e2e8f0',
   '#1a1a2e',
   '#0f172a',
   '#18181b',
   '#1e1b4b',
   '#14532d',
-  '#7f1d1d',
-  '#78350f',
-  '#ffffff',
 ];
 
 const transitions = [
@@ -59,8 +59,8 @@ export const SlideToolbar = () => {
               key={color}
               onClick={() => setSlideBackground(color)}
               className={`cursor-pointer w-6 h-6 rounded border-2 transition-all ${currentSlide?.background === color
-                  ? 'border-blue-500 scale-110 shadow-sm'
-                  : 'border-gray-100 dark:border-transparent hover:border-blue-300 dark:hover:border-white/30'
+                ? 'border-blue-500 scale-110 shadow-sm'
+                : 'border-gray-100 dark:border-transparent hover:border-blue-300 dark:hover:border-white/30'
                 }`}
               style={{ background: color }}
             />
