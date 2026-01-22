@@ -1,0 +1,138 @@
+import CryptoJS from 'crypto-js';
+import { pinata } from './pinata';
+
+/**
+ * SealAssetService - Encryption service for premium assets
+ * Encrypts assets before uploading to Pinata IPFS
+ */
+class SealAssetService {
+    /**
+     * Encrypt and upload asset to Pinata
+     * @param {File|Blob} file - Asset file to encrypt
+     * @param {Object} metadata - Asset metadata
+     * @returns {Promise<{cid: string, encryptionKey: string, metadata: Object}>}
+     */
+    async sealAndUpload(file, metadata = {}) {
+        try {
+            // 1. Generate random encryption key (256-bit)
+            const encryptionKey = CryptoJS.lib.WordArray.random(32).toString();
+
+            // 2. Read file as base64
+            const fileData = await this.readFileAsBase64(file);
+
+            // 3. Encrypt data with AES-256
+            const encrypted = CryptoJS.AES.encrypt(fileData, encryptionKey).toString();
+
+            // 4. Create encrypted blob
+            const encryptedBlob = new Blob([encrypted], {
+                type: 'application/octet-stream'
+            });
+
+            // 5. Upload encrypted blob to Pinata
+            const formData = new FormData();
+            formData.append('file', encryptedBlob, 'encrypted_asset.enc');
+            formData.append('pinataMetadata', JSON.stringify({
+                name: metadata.name || 'Premium Asset',
+                keyvalues: {
+                    encrypted: 'true',
+                    assetType: metadata.assetType || 'premium',
+                    ...metadata,
+                },
+            }));
+
+            const response = await fetch('https://api.pinata.cloud/pinning/pinFileToIPFS', {
+                method: 'POST',
+                headers: {
+                    Authorization: `Bearer ${import.meta.env.VITE_PINATA_JWT}`,
+                },
+                body: formData,
+            });
+
+            const data = await response.json();
+
+            // 6. Return CID + encryption key
+            return {
+                cid: data.IpfsHash,
+                encryptionKey, // IMPORTANT: Store this securely!
+                metadata: {
+                    ...metadata,
+                    encrypted: true,
+                    uploadedAt: Date.now(),
+                },
+            };
+        } catch (error) {
+            console.error('Seal and upload failed:', error);
+            throw new Error('Failed to encrypt and upload asset');
+        }
+    }
+
+    /**
+     * Decrypt and retrieve asset from Pinata
+     * @param {string} cid - IPFS CID
+     * @param {string} encryptionKey - Decryption key
+     * @returns {Promise<string>} - Decrypted data URL
+     */
+    async unseal(cid, encryptionKey) {
+        try {
+            // 1. Fetch encrypted data from IPFS
+            const response = await fetch(`https://gateway.pinata.cloud/ipfs/${cid}`);
+            const encryptedData = await response.text();
+
+            // 2. Decrypt with AES-256
+            const decrypted = CryptoJS.AES.decrypt(encryptedData, encryptionKey);
+            const originalData = decrypted.toString(CryptoJS.enc.Utf8);
+
+            if (!originalData) {
+                throw new Error('Decryption failed - invalid key');
+            }
+
+            // 3. Return decrypted data (base64 data URL)
+            return originalData;
+        } catch (error) {
+            console.error('Unseal failed:', error);
+            throw new Error('Failed to decrypt asset');
+        }
+    }
+
+    /**
+     * Read file as base64 data URL
+     * @private
+     */
+    readFileAsBase64(file) {
+        return new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onload = () => resolve(reader.result);
+            reader.onerror = reject;
+            reader.readAsDataURL(file);
+        });
+    }
+
+    /**
+     * Convert base64 to Blob
+     * @private
+     */
+    base64ToBlob(base64Data) {
+        const [header, data] = base64Data.split(',');
+        const mime = header.match(/:(.*?);/)?.[1] || 'application/octet-stream';
+        const binary = atob(data);
+        const array = new Uint8Array(binary.length);
+
+        for (let i = 0; i < binary.length; i++) {
+            array[i] = binary.charCodeAt(i);
+        }
+
+        return new Blob([array], { type: mime });
+    }
+
+    /**
+     * Verify encryption key validity
+     * @param {string} key - Encryption key to verify
+     * @returns {boolean}
+     */
+    isValidKey(key) {
+        return typeof key === 'string' && key.length === 64; // 32 bytes = 64 hex chars
+    }
+}
+
+// Export singleton instance
+export const sealAssetService = new SealAssetService();

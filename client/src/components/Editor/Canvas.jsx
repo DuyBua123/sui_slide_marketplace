@@ -8,6 +8,9 @@ import {
   Text,
   Transformer,
   Image as KonvaImage,
+  Star,
+  RegularPolygon,
+  Path,
 } from "react-konva";
 import { motion, AnimatePresence } from "framer-motion";
 import { useSlideStore } from "../../store/useSlideStore";
@@ -237,10 +240,23 @@ export const Canvas = ({ readOnly = false }) => {
       updates.height = Math.max(20, node.height() * scaleY);
       node.scaleX(1);
       node.scaleY(1);
-    } else if (element.type === "circle") {
-      updates.radius = Math.max(10, element.radius * Math.max(scaleX, scaleY));
+    } else if (element.type === "circle" || element.type === "regularPolygon") {
+      // Uniform scaling for regular shapes
+      const maxScale = Math.max(scaleX, scaleY);
+      updates.radius = Math.max(10, element.radius * maxScale);
       node.scaleX(1);
       node.scaleY(1);
+    } else if (element.type === "star") {
+      const maxScale = Math.max(scaleX, scaleY);
+      updates.innerRadius = Math.max(5, element.innerRadius * maxScale);
+      updates.outerRadius = Math.max(10, element.outerRadius * maxScale);
+      node.scaleX(1);
+      node.scaleY(1);
+    } else if (element.type === "path") {
+      // For paths, we persist scale instead of changing path data
+      updates.scaleX = scaleX;
+      updates.scaleY = scaleY;
+      // We don't reset scale to 1 here because we save the scale itself
     }
 
     updateElement(id, updates);
@@ -402,6 +418,41 @@ export const Canvas = ({ readOnly = false }) => {
             align={element.align || "left"}
             onDblClick={(e) => handleTextDblClick(e, element)}
             onDblTap={(e) => handleTextDblClick(e, element)}
+          />
+        );
+      case "star":
+        return (
+          <Star
+            {...commonProps}
+            numPoints={element.numPoints}
+            innerRadius={element.innerRadius}
+            outerRadius={element.outerRadius}
+            fill={element.fill}
+            stroke={element.stroke}
+            strokeWidth={element.strokeWidth}
+          />
+        );
+      case "regularPolygon":
+        return (
+          <RegularPolygon
+            {...commonProps}
+            sides={element.sides}
+            radius={element.radius}
+            fill={element.fill}
+            stroke={element.stroke}
+            strokeWidth={element.strokeWidth}
+          />
+        );
+      case "path":
+        return (
+          <Path
+            {...commonProps}
+            data={element.data}
+            fill={element.fill}
+            stroke={element.stroke}
+            strokeWidth={element.strokeWidth}
+            scaleX={element.scaleX || 1}
+            scaleY={element.scaleY || 1}
           />
         );
       case "image":

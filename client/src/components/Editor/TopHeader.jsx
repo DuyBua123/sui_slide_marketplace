@@ -1,27 +1,31 @@
 import { useState } from "react";
-import { ArrowLeft, FileText, Expand, Share2, Play, Users, Check, AlertCircle, Save, Clock } from "lucide-react";
+import { ArrowLeft, FileText, Expand, Share2, Play, Users, Check, AlertCircle, Save, Clock, Crown } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useSlideStore } from "../../store/useSlideStore";
 import { useAutoSave } from "../../hooks/useAutoSave";
 import { ShareModal } from "./ShareModal";
+import { PremiumModal } from "../PremiumModal";
+import { usePremiumStatus } from "../../hooks/usePremiumStatus";
 import ThemeToggle from "../ThemeToggle";
 
 /**
  * Top Header - Canva style with File, Resize, Share, Present, Save to Blockchain
  */
-export const TopHeader = ({ 
-  projectId, 
+export const TopHeader = ({
+  projectId,
   onSave,
   onSaveToBlockchain,
   isMinted,
   blockchainSaveStatus,
   blockchainSaveError,
   isUpdating,
-  onMintClick 
+  onMintClick
 }) => {
   const navigate = useNavigate();
   const { title, setTitle } = useSlideStore();
   const [showShareModal, setShowShareModal] = useState(false);
+  const [showPremiumModal, setShowPremiumModal] = useState(false);
+  const { isPremium, refetch: refetchPremium } = usePremiumStatus();
   const { saveStatus, lastSavedAt } = useAutoSave(projectId);
 
   const handleBackClick = () => {
@@ -34,7 +38,7 @@ export const TopHeader = ({
           if (projectData.slides && projectData.slides.length > 0) {
             const newId = crypto.randomUUID();
             const savedSlides = JSON.parse(localStorage.getItem('slides') || '[]');
-            
+
             const slideEntry = {
               id: newId,
               title: title || 'Untitled Presentation',
@@ -165,6 +169,22 @@ export const TopHeader = ({
 
       {/* Right: Tools + Mint + Save to Blockchain + Share + Present */}
       <div className="flex items-center gap-2">
+        {/* Go Pro Button or Premium Badge */}
+        {isPremium ? (
+          <div className="flex items-center gap-1.5 px-3 py-1.5 bg-gradient-to-r from-yellow-400 to-orange-500 text-white rounded-lg text-[11px] font-black uppercase tracking-tight shadow-lg shadow-yellow-500/20">
+            <Crown className="w-3.5 h-3.5" />
+            Premium
+          </div>
+        ) : (
+          <button
+            onClick={() => setShowPremiumModal(true)}
+            className="cursor-pointer flex items-center gap-1.5 px-3 py-1.5 bg-gradient-to-r from-yellow-400 to-orange-500 hover:from-yellow-500 hover:to-orange-600 text-white rounded-lg text-[11px] font-black uppercase tracking-tight shadow-lg shadow-yellow-500/20 transition-all active:scale-95"
+          >
+            <Crown className="w-3.5 h-3.5" />
+            Go Pro
+          </button>
+        )}
+
         <div className="flex items-center mr-2 border-r border-gray-200 dark:border-white/10 pr-2 gap-1">
           <ThemeToggle />
         </div>
@@ -233,6 +253,13 @@ export const TopHeader = ({
 
       {/* Share Modal */}
       <ShareModal isOpen={showShareModal} onClose={() => setShowShareModal(false)} />
+
+      {/* Premium Modal */}
+      <PremiumModal
+        isOpen={showPremiumModal}
+        onClose={() => setShowPremiumModal(false)}
+        onSuccess={refetchPremium}
+      />
     </div>
   );
 };
