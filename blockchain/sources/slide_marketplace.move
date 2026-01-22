@@ -302,17 +302,33 @@ module 0x0::slide_marketplace {
     }
 
     /// Delete a slide (only owner can delete)
-    /// Takes the slide object ID and verifies ownership via event validation
+    /// Actually deletes the SlideObject from the blockchain
     public entry fun delete_slide(
-        slide_id: ID,
+        slide: SlideObject,
         ctx: &TxContext
     ) {
-        // Emit deletion event - verifies sender is attempting deletion
+        // Verify ownership
+        assert!(slide.creator == ctx.sender(), ENotOwner);
+        
+        let SlideObject { 
+            id, 
+            creator, 
+            title, 
+            content_url: _, 
+            thumbnail_url: _, 
+            price: _, 
+            is_listed: _ 
+        } = slide;
+
+        // Emit deletion event before destroying
         event::emit(SlideDeleted {
-            slide_id,
-            creator: ctx.sender(),
-            title: std::string::utf8(b""),
+            slide_id: object::uid_to_inner(&id),
+            creator,
+            title,
         });
+        
+        // Delete the object
+        object::delete(id);
     }
 
     public struct SlideDeleted has copy, drop {
