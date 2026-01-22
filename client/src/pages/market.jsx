@@ -1,26 +1,29 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useCurrentAccount } from "@mysten/dapp-kit";
+import { v4 as uuid } from "uuid";
+import { useMarketplaceSlides, useBuySlide } from "../hooks/useMarketplace";
 
 export const Market = () => {
   const navigate = useNavigate();
   const account = useCurrentAccount();
-  const [slides, setSlides] = useState([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const { slides, isLoading, error, refetch } = useMarketplaceSlides();
+  const { buySlide, isLoading: isBuying } = useBuySlide();
   const [filter, setFilter] = useState("all");
   const [searchQuery, setSearchQuery] = useState("");
 
-  // Load slides from localStorage (mock for blockchain query)
+  // Listen for marketplace refresh trigger from other pages (e.g., when slides are deleted)
   useEffect(() => {
-    setIsLoading(true);
-    // Simulate API delay
-    setTimeout(() => {
-      const savedSlides = JSON.parse(localStorage.getItem("slides") || "[]");
-      // In a real app, this would fetch from blockchain events/indexer
-      setSlides(savedSlides);
-      setIsLoading(false);
-    }, 500);
-  }, []);
+    const handleStorageChange = (e) => {
+      if (e.key === "marketplace_refresh") {
+        console.log('Marketplace refresh triggered');
+        refetch();
+      }
+    };
+
+    window.addEventListener("storage", handleStorageChange);
+    return () => window.removeEventListener("storage", handleStorageChange);
+  }, [refetch]);
 
   // Filter slides
   const filteredSlides = slides.filter((slide) => {
@@ -28,9 +31,10 @@ export const Market = () => {
     return matchesSearch;
   });
 
-  // Mock price (in real app, comes from blockchain)
+  // Convert MIST to SUI (1 SUI = 1,000,000,000 MIST)
   const getPrice = (slide) => {
-    return (Math.abs(slide.id.charCodeAt(6) || 5) % 10) + 1;
+    const priceInMist = slide.price || 0;
+    return (priceInMist / 1000000000).toFixed(4);
   };
 
   // Check if user owns slide or license
@@ -44,25 +48,41 @@ export const Market = () => {
     return "none";
   };
 
-  // Buy license (mock)
+  // Buy license (for SlideObject) or buy slide (for Listing)
   const handleBuyLicense = async (slide) => {
     if (!account) {
       navigate("/sign-in");
       return;
     }
 
-    const licenses = JSON.parse(localStorage.getItem("licenses") || "[]");
-    licenses.push({
-      id: `license-${Date.now()}`,
-      slideId: slide.id,
-      buyer: account.address,
-      purchasedAt: new Date().toISOString(),
-    });
-    localStorage.setItem("licenses", JSON.stringify(licenses));
+    try {
+      if (slide.type === 'listing') {
+        // Buy full ownership from Listing
+        await buySlide({
+          listingId: slide.id,
+          price: slide.price,
+        });
+      } else {
+        // Buy license for SlideObject
+        // This would require buy_license transaction
+        // For now, store in localStorage for development
+        const licenses = JSON.parse(localStorage.getItem("licenses") || "[]");
+        licenses.push({
+          id: uuid(),
+          slideId: slide.id,
+          buyer: account.address,
+          purchasedAt: new Date().toISOString(),
+        });
+        localStorage.setItem("licenses", JSON.stringify(licenses));
+      }
 
-    // Refresh
-    setSlides([...slides]);
-    alert(`License purchased for "${slide.title}"!`);
+      // Refresh slides list
+      await refetch();
+      alert(`License purchased for "${slide.title}"!`);
+    } catch (err) {
+      console.error('Error buying license:', err);
+      alert(`Failed to purchase license: ${err.message}`);
+    }
   };
 
   return (
@@ -127,8 +147,43 @@ export const Market = () => {
         </div>
       )}
 
+      {/* Error state */}
+      {error && !isLoading && (
+        <div className="mb-6 p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800/30 rounded-xl">
+          <div className="flex items-start gap-3">
+            <svg
+              className="w-5 h-5 text-red-600 dark:text-red-400 mt-0.5 shrink-0"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M12 8v4m0 4v.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+              />
+            </svg>
+            <div>
+              <h3 className="font-semibold text-red-900 dark:text-red-100">
+                Failed to load marketplace
+              </h3>
+              <p className="text-red-800 dark:text-red-300 text-sm mt-1">
+                {error}
+              </p>
+              <button
+                onClick={refetch}
+                className="mt-3 px-4 py-2 bg-red-600 hover:bg-red-700 text-white text-sm rounded-lg font-medium transition-colors"
+              >
+                Try again
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Empty state */}
-      {!isLoading && filteredSlides.length === 0 && (
+      {!isLoading && !error && filteredSlides.length === 0 && (
         <div className="text-center py-20">
           <div className="w-24 h-24 bg-gray-100 dark:bg-gray-800 rounded-3xl flex items-center justify-center mx-auto mb-6">
             <svg
@@ -153,7 +208,7 @@ export const Market = () => {
       )}
 
       {/* Grid */}
-      {!isLoading && filteredSlides.length > 0 && (
+      {!isLoading && !error && filteredSlides.length > 0 && (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
           {filteredSlides.map((slide) => {
             const price = getPrice(slide);
@@ -228,9 +283,10 @@ export const Market = () => {
                     {accessStatus === "none" ? (
                       <button
                         onClick={() => handleBuyLicense(slide)}
-                        className="cursor-pointer px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-lg text-sm font-medium transition-colors active:scale-95 shadow-lg shadow-blue-500/20"
+                        disabled={isBuying}
+                        className="cursor-pointer px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-lg text-sm font-medium transition-colors active:scale-95 shadow-lg shadow-blue-500/20 disabled:opacity-50 disabled:cursor-not-allowed"
                       >
-                        Buy License
+                        {isBuying ? "Processing..." : "Buy License"}
                       </button>
                     ) : (
                       <button
