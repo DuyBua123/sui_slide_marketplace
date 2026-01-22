@@ -15,7 +15,7 @@
     "@mysten/sui": "^1.45.2",
     "@tailwindcss/vite": "^4.1.18",
     "@tanstack/react-query": "^5.90.18",
-    "aos": "^2.3.4",
+    "aos": "^3.0.0-beta.6",
     "chart.js": "^4.5.1",
     "crypto-js": "^4.2.0",
     "file-saver": "^2.0.5",

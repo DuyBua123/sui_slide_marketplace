@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
-import { useNavigate, useParams } from "react-router-dom";
+import { useNavigate, useParams, useLocation } from "react-router-dom";
 import { useCurrentAccount } from "@mysten/dapp-kit";
 import { LeftIconRail } from "./LeftIconRail";
 import { TopHeader } from "./TopHeader";
@@ -21,6 +21,7 @@ import { useSlideStore, useTemporalStore } from "../../store/useSlideStore";
 import { useAutoSave } from "../../hooks/useAutoSave";
 import { useUpdateSlide } from "../../hooks/useUpdateSlide";
 import { saveSlideToBlockchain } from "../../services/blockchain/blockchainSave";
+import { fetchFromIPFS } from "../../services/exports/exportToIPFS";
 
 /**
  * EditorLayout - Canva-style grid layout
@@ -29,6 +30,7 @@ import { saveSlideToBlockchain } from "../../services/blockchain/blockchainSave"
 export const EditorLayout = () => {
   const navigate = useNavigate();
   const { id } = useParams();
+  const location = useLocation();
   const account = useCurrentAccount();
 
   const [activeTab, setActiveTab] = useState("elements");
@@ -39,6 +41,7 @@ export const EditorLayout = () => {
   const [suiObjectId, setSuiObjectId] = useState(null);
   const [blockchainSaveStatus, setBlockchainSaveStatus] = useState(null); // null | 'saving' | 'success' | 'error'
   const [blockchainSaveError, setBlockchainSaveError] = useState(null);
+  const [isLoading, setIsLoading] = useState(false);
 
   const {
     title,
@@ -73,32 +76,64 @@ export const EditorLayout = () => {
 
   // Load presentation
   useEffect(() => {
-    if (id) {
-      const savedSlides = JSON.parse(localStorage.getItem("slides") || "[]");
-      const slide = savedSlides.find((s) => s.id === id);
-      if (slide?.data) {
-        loadFromJSON(slide.data);
-        setCurrentSlideData(slide);
-        if (slide.suiObjectId) {
-          setIsMinted(true);
-          setSuiObjectId(slide.suiObjectId);
-        }
-      }
-    } else {
-      const autoSaved = localStorage.getItem("current_project");
-      if (autoSaved) {
+    const loadInitialData = async () => {
+      const source = location.state?.source;
+      const slideMeta = location.state?.slide;
+
+      console.log('[EDITOR] Loading presentation, id:', id, 'source:', source);
+
+      if (id) {
+        setIsLoading(true);
         try {
-          const data = JSON.parse(autoSaved);
-          if (data.slides) loadFromJSON(data);
-        } catch (e) {
-          clearCanvas();
+          if (source === 'blockchain' && slideMeta?.contentUrl) {
+            console.log('[EDITOR] Fetching minted content from IPFS:', slideMeta.contentUrl);
+            const data = await fetchFromIPFS(slideMeta.contentUrl);
+            if (data) {
+              console.log('[EDITOR] Successfully fetched minted content');
+              loadFromJSON(data);
+              setCurrentSlideData({ ...slideMeta, data });
+              setIsMinted(true);
+              setSuiObjectId(slideMeta.suiObjectId || slideMeta.id);
+              setIsLoading(false);
+              return;
+            }
+          }
+
+          // Fallback to localStorage
+          const savedSlides = JSON.parse(localStorage.getItem("slides") || "[]");
+          const slide = savedSlides.find((s) => s.id === id);
+          if (slide?.data) {
+            console.log('[EDITOR] Loading from local storage');
+            loadFromJSON(slide.data);
+            setCurrentSlideData(slide);
+            if (slide.suiObjectId) {
+              setIsMinted(true);
+              setSuiObjectId(slide.suiObjectId);
+            }
+          }
+        } catch (error) {
+          console.error('[EDITOR] Error loading slide data:', error);
+        } finally {
+          setIsLoading(false);
         }
       } else {
-        clearCanvas();
+        const autoSaved = localStorage.getItem("current_project");
+        if (autoSaved) {
+          try {
+            const data = JSON.parse(autoSaved);
+            if (data.slides) loadFromJSON(data);
+          } catch (e) {
+            clearCanvas();
+          }
+        } else {
+          clearCanvas();
+        }
+        setTitle("Untitled Presentation");
       }
-      setTitle("Untitled Presentation");
-    }
-  }, [id, loadFromJSON, clearCanvas, setTitle]);
+    };
+
+    loadInitialData();
+  }, [id, loadFromJSON, clearCanvas, setTitle, location.state]);
 
   // Keyboard shortcuts
   useEffect(() => {
@@ -230,6 +265,17 @@ export const EditorLayout = () => {
     return <SlideToolbar />;
   };
 
+  if (isLoading) {
+    return (
+      <div className="h-screen bg-[#f8f9fa] dark:bg-[#0a0a0f] flex flex-col items-center justify-center">
+        <div className="flex flex-col items-center gap-4">
+          <div className="w-12 h-12 border-4 border-blue-500 border-t-transparent rounded-full animate-spin" />
+          <p className="text-gray-600 dark:text-gray-400 font-medium">Loading slide from blockchain...</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="h-screen bg-[#f8f9fa] dark:bg-[#0a0a0f] text-gray-900 dark:text-white flex flex-col overflow-hidden transition-colors duration-300">
       {/* Top Header */}
@@ -295,7 +341,11 @@ export const EditorLayout = () => {
       <MintSlideModal
         isOpen={showMintModal}
         onClose={() => setShowMintModal(false)}
-        slideData={currentSlideData}
+        slideData={{
+          title: title,
+          data: exportToJSON(),
+          thumbnail: currentSlideData?.thumbnail
+        }}
         onMintSuccess={handleMintSuccess}
       />
 

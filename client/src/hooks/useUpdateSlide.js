@@ -21,10 +21,11 @@ export const useUpdateSlide = () => {
      * Update an existing slide on the blockchain
      * @param {Object} params
      * @param {Object} params.slideObject - The slide object to update
+     * @param {string} params.title - New title for the slide
      * @param {string} params.contentUrl - New IPFS URL to slide JSON data
      * @param {string} params.thumbnailUrl - New URL to thumbnail image
      */
-    const updateSlide = async ({ slideObject, contentUrl, thumbnailUrl }) => {
+    const updateSlide = async ({ slideObject, title, contentUrl, thumbnailUrl }) => {
         setIsLoading(true);
         setError(null);
         setTxDigest(null);
@@ -36,6 +37,7 @@ export const useUpdateSlide = () => {
                 target: `${PACKAGE_ID}::slide_marketplace::update_slide`,
                 arguments: [
                     tx.object(slideObject.id || slideObject),
+                    tx.pure.string(title),
                     tx.pure.string(contentUrl),
                     tx.pure.string(thumbnailUrl),
                 ],

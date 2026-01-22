@@ -74,7 +74,11 @@ export const Market = () => {
     // Lọc theo giá bán (Slider)
     const matchesPrice = priceInSui <= maxPrice;
 
-    return matchesSearch && matchesFilter && matchesPrice;
+    // Chỉ hiện slide chưa sở hữu/mua (accessStatus === "none")
+    const accessStatus = getAccessStatus(slide);
+    const isNotOwned = accessStatus === "none";
+
+    return matchesSearch && matchesFilter && matchesPrice && isNotOwned;
   });
 
   // Buy license (for SlideObject) or buy slide (for Listing)

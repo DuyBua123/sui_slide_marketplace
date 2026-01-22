@@ -1,9 +1,10 @@
 ﻿import { useState, useEffect, useRef, useCallback } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { Stage, Layer, Rect, Circle, Line, Text, Image as KonvaImage } from 'react-konva';
 import { motion, AnimatePresence } from 'framer-motion';
 import Konva from 'konva';
 import { animationPresets } from '../components/Editor/animationPresets';
+import { fetchFromIPFS } from '../services/exports/exportToIPFS';
 import {
   ChevronLeft,
   ChevronRight,
@@ -76,6 +77,7 @@ const URLImage = ({ element }) => {
 export const Slide = () => {
   const { id } = useParams();
   const navigate = useNavigate();
+  const location = useLocation();
   const containerRef = useRef(null);
   const stageRef = useRef(null);
   const [presentation, setPresentation] = useState(null);
@@ -88,24 +90,53 @@ export const Slide = () => {
   const [showSettings, setShowSettings] = useState(false);
   const [clickSequence, setClickSequence] = useState(0);
   const [animatedElements, setAnimatedElements] = useState(new Set());
+  const [isLoading, setIsLoading] = useState(true);
   const controlsTimeout = useRef(null);
 
   // Load presentation
   useEffect(() => {
-    const slides = JSON.parse(localStorage.getItem("slides") || "[]");
-    console.log('Loading presentation, id:', id);
-    console.log('Available slides:', slides.map(s => ({ id: s.id, title: s.title || s.data?.title })));
+    const loadPresentation = async () => {
+      setIsLoading(true);
+      const source = location.state?.source;
+      const slideMeta = location.state?.slide;
 
-    const found = slides.find((s) => s.id === id);
+      console.log('Loading presentation, id:', id, 'source:', source);
 
-    if (found?.data) {
-      console.log('Found presentation:', found.data.title);
-      setPresentation(found.data);
-    } else {
-      console.warn('Presentation not found for id:', id);
-      navigate("/my-slide");
-    }
-  }, [id, navigate]);
+      try {
+        if (source === 'blockchain' && slideMeta?.contentUrl) {
+          console.log('Fetching from IPFS:', slideMeta.contentUrl);
+          const data = await fetchFromIPFS(slideMeta.contentUrl);
+          if (data) {
+            console.log('Successfully fetched from IPFS:', data.title);
+            setPresentation(data);
+            setIsLoading(false);
+            return;
+          }
+        }
+
+        // Fallback to localStorage
+        const slides = JSON.parse(localStorage.getItem("slides") || "[]");
+        console.log('Available local slides:', slides.map(s => ({ id: s.id, title: s.title || s.data?.title })));
+
+        const found = slides.find((s) => s.id === id);
+
+        if (found?.data) {
+          console.log('Found local presentation:', found.data.title);
+          setPresentation(found.data);
+        } else {
+          console.warn('Presentation not found for id:', id);
+          navigate("/my-slide");
+        }
+      } catch (error) {
+        console.error('Error loading presentation:', error);
+        // Maybe show alert or navigate back
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    loadPresentation();
+  }, [id, navigate, location.state]);
 
   // Responsive scaling
   useEffect(() => {
@@ -360,10 +391,15 @@ export const Slide = () => {
     }
   };
 
-  if (!presentation) {
+  if (isLoading || !presentation) {
     return (
       <div className="min-h-screen bg-black/95 flex items-center justify-center">
-        <div className="text-white text-xl">Loading presentation...</div>
+        <div className="flex flex-col items-center gap-4">
+          <div className="w-12 h-12 border-4 border-blue-500 border-t-transparent rounded-full animate-spin" />
+          <div className="text-white text-xl">
+            {isLoading ? 'Loading content from blockchain...' : 'Preparing presentation...'}
+          </div>
+        </div>
       </div>
     );
   }

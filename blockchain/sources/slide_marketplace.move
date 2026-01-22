@@ -267,12 +267,14 @@ module 0x0::slide_marketplace {
     /// Update slide content (only owner)
     public entry fun update_slide(
         slide: &mut SlideObject,
+        new_title: String,
         new_content_url: String,
         new_thumbnail_url: String,
         ctx: &TxContext
     ) {
         assert!(slide.creator == ctx.sender(), ENotOwner);
         
+        slide.title = new_title;
         slide.content_url = new_content_url;
         slide.thumbnail_url = new_thumbnail_url;
 

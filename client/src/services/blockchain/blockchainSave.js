@@ -71,6 +71,7 @@ export const saveSlideToBlockchain = async ({
         // Call the update function
         const result = await onUpdate({
             slideObject: { id: suiObjectId },
+            title,
             contentUrl,
             thumbnailUrl,
         });
