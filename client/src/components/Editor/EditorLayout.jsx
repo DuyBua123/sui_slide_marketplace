@@ -341,7 +341,11 @@ export const EditorLayout = () => {
       <MintSlideModal
         isOpen={showMintModal}
         onClose={() => setShowMintModal(false)}
-        slideData={currentSlideData}
+        slideData={{
+          title: title,
+          data: exportToJSON(),
+          thumbnail: currentSlideData?.thumbnail
+        }}
         onMintSuccess={handleMintSuccess}
       />
 
