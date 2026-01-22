@@ -62,6 +62,10 @@ export const Market = () => {
           listingId: slide.id,
           price: slide.price,
         });
+        
+        // Refresh slides list to remove sold listing
+        await refetch();
+        alert(`Successfully purchased full ownership of "${slide.title}"!`);
       } else {
         // Buy license for SlideObject
         // This would require buy_license transaction
@@ -74,14 +78,14 @@ export const Market = () => {
           purchasedAt: new Date().toISOString(),
         });
         localStorage.setItem("licenses", JSON.stringify(licenses));
+        
+        // Refresh slides list
+        await refetch();
+        alert(`License purchased for "${slide.title}"!`);
       }
-
-      // Refresh slides list
-      await refetch();
-      alert(`License purchased for "${slide.title}"!`);
     } catch (err) {
       console.error('Error buying license:', err);
-      alert(`Failed to purchase license: ${err.message}`);
+      alert(`Failed to purchase: ${err.message}`);
     }
   };
 

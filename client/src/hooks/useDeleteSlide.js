@@ -23,11 +23,11 @@ export const useDeleteSlide = () => {
             console.log('[DELETE] Package ID:', packageId);
             console.log('[DELETE] Slide Object ID:', slideObjectId);
 
-            // Pass only the ID as a primitive type
+            // Pass the SlideObject as an object argument (not pure)
             tx.moveCall({
                 target: `${packageId}::slide_marketplace::delete_slide`,
                 arguments: [
-                    tx.pure.id(slideObjectId),  // Just the ID
+                    tx.object(slideObjectId),  // Pass as object reference
                 ],
             });
 
