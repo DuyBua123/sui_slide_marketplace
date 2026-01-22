@@ -69,6 +69,8 @@ export const MySlide = () => {
             deleteLocalSlideRecord(slide.suiObjectId);
             // Remove from local state
             setSlides(slides.filter((s) => s.id !== slide.id));
+            // Trigger marketplace refresh
+            localStorage.setItem("marketplace_refresh", Date.now().toString());
           },
           onError: (error) => {
             console.error('[MYSLIDES] Failed to delete blockchain slide:', error);
@@ -82,6 +84,8 @@ export const MySlide = () => {
         const updated = savedSlides.filter((s) => s.id !== slide.id);
         localStorage.setItem("slides", JSON.stringify(updated));
         setSlides(slides.filter((s) => s.id !== slide.id));
+        // Trigger marketplace refresh
+        localStorage.setItem("marketplace_refresh", Date.now().toString());
       }
     }
   };
