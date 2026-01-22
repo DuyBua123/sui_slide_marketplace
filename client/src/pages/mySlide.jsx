@@ -225,7 +225,7 @@ export const MySlide = () => {
                 {/* Hover overlay */}
                 <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-3 backdrop-blur-[2px]">
                   <button
-                    onClick={() => navigate(`/editor/${slide.id}`)}
+                    onClick={() => navigate(`/editor/${slide.id}`, { state: { source: useBlockchain ? 'blockchain' : 'local', slide } })}
                     className="cursor-pointer p-3 bg-blue-600 hover:bg-blue-500 text-white rounded-xl transition-colors shadow-lg"
                     title="Edit"
                   >
@@ -244,7 +244,7 @@ export const MySlide = () => {
                     </svg>
                   </button>
                   <button
-                    onClick={() => navigate(`/slide/${slide.id}`)}
+                    onClick={() => navigate(`/slide/${slide.id}`, { state: { source: useBlockchain ? 'blockchain' : 'local', slide } })}
                     className="cursor-pointer p-3 bg-cyan-600 hover:bg-cyan-500 text-white rounded-xl transition-colors shadow-lg"
                     title="Present"
                   >
