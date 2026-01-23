@@ -1,6 +1,8 @@
 import { useEffect, useState, useCallback } from 'react';
 import { useCurrentAccount, useSuiClient } from '@mysten/dapp-kit';
 import { isSlideDeleted } from '../utils/deletedSlidesTracker';
+ 
+const PACKAGE_ID = import.meta.env.VITE_PACKAGE_ID || '0x0';
 
 /**
  * Hook to fetch user's slides from blockchain
@@ -27,8 +29,60 @@ export const useMySlides = () => {
 
         try {
             console.log('[BLOCKCHAIN] Fetching assets for account:', account.address);
+            const userAddr = account.address.replace('0x', '').toLowerCase();
 
-            // 1. Fetch ALL objects owned by the user
+            // 1. Fetch Shared SlideObjects by querying SlideMinted events
+            // We fetch all minted slides and filter by current ownership field
+            console.log('[BLOCKCHAIN] Querying SlideMinted events for ownership check');
+            const mintedEvents = await client.queryEvents({
+                query: {
+                    MoveEventType: `${PACKAGE_ID}::slide_marketplace::SlideMinted`,
+                },
+                limit: 100,
+                order: 'descending',
+            });
+
+            const slideOwnershipMap = new Map();
+            if (mintedEvents?.data) {
+                for (const event of mintedEvents.data) {
+                    const slideId = event.parsedJson?.slide_id;
+                    if (slideId && !slideOwnershipMap.has(slideId)) {
+                        try {
+                            const obj = await client.getObject({
+                                id: slideId,
+                                options: { showContent: true },
+                            });
+                            
+                            if (obj.data?.content?.dataType === 'moveObject') {
+                                const fields = obj.data.content.fields;
+                                const owner = fields.owner?.replace('0x', '').toLowerCase();
+                                
+                                if (owner === userAddr && !isSlideDeleted(slideId)) {
+                                    slideOwnershipMap.set(slideId, {
+                                        id: slideId,
+                                        objectId: slideId,
+                                        title: fields.title || 'Untitled Slide',
+                                        contentUrl: fields.content_url || '',
+                                        thumbnailUrl: fields.thumbnail_url || '',
+                                        price: fields.price || 0,
+                                        isListed: fields.is_listed || false,
+                                        owner: fields.owner,
+                                        isOwner: true,
+                                        createdAt: new Date().toISOString(),
+                                        source: 'blockchain',
+                                        suiObjectId: slideId
+                                    });
+                                }
+                            }
+                        } catch (e) {
+                            console.warn(`[BLOCKCHAIN] Failed to check ownership for slide ${slideId}:`, e);
+                        }
+                    }
+                }
+            }
+
+            // 2. Fetch Owned SlideLicenses
+            console.log('[BLOCKCHAIN] Querying owned licenses');
             const response = await client.getOwnedObjects({
                 owner: account.address,
                 options: {
@@ -37,86 +91,53 @@ export const useMySlides = () => {
                 },
             });
 
-            if (!response.data) {
-                setSlides([]);
-                setIsLoading(false);
-                return;
-            }
-
-            const ownedSlides = [];
-            const licenses = [];
-
-            // 2. Sort objects into slides and licenses
-            for (const obj of response.data) {
-                const type = obj.data?.type || '';
-                const isDeleted = isSlideDeleted(obj.data.objectId);
-                if (isDeleted) continue;
-
-                if (type.includes('SlideObject')) {
-                    ownedSlides.push(obj);
-                } else if (type.includes('SlideLicense')) {
-                    licenses.push(obj);
-                }
-            }
-
-            console.log(`[BLOCKCHAIN] Found ${ownedSlides.length} owned slides and ${licenses.length} licenses`);
-
-            // 3. Parse owned slides
-            const parsedOwnedSlides = ownedSlides.map((obj) => {
-                const fields = obj.data?.content?.fields;
-                return {
-                    id: obj.data.objectId,
-                    objectId: obj.data.objectId,
-                    title: fields.title || 'Untitled Slide',
-                    contentUrl: fields.content_url || '',
-                    thumbnailUrl: fields.thumbnail_url || '',
-                    price: fields.price || 0,
-                    isListed: fields.is_listed || false,
-                    owner: account.address,
-                    isOwner: true,
-                    createdAt: new Date().toISOString(),
-                    source: 'blockchain',
-                    suiObjectId: obj.data.objectId // Ensure this exists for deletion logic
-                };
-            });
-
-            // 4. Resolve licenses to SlideObjects
             const parsedLicensedSlides = [];
-            for (const license of licenses) {
-                const fields = license.data?.content?.fields;
-                const slideId = fields?.slide_id;
-                if (!slideId) continue;
+            if (response.data) {
+                for (const obj of response.data) {
+                    const type = obj.data?.type || '';
+                    const isDeleted = isSlideDeleted(obj.data.objectId);
+                    if (isDeleted) continue;
 
-                try {
-                    const slideObj = await client.getObject({
-                        id: slideId,
-                        options: { showContent: true },
-                    });
+                    if (type.includes('SlideLicense')) {
+                        const fields = obj.data?.content?.fields || obj.data?.content?.data?.fields;
+                        const slideId = fields?.slide_id;
+                        
+                        if (slideId && !slideOwnershipMap.has(slideId)) {
+                            try {
+                                const slideObj = await client.getObject({
+                                    id: slideId,
+                                    options: { showContent: true },
+                                });
 
-                    if (slideObj.data?.content?.fields) {
-                        const sFields = slideObj.data.content.fields;
-                        parsedLicensedSlides.push({
-                            id: slideId, // Use original slide ID for navigation
-                            licenseId: license.data.objectId,
-                            objectId: slideId,
-                            title: sFields.title || fields.slide_title || 'Untitled Slide',
-                            contentUrl: sFields.content_url || '',
-                            thumbnailUrl: sFields.thumbnail_url || '',
-                            price: sFields.price || 0,
-                            owner: sFields.owner,
-                            isOwner: false, // User only has a license
-                            isLicensed: true,
-                            createdAt: new Date().toISOString(),
-                            source: 'blockchain'
-                        });
+                                if (slideObj.data?.content?.fields) {
+                                    const sFields = slideObj.data.content.fields;
+                                    parsedLicensedSlides.push({
+                                        id: slideId,
+                                        licenseId: obj.data.objectId,
+                                        objectId: slideId,
+                                        title: sFields.title || fields.slide_title || 'Untitled Slide',
+                                        contentUrl: sFields.content_url || '',
+                                        thumbnailUrl: sFields.thumbnail_url || '',
+                                        price: sFields.price || 0,
+                                        owner: sFields.owner,
+                                        isOwner: false,
+                                        isLicensed: true,
+                                        createdAt: new Date().toISOString(),
+                                        source: 'blockchain'
+                                    });
+                                }
+                            } catch (e) {
+                                console.warn(`[BLOCKCHAIN] Failed to fetch licensed slide ${slideId}:`, e);
+                            }
+                        }
                     }
-                } catch (e) {
-                    console.warn(`[BLOCKCHAIN] Failed to fetch licensed slide ${slideId}:`, e);
                 }
             }
 
-            const allSlides = [...parsedOwnedSlides, ...parsedLicensedSlides];
-            console.log('[BLOCKCHAIN] Total assets parsed:', allSlides.length);
+            const ownedSlides = Array.from(slideOwnershipMap.values());
+            const allSlides = [...ownedSlides, ...parsedLicensedSlides];
+            
+            console.log(`[BLOCKCHAIN] Total assets: ${allSlides.length} (${ownedSlides.length} owned, ${parsedLicensedSlides.length} licensed)`);
             setSlides(allSlides);
         } catch (err) {
             console.error('[BLOCKCHAIN] Error fetching assets:', err);
