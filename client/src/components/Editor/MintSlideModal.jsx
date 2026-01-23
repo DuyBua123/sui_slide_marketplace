@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { PlusCircle } from "lucide-react";
 import { useMintSlide } from "../../hooks/useMintSlide";
-import { uploadJSONToPinata, uploadDataUrlToPinata } from "../../utils/pinata";
+import { uploadJSONToWalrus, uploadDataUrlToWalrus } from "../../utils/walrus";
 
 /**
  * Modal for minting a slide to SUI blockchain
@@ -42,20 +42,18 @@ export const MintSlideModal = ({ isOpen, onClose, slideData, onMintSuccess }) =>
       let contentUrl = "";
       let thumbnailUrl = "";
 
-      // Upload slide JSON data to IPFS
+      // Upload slide JSON data to Walrus
       if (slideData?.data) {
-        const contentResult = await uploadJSONToPinata(
-          slideData.data,
-          `${slideData.title || "slide"}-content.json`,
+        const contentResult = await uploadJSONToWalrus(
+          slideData.data
         );
         contentUrl = contentResult.url;
       }
 
-      // Upload thumbnail to IPFS if it's a data URL
+      // Upload thumbnail to Walrus if it's a data URL
       if (slideData?.thumbnail && slideData.thumbnail.startsWith("data:")) {
-        const thumbnailResult = await uploadDataUrlToPinata(
-          slideData.thumbnail,
-          `${slideData.title || "slide"}-thumbnail.png`,
+        const thumbnailResult = await uploadDataUrlToWalrus(
+          slideData.thumbnail
         );
         thumbnailUrl = thumbnailResult.url;
       } else if (slideData?.thumbnail) {
@@ -67,7 +65,10 @@ export const MintSlideModal = ({ isOpen, onClose, slideData, onMintSuccess }) =>
 
       const result = await mintSlide({
         title: slideData?.title || "Untitled Slide",
-        contentUrl: contentUrl || "ipfs://placeholder",
+        title: slideData?.title || "Untitled Slide",
+        contentUrl: contentUrl || "",
+        thumbnailUrl: thumbnailUrl || "",
+        price: priceInMist,
         thumbnailUrl: thumbnailUrl || "",
         price: priceInMist,
         salePrice: salePriceInMist,
@@ -78,7 +79,7 @@ export const MintSlideModal = ({ isOpen, onClose, slideData, onMintSuccess }) =>
       // This is a simplified version - in production you'd parse the effects
       console.log("[MINT] Transaction Digest:", result.digest);
       console.log("[MINT] Transaction Result:", result);
-      
+
       setObjectId(result.digest);
       setStep("success");
 
@@ -134,7 +135,7 @@ export const MintSlideModal = ({ isOpen, onClose, slideData, onMintSuccess }) =>
 
             {/* Loading Title */}
             <h3 className="text-xl font-extrabold text-gray-900 dark:text-white mb-2 tracking-tight">
-              Uploading to IPFS...
+              Uploading to Walrus...
             </h3>
 
             {/* Description Text */}

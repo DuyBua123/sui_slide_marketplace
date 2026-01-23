@@ -1,5 +1,5 @@
 import CryptoJS from 'crypto-js';
-import { pinata } from './pinata';
+import { uploadToWalrus } from '../utils/walrus';
 
 /**
  * SealAssetService - Encryption service for premium assets
@@ -28,31 +28,14 @@ class SealAssetService {
                 type: 'application/octet-stream'
             });
 
-            // 5. Upload encrypted blob to Pinata
-            const formData = new FormData();
-            formData.append('file', encryptedBlob, 'encrypted_asset.enc');
-            formData.append('pinataMetadata', JSON.stringify({
-                name: metadata.name || 'Premium Asset',
-                keyvalues: {
-                    encrypted: 'true',
-                    assetType: metadata.assetType || 'premium',
-                    ...metadata,
-                },
-            }));
+            // 5. Upload encrypted blob to Walrus
+            // Note: Walrus currently doesn't support custom metadata in the same way as Pinata's pinFileToIPFS,
+            // but we can wrap it if needed. For now, we just upload the encrypted blob.
+            const uploadResult = await uploadToWalrus(encryptedBlob);
 
-            const response = await fetch('https://api.pinata.cloud/pinning/pinFileToIPFS', {
-                method: 'POST',
-                headers: {
-                    Authorization: `Bearer ${import.meta.env.VITE_PINATA_JWT}`,
-                },
-                body: formData,
-            });
-
-            const data = await response.json();
-
-            // 6. Return CID + encryption key
+            // 6. Return Blob ID + encryption key
             return {
-                cid: data.IpfsHash,
+                cid: uploadResult.blobId, // Keeping 'cid' key for compatibility, but value is blobId
                 encryptionKey, // IMPORTANT: Store this securely!
                 metadata: {
                     ...metadata,
@@ -72,10 +55,11 @@ class SealAssetService {
      * @param {string} encryptionKey - Decryption key
      * @returns {Promise<string>} - Decrypted data URL
      */
-    async unseal(cid, encryptionKey) {
+    async unseal(blobId, encryptionKey) {
         try {
-            // 1. Fetch encrypted data from IPFS
-            const response = await fetch(`https://gateway.pinata.cloud/ipfs/${cid}`);
+            // 1. Fetch encrypted data from Walrus
+            const aggregatorUrl = import.meta.env.VITE_WALRUS_AGGREGATOR || 'https://aggregator.walrus-testnet.walrus.space';
+            const response = await fetch(`${aggregatorUrl}/v1/blobs/${blobId}`);
             const encryptedData = await response.text();
 
             // 2. Decrypt with AES-256
