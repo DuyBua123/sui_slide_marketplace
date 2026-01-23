@@ -8,11 +8,13 @@ import { uploadJSONToPinata, uploadDataUrlToPinata } from "../../utils/pinata";
  */
 export const MintSlideModal = ({ isOpen, onClose, slideData, onMintSuccess }) => {
   const [price, setPrice] = useState("1");
+  const [salePrice, setSalePrice] = useState("10"); // Default sale price
+  const [isForSale, setIsForSale] = useState(false);
   const [step, setStep] = useState("input"); // 'input' | 'uploading' | 'minting' | 'success'
   const [error, setError] = useState(null);
   const [objectId, setObjectId] = useState(null);
 
-  const { mintSlide, isLoading: isMinting } = useMintSlide();
+  const { mintSlide } = useMintSlide();
 
   if (!isOpen) return null;
 
@@ -21,9 +23,15 @@ export const MintSlideModal = ({ isOpen, onClose, slideData, onMintSuccess }) =>
     setError(null);
 
     const priceInMist = Math.floor(parseFloat(price) * 1_000_000_000);
+    const salePriceInMist = Math.floor(parseFloat(salePrice) * 1_000_000_000);
 
     if (priceInMist <= 0) {
-      setError("Please enter a valid price");
+      setError("Please enter a valid license price");
+      return;
+    }
+
+    if (isForSale && salePriceInMist <= 0) {
+      setError("Please enter a valid sale price");
       return;
     }
 
@@ -62,6 +70,8 @@ export const MintSlideModal = ({ isOpen, onClose, slideData, onMintSuccess }) =>
         contentUrl: contentUrl || "ipfs://placeholder",
         thumbnailUrl: thumbnailUrl || "",
         price: priceInMist,
+        salePrice: salePriceInMist,
+        isForSale: isForSale,
       });
 
       // Get the created object ID from transaction effects
@@ -272,8 +282,47 @@ export const MintSlideModal = ({ isOpen, onClose, slideData, onMintSuccess }) =>
                     </span>
                   </div>
                 </div>
-                <p className="text-[11px] text-gray-400 dark:text-gray-500 mt-3 italic font-medium leading-relaxed">
-                  * This is the fixed price others pay to license your slide content. Minimum: 0.0001 SUI
+              </div>
+
+              {/* Full Ownership Sale Section */}
+              <div className="mb-6 bg-gray-50 dark:bg-white/5 p-4 rounded-2xl border border-gray-100 dark:border-white/5 transition-all">
+                <div className="flex items-center justify-between mb-4">
+                  <label className="text-[11px] font-black text-gray-500 dark:text-gray-400 uppercase tracking-widest">
+                    List for Full Ownership Sale
+                  </label>
+                  <label className="relative inline-flex items-center cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={isForSale}
+                      onChange={(e) => setIsForSale(e.target.checked)}
+                      className="sr-only peer"
+                    />
+                    <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-0.5 after:left-0.5 after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-blue-600"></div>
+                  </label>
+                </div>
+
+                {isForSale && (
+                  <div className="relative group animate-in zoom-in-95 duration-200">
+                    <input
+                      type="number"
+                      step="0.0001"
+                      min="0.0001"
+                      value={salePrice}
+                      onChange={(e) => setSalePrice(e.target.value)}
+                      className="w-full px-5 py-4 bg-white dark:bg-black/30 border-2 border-gray-100 dark:border-white/10 rounded-2xl text-gray-900 dark:text-white text-xl font-black focus:border-blue-500 dark:focus:border-cyan-500 focus:outline-none transition-all shadow-sm focus:shadow-blue-500/10 [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                      placeholder="10"
+                    />
+                    <div className="absolute right-4 top-1/2 -translate-y-1/2 flex items-center gap-2 bg-gray-100 dark:bg-black/40 px-3 py-2 rounded-xl border border-gray-200 dark:border-white/5">
+                      <span className="text-gray-700 dark:text-gray-300 font-black text-xs">
+                        SUI
+                      </span>
+                    </div>
+                  </div>
+                )}
+                <p className="text-[10px] text-gray-400 dark:text-gray-500 mt-3 font-medium leading-relaxed">
+                  {isForSale 
+                    ? "* Others can purchase full ownership of this slide object."
+                    : "* Only licensing is enabled by default."}
                 </p>
               </div>
 
@@ -342,7 +391,7 @@ export const MintSlideModal = ({ isOpen, onClose, slideData, onMintSuccess }) =>
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center transition-all duration-300">
-      {/* Backdrop với độ mờ khác nhau cho 2 chế độ */}
+      {/* Backdrop with different opacity for 2 modes */}
       <div
         className="absolute inset-0 bg-slate-900/40 dark:bg-black/80 backdrop-blur-sm transition-colors"
         onClick={step === "input" ? onClose : undefined}
