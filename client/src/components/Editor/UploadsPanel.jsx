@@ -1,6 +1,6 @@
 import { Upload, Video, Folder, Wand2 } from "lucide-react";
 import { useState, useEffect } from "react";
-import { uploadFileToIPFS } from "../../utils/pinata";
+import { uploadToWalrus, getWalrusUrl } from "../../utils/walrus";
 import { useSlideStore } from "../../store/useSlideStore";
 
 /**
@@ -18,10 +18,8 @@ export const UploadsPanel = () => {
 
     setUploading(true);
     try {
-      const result = await uploadFileToIPFS(file);
-
-      // CRITICAL FIX: Extract URL string from Pinata response object
-      const imageUrl = typeof result === "object" ? result.url : result;
+      const result = await uploadToWalrus(file);
+      const imageUrl = result.url;
 
       // Add to uploads list
       const newUpload = {
@@ -98,11 +96,10 @@ export const UploadsPanel = () => {
           <button
             key={tab}
             onClick={() => setActiveTab(tab)}
-            className={`cursor-pointer flex-1 py-3 text-xs font-bold uppercase tracking-widest transition-all relative ${
-              activeTab === tab
+            className={`cursor-pointer flex-1 py-3 text-xs font-bold uppercase tracking-widest transition-all relative ${activeTab === tab
                 ? "text-purple-600 dark:text-purple-400"
                 : "text-gray-400 hover:text-gray-600 dark:hover:text-gray-200"
-            }`}
+              }`}
           >
             {tab}
             {activeTab === tab && (
