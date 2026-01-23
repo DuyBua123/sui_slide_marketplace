@@ -262,8 +262,9 @@ export const Market = () => {
                     <div
                       className={`aspect-4/3 rounded-[18px] mb-4 relative flex items-center justify-center overflow-hidden ${slide.bgColor || "bg-blue-50 dark:bg-blue-900/20"}`}
                     >
-                      <div className="absolute top-2 left-2 px-2 py-0.5 bg-white/90 dark:bg-black/50 backdrop-blur-md rounded-full text-sm font-bold uppercase">
-                        🔥 Trending
+                      <div className="absolute top-2 left-2 px-2 py-0.5 bg-white/90 dark:bg-black/50 backdrop-blur-md rounded-full text-[10px] font-bold uppercase tracking-wider shadow-sm z-10 flex items-center gap-1.5">
+                        <span className={`w-1.5 h-1.5 rounded-full ${slide.type === 'listing' ? 'bg-orange-500' : 'bg-blue-500'}`}></span>
+                        {slide.type === 'listing' ? 'Full Ownership' : 'License'}
                       </div>
                       <div className="absolute top-2 right-2 px-2 py-0.5 bg-[#1e293b] text-white rounded-full text-sm font-bold">
                         {price} SUI
@@ -296,7 +297,7 @@ export const Market = () => {
                         {slide.title || "Untitled"}
                       </h3>
                       <p className="text-sm text-blue-500 font-medium mb-4">
-                        @{slide.author || "Creator"}
+                        @{slide.author || slide.creator || slide.owner || "Creator"}
                       </p>
 
                       <div className="mb-4">
