@@ -1,4 +1,4 @@
-module slide_marketplace::premium_pass {
+module 0x0::premium_pass {
     use sui::transfer;
     use sui::object::{Self, UID};
     use sui::tx_context::{Self, TxContext};

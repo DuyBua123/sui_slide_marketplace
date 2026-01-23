@@ -24,8 +24,10 @@ export const useMintSlide = () => {
      * @param {string} params.contentUrl - IPFS URL to slide JSON data
      * @param {string} params.thumbnailUrl - URL to thumbnail image
      * @param {number} params.price - License price in MIST (1 SUI = 1e9 MIST)
+     * @param {number} params.salePrice - Full ownership price in MIST
+     * @param {boolean} params.isForSale - Whether available for sale initially
      */
-    const mintSlide = async ({ title, contentUrl, thumbnailUrl, price }) => {
+    const mintSlide = async ({ title, contentUrl, thumbnailUrl, price, salePrice = 0, isForSale = false }) => {
         setIsLoading(true);
         setError(null);
         setTxDigest(null);
@@ -40,6 +42,8 @@ export const useMintSlide = () => {
                     tx.pure.string(contentUrl),
                     tx.pure.string(thumbnailUrl),
                     tx.pure.u64(price),
+                    tx.pure.u64(salePrice),
+                    tx.pure.bool(isForSale),
                 ],
             });
 
