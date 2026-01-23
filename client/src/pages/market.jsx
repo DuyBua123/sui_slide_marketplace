@@ -45,10 +45,13 @@ export const Market = () => {
 
   // Check if user owns slide or license
   const getAccessStatus = (slide) => {
-    if (slide.owner === account?.address) return "owner";
-    // Mock: check licenses in localStorage
+    if (!account?.address) return "none";
+    
+    if (slide.owner === account.address) return "owner";
+    
+    // Check licenses in localStorage
     const licenses = JSON.parse(localStorage.getItem("licenses") || "[]");
-    if (licenses.some((l) => l.slideId === slide.id && l.buyer === account?.address)) {
+    if (licenses.some((l) => l.slideId === slide.id && l.buyer === account.address)) {
       return "licensed";
     }
     return "none";
@@ -56,9 +59,10 @@ export const Market = () => {
 
   // Filter slides
   const filteredSlides = slides.filter((slide) => {
-    if (!slide || !slide.title) return false;
+    if (!slide) return false;
+    const slideTitle = slide.title || "Untitled Slide";
     // Lọc theo từ khóa tìm kiếm
-    const matchesSearch = slide.title?.toLowerCase().includes(searchQuery.toLowerCase());
+    const matchesSearch = slideTitle.toLowerCase().includes(searchQuery.toLowerCase());
 
     // Lọc theo trạng thái (Premium/Free/All)
     const priceInSui = parseFloat(getPrice(slide));
@@ -133,6 +137,23 @@ export const Market = () => {
           Discover premium slide presentations. Purchase licenses to view and present, while
           creators retain ownership and editing rights.
         </p>
+
+        {/* Configuration Warning */}
+        {(!import.meta.env.VITE_PACKAGE_ID || import.meta.env.VITE_PACKAGE_ID === '0x0') && (
+          <div className="mt-8 p-4 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-900/30 rounded-2xl max-w-2xl mx-auto flex items-center gap-4 text-left">
+            <div className="w-10 h-10 bg-amber-100 dark:bg-amber-500/20 rounded-full flex items-center justify-center shrink-0">
+              <svg className="w-6 h-6 text-amber-600 dark:text-amber-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+              </svg>
+            </div>
+            <div>
+              <p className="text-amber-800 dark:text-amber-400 font-bold text-sm">Blockchain connection not configured</p>
+              <p className="text-amber-700/80 dark:text-amber-400/60 text-xs mt-0.5 font-medium leading-relaxed">
+                The marketplace is currently in preview mode. To see live slides from others, please configure the <code>VITE_PACKAGE_ID</code> in your <code>.env</code> file.
+              </p>
+            </div>
+          </div>
+        )}
       </div>
 
       <div className="flex flex-col lg:flex-row gap-8 px-4 max-w-[1400px] mx-auto">
@@ -262,9 +283,8 @@ export const Market = () => {
                     <div
                       className={`aspect-4/3 rounded-[18px] mb-4 relative flex items-center justify-center overflow-hidden ${slide.bgColor || "bg-blue-50 dark:bg-blue-900/20"}`}
                     >
-                      <div className="absolute top-2 left-2 px-2 py-0.5 bg-white/90 dark:bg-black/50 backdrop-blur-md rounded-full text-[10px] font-bold uppercase tracking-wider shadow-sm z-10 flex items-center gap-1.5">
-                        <span className={`w-1.5 h-1.5 rounded-full ${slide.type === 'listing' ? 'bg-orange-500' : 'bg-blue-500'}`}></span>
-                        {slide.type === 'listing' ? 'Full Ownership' : 'License'}
+                      <div className="absolute top-2 left-2 px-2 py-0.5 bg-white/90 dark:bg-black/50 backdrop-blur-md rounded-full text-sm font-bold uppercase">
+                        🔥 Trending
                       </div>
                       <div className="absolute top-2 right-2 px-2 py-0.5 bg-[#1e293b] text-white rounded-full text-sm font-bold">
                         {price} SUI
@@ -297,7 +317,7 @@ export const Market = () => {
                         {slide.title || "Untitled"}
                       </h3>
                       <p className="text-sm text-blue-500 font-medium mb-4">
-                        @{slide.author || slide.creator || slide.owner || "Creator"}
+                        @{slide.author || "Creator"}
                       </p>
 
                       <div className="mb-4">
