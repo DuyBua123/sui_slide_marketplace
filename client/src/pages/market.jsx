@@ -52,14 +52,22 @@ export const Market = () => {
 
   // Check if user owns slide or license
   const getAccessStatus = (slide) => {
-    if (!account?.address) return "none";
+    if (!account?.address || !slide) return "none";
+    
+    // Normalize addresses for robust comparison
+    const userAddr = account.address.replace('0x', '').toLowerCase();
+    const ownerAddr = slide.owner?.replace('0x', '').toLowerCase();
     
     // Check ownership
-    if (slide.owner === account.address) return "owner";
+    if (ownerAddr === userAddr) return "owner";
     
-    // Check licenses in localStorage (will move to blockchain check later)
+    // Check licenses in localStorage (legacy/mock)
     const licenses = JSON.parse(localStorage.getItem("licenses") || "[]");
-    if (licenses.some((l) => l.slideId === slide.id && l.buyer === account.address)) {
+    if (licenses.some((l) => {
+      const lSlideId = l.slideId?.replace('0x', '').toLowerCase();
+      const sId = slide.id?.replace('0x', '').toLowerCase();
+      return lSlideId === sId && l.buyer === account.address;
+    })) {
       return "licensed";
     }
     return "none";

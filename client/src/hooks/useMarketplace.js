@@ -1,4 +1,4 @@
-import { useSignAndExecuteTransaction, useSuiClient } from '@mysten/dapp-kit';
+import { useSignAndExecuteTransaction, useSuiClient, useCurrentAccount } from '@mysten/dapp-kit';
 import { Transaction } from '@mysten/sui/transactions';
 import { useState, useEffect, useCallback } from 'react';
 import { isSlideDeleted } from '../utils/deletedSlidesTracker';
@@ -13,6 +13,7 @@ export const useMarketplaceSlides = () => {
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState(null);
 
+    const account = useCurrentAccount();
     const client = useSuiClient();
 
     const fetchMarketplaceSlides = useCallback(async (isRefetch = false) => {
@@ -29,13 +30,41 @@ export const useMarketplaceSlides = () => {
             console.log('[MARKETPLACE] Fetching slides from package:', PACKAGE_ID);
             const slideMap = new Map();
 
-            // Fetch SlideMinted events
+            // 1. Fetch user's licenses if logged in
+            const userLicenses = new Set();
+            if (account?.address) {
+                try {
+                    const ownedObjects = await client.getOwnedObjects({
+                        owner: account.address,
+                        options: { showContent: true, showType: true },
+                    });
+                    
+                    if (ownedObjects?.data) {
+                        for (const obj of ownedObjects.data) {
+                            const type = obj.data?.type || '';
+                            if (type.includes('SlideLicense')) {
+                                const fields = obj.data?.content?.fields || obj.data?.content?.data?.fields;
+                                const slideId = fields?.slide_id;
+                                if (slideId) {
+                                    // Normalize ID (remove 0x, lowercase)
+                                    userLicenses.add(slideId.replace('0x', '').toLowerCase());
+                                }
+                            }
+                        }
+                    }
+                    console.log(`[MARKETPLACE] Found ${userLicenses.size} licenses for user`);
+                } catch (e) {
+                    console.warn('[MARKETPLACE] Failed to fetch user licenses:', e);
+                }
+            }
+
+            // 2. Fetch SlideMinted events
             try {
                 const mintedEventsResponse = await client.queryEvents({
                     query: {
                         MoveEventType: `${PACKAGE_ID}::slide_marketplace::SlideMinted`,
                     },
-                    limit: 100, // Increased limit
+                    limit: 100,
                     order: 'descending',
                 });
 
@@ -43,6 +72,15 @@ export const useMarketplaceSlides = () => {
                     for (const eventData of mintedEventsResponse.data) {
                         const slideId = eventData.parsedJson?.slide_id;
                         if (slideId && !slideMap.has(slideId)) {
+                            // Normalize slideId for set check
+                            const normSlideId = slideId.replace('0x', '').toLowerCase();
+                            
+                            // Skip if user already has a license for this slide
+                            if (userLicenses.has(normSlideId)) {
+                                console.log(`[MARKETPLACE] Skipping slide ${slideId} (user has license)`);
+                                continue;
+                            }
+
                             try {
                                 const obj = await client.getObject({
                                     id: slideId,
@@ -52,6 +90,15 @@ export const useMarketplaceSlides = () => {
                                 if (obj.data?.content?.dataType === 'moveObject') {
                                     const fields = obj.data.content.fields;
                                     
+                                    // Skip if user is the owner (normalize addresses)
+                                    const ownerAddr = fields.owner?.replace('0x', '').toLowerCase();
+                                    const userAddr = account?.address?.replace('0x', '').toLowerCase();
+                                    
+                                    if (userAddr && ownerAddr === userAddr) {
+                                        console.log(`[MARKETPLACE] Skipping slide ${slideId} (user is owner)`);
+                                        continue;
+                                    }
+
                                     // A slide is visible in marketplace if it's listed for license OR for sale
                                     if ((fields.is_listed || fields.is_for_sale) && !isSlideDeleted(slideId)) {
                                         slideMap.set(slideId, {
@@ -65,13 +112,12 @@ export const useMarketplaceSlides = () => {
                                             author: fields.owner,
                                             contentUrl: fields.content_url,
                                             thumbnail: fields.thumbnail_url,
-                                            type: fields.is_for_sale ? 'listing' : 'slideObject', // Maintain backward compatibility in UI if possible
+                                            type: fields.is_for_sale ? 'listing' : 'slideObject',
                                             source: 'blockchain'
                                         });
                                     }
                                 }
                             } catch (e) { 
-                                // Silent fail for single objects
                                 console.warn(`[MARKETPLACE] Failed to fetch object ${slideId}:`, e);
                             }
                         }
@@ -88,18 +134,29 @@ export const useMarketplaceSlides = () => {
         } catch (err) {
             console.warn('[MARKETPLACE] Fetch failed, falling back to local storage:', err.message);
             setError(`Sync failed: ${err.message}. Showing local slides.`);
+            
+            const userAddr = account?.address?.replace('0x', '').toLowerCase();
             const mockSlides = JSON.parse(localStorage.getItem('slides') || '[]');
-            setSlides(mockSlides.map(s => ({ ...s, source: 'local' })));
+            
+            // Filter local slides if possible
+            const filteredLocal = mockSlides
+                .map(s => ({ ...s, source: 'local' }))
+                .filter(s => {
+                    const ownerAddr = s.owner?.replace('0x', '').toLowerCase();
+                    return !userAddr || ownerAddr !== userAddr;
+                });
+                
+            setSlides(filteredLocal);
         } finally {
             setIsLoading(false);
         }
-    }, [client]);
+    }, [client, account?.address]);
 
     useEffect(() => {
         if (client) {
             fetchMarketplaceSlides();
         }
-    }, [client, fetchMarketplaceSlides]);
+    }, [client, fetchMarketplaceSlides, account?.address]);
 
     const refetch = () => fetchMarketplaceSlides(true);
 
