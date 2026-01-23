@@ -1,4 +1,4 @@
-import { useSignAndExecuteTransaction, useSuiClient } from '@mysten/dapp-kit';
+import { useSignAndExecuteTransaction, useSuiClient, useCurrentAccount } from '@mysten/dapp-kit';
 import { Transaction } from '@mysten/sui/transactions';
 import { useState, useEffect, useCallback } from 'react';
 import { isSlideDeleted } from '../utils/deletedSlidesTracker';
@@ -7,13 +7,13 @@ const PACKAGE_ID = import.meta.env.VITE_PACKAGE_ID || '0x0';
 
 /**
  * Hook to fetch marketplace slides using events
- * Listens to SlideMinted and SlideListed events to get available slides
  */
 export const useMarketplaceSlides = () => {
     const [slides, setSlides] = useState([]);
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState(null);
 
+    const account = useCurrentAccount();
     const client = useSuiClient();
 
     const fetchMarketplaceSlides = useCallback(async (isRefetch = false) => {
@@ -27,15 +27,44 @@ export const useMarketplaceSlides = () => {
                 );
             }
 
+            console.log('[MARKETPLACE] Fetching slides from package:', PACKAGE_ID);
             const slideMap = new Map();
 
-            // 1. Fetch Minted Slides (for Licensing)
+            // 1. Fetch user's licenses if logged in
+            const userLicenses = new Set();
+            if (account?.address) {
+                try {
+                    const ownedObjects = await client.getOwnedObjects({
+                        owner: account.address,
+                        options: { showContent: true, showType: true },
+                    });
+                    
+                    if (ownedObjects?.data) {
+                        for (const obj of ownedObjects.data) {
+                            const type = obj.data?.type || '';
+                            if (type.includes('SlideLicense')) {
+                                const fields = obj.data?.content?.fields || obj.data?.content?.data?.fields;
+                                const slideId = fields?.slide_id;
+                                if (slideId) {
+                                    // Normalize ID (remove 0x, lowercase)
+                                    userLicenses.add(slideId.replace('0x', '').toLowerCase());
+                                }
+                            }
+                        }
+                    }
+                    console.log(`[MARKETPLACE] Found ${userLicenses.size} licenses for user`);
+                } catch (e) {
+                    console.warn('[MARKETPLACE] Failed to fetch user licenses:', e);
+                }
+            }
+
+            // 2. Fetch SlideMinted events
             try {
                 const mintedEventsResponse = await client.queryEvents({
                     query: {
                         MoveEventType: `${PACKAGE_ID}::slide_marketplace::SlideMinted`,
                     },
-                    limit: 50,
+                    limit: 100,
                     order: 'descending',
                 });
 
@@ -43,6 +72,15 @@ export const useMarketplaceSlides = () => {
                     for (const eventData of mintedEventsResponse.data) {
                         const slideId = eventData.parsedJson?.slide_id;
                         if (slideId && !slideMap.has(slideId)) {
+                            // Normalize slideId for set check
+                            const normSlideId = slideId.replace('0x', '').toLowerCase();
+                            
+                            // Skip if user already has a license for this slide
+                            if (userLicenses.has(normSlideId)) {
+                                console.log(`[MARKETPLACE] Skipping slide ${slideId} (user has license)`);
+                                continue;
+                            }
+
                             try {
                                 const obj = await client.getObject({
                                     id: slideId,
@@ -51,90 +89,74 @@ export const useMarketplaceSlides = () => {
 
                                 if (obj.data?.content?.dataType === 'moveObject') {
                                     const fields = obj.data.content.fields;
-                                    if (fields.is_listed && !isSlideDeleted(slideId)) {
+                                    
+                                    // Skip if user is the owner (normalize addresses)
+                                    const ownerAddr = fields.owner?.replace('0x', '').toLowerCase();
+                                    const userAddr = account?.address?.replace('0x', '').toLowerCase();
+                                    
+                                    if (userAddr && ownerAddr === userAddr) {
+                                        console.log(`[MARKETPLACE] Skipping slide ${slideId} (user is owner)`);
+                                        continue;
+                                    }
+
+                                    // A slide is visible in marketplace if it's listed for license OR for sale
+                                    if ((fields.is_listed || fields.is_for_sale) && !isSlideDeleted(slideId)) {
                                         slideMap.set(slideId, {
                                             id: slideId,
                                             title: fields.title || 'Untitled Slide',
                                             price: fields.price || 0,
-                                            owner: fields.creator,
-                                            author: fields.creator,
+                                            salePrice: fields.sale_price || 0,
+                                            isListed: fields.is_listed,
+                                            isForSale: fields.is_for_sale,
+                                            owner: fields.owner,
+                                            author: fields.owner,
                                             contentUrl: fields.content_url,
                                             thumbnail: fields.thumbnail_url,
-                                            creator: fields.creator,
-                                            isListed: true,
-                                            type: 'slideObject',
+                                            type: fields.is_for_sale ? 'listing' : 'slideObject',
+                                            source: 'blockchain'
                                         });
                                     }
                                 }
-                            } catch { /* ignore deleted objects */ }
+                            } catch (e) { 
+                                console.warn(`[MARKETPLACE] Failed to fetch object ${slideId}:`, e);
+                            }
                         }
                     }
                 }
-            } catch (e) { console.warn('Fetch minted events failed', e); }
+            } catch (e) { 
+                console.error('[MARKETPLACE] Fetch events failed:', e.message); 
+                throw e;
+            }
 
-            // 2. Fetch Listed Slides (for Full Ownership Sale)
-            try {
-                const listedEventsResponse = await client.queryEvents({
-                    query: {
-                        MoveEventType: `${PACKAGE_ID}::slide_marketplace::SlideListed`,
-                    },
-                    limit: 50,
-                    order: 'descending',
-                });
-
-                if (listedEventsResponse?.data) {
-                    for (const eventData of listedEventsResponse.data) {
-                        const listingId = eventData.parsedJson?.listing_id;
-                        if (listingId && !slideMap.has(listingId)) {
-                            try {
-                                const obj = await client.getObject({
-                                    id: listingId,
-                                    options: { showContent: true },
-                                });
-
-                                if (obj.data?.content?.dataType === 'moveObject') {
-                                    const fields = obj.data.content.fields;
-                                    const slideFields = fields.slide?.fields || fields.slide || {};
-                                    const originalSlideId = slideFields.id?.id || eventData.parsedJson?.slide_id;
-
-                                    if (originalSlideId && !isSlideDeleted(originalSlideId)) {
-                                        slideMap.set(listingId, {
-                                            id: listingId,
-                                            originalSlideId,
-                                            title: slideFields.title || 'Untitled Slide',
-                                            price: fields.price || 0,
-                                            owner: fields.seller,
-                                            author: fields.seller,
-                                            contentUrl: slideFields.content_url,
-                                            thumbnail: slideFields.thumbnail_url,
-                                            creator: slideFields.creator,
-                                            isListed: true,
-                                            type: 'listing',
-                                        });
-                                    }
-                                }
-                            } catch { /* ignore deleted objects */ }
-                        }
-                    }
-                }
-            } catch (e) { console.warn('Fetch listed events failed', e); }
-
-            setSlides(Array.from(slideMap.values()));
+            const results = Array.from(slideMap.values());
+            console.log(`[MARKETPLACE] Total interactive slides found: ${results.length}`);
+            setSlides(results);
         } catch (err) {
-            console.error('Error fetching marketplace slides:', err);
-            setError(err.message);
+            console.warn('[MARKETPLACE] Fetch failed, falling back to local storage:', err.message);
+            setError(`Sync failed: ${err.message}. Showing local slides.`);
+            
+            const userAddr = account?.address?.replace('0x', '').toLowerCase();
             const mockSlides = JSON.parse(localStorage.getItem('slides') || '[]');
-            setSlides(mockSlides);
+            
+            // Filter local slides if possible
+            const filteredLocal = mockSlides
+                .map(s => ({ ...s, source: 'local' }))
+                .filter(s => {
+                    const ownerAddr = s.owner?.replace('0x', '').toLowerCase();
+                    return !userAddr || ownerAddr !== userAddr;
+                });
+                
+            setSlides(filteredLocal);
         } finally {
             setIsLoading(false);
         }
-    }, [client]);
+    }, [client, account?.address]);
 
     useEffect(() => {
         if (client) {
             fetchMarketplaceSlides();
         }
-    }, [client, fetchMarketplaceSlides]);
+    }, [client, fetchMarketplaceSlides, account?.address]);
 
     const refetch = () => fetchMarketplaceSlides(true);
 
@@ -142,17 +164,15 @@ export const useMarketplaceSlides = () => {
 };
 
 /**
- * Hook to list a slide for sale (full ownership transfer)
+ * Hook to sell a slide (enable full ownership transfer)
  */
 export const useListSlide = () => {
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState(null);
-    const [txDigest, setTxDigest] = useState(null);
 
-    const client = useSuiClient();
     const { mutateAsync: signAndExecute } = useSignAndExecuteTransaction();
 
-    const listSlide = async ({ slideId, price }) => {
+    const listSlide = async ({ slideId, price, isForSale = true, licensePrice = 0, isListed = true }) => {
         setIsLoading(true);
         setError(null);
 
@@ -160,17 +180,17 @@ export const useListSlide = () => {
             const tx = new Transaction();
 
             tx.moveCall({
-                target: `${PACKAGE_ID}::slide_marketplace::list_slide`,
+                target: `${PACKAGE_ID}::slide_marketplace::update_listing_status`,
                 arguments: [
                     tx.object(slideId),
+                    tx.pure.u64(licensePrice),
+                    tx.pure.bool(isListed),
                     tx.pure.u64(price),
+                    tx.pure.bool(isForSale),
                 ],
             });
 
             const result = await signAndExecute({ transaction: tx });
-            await client.waitForTransaction({ digest: result.digest });
-
-            setTxDigest(result.digest);
             return result;
         } catch (err) {
             setError(err.message);
@@ -180,33 +200,31 @@ export const useListSlide = () => {
         }
     };
 
-    return { listSlide, isLoading, error, txDigest };
+    return { listSlide, isLoading, error };
 };
 
 /**
- * Hook to buy a listed slide (full ownership transfer)
+ * Hook to buy full ownership of a slide
  */
 export const useBuySlide = () => {
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState(null);
-    const [txDigest, setTxDigest] = useState(null);
 
     const client = useSuiClient();
     const { mutateAsync: signAndExecute } = useSignAndExecuteTransaction();
 
-    const buySlide = async ({ listingId, price }) => {
+    const buySlide = async ({ slideId, price }) => {
         setIsLoading(true);
         setError(null);
 
         try {
             const tx = new Transaction();
-
             const [coin] = tx.splitCoins(tx.gas, [tx.pure.u64(price)]);
 
             tx.moveCall({
                 target: `${PACKAGE_ID}::slide_marketplace::buy_slide`,
                 arguments: [
-                    tx.object(listingId),
+                    tx.object(slideId),
                     coin,
                 ],
             });
@@ -214,7 +232,6 @@ export const useBuySlide = () => {
             const result = await signAndExecute({ transaction: tx });
             await client.waitForTransaction({ digest: result.digest });
 
-            setTxDigest(result.digest);
             return result;
         } catch (err) {
             setError(err.message);
@@ -224,36 +241,38 @@ export const useBuySlide = () => {
         }
     };
 
-    return { buySlide, isLoading, error, txDigest };
+    return { buySlide, isLoading, error };
 };
 
 /**
- * Hook to delist a slide (cancel sale)
+ * Hook to delist a slide (stop full ownership sale)
  */
 export const useDelistSlide = () => {
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState(null);
 
-    const client = useSuiClient();
     const { mutateAsync: signAndExecute } = useSignAndExecuteTransaction();
 
-    const delistSlide = async ({ listingId }) => {
+    const delistSlide = async ({ slideId, currentLicensePrice, currentIsListed }) => {
         setIsLoading(true);
         setError(null);
 
         try {
             const tx = new Transaction();
 
+            // Stop full ownership sale but keep license settings
             tx.moveCall({
-                target: `${PACKAGE_ID}::slide_marketplace::delist_slide`,
+                target: `${PACKAGE_ID}::slide_marketplace::update_listing_status`,
                 arguments: [
-                    tx.object(listingId),
+                    tx.object(slideId),
+                    tx.pure.u64(currentLicensePrice || 0),
+                    tx.pure.bool(currentIsListed || false),
+                    tx.pure.u64(0),
+                    tx.pure.bool(false),
                 ],
             });
 
             const result = await signAndExecute({ transaction: tx });
-            await client.waitForTransaction({ digest: result.digest });
-
             return result;
         } catch (err) {
             setError(err.message);
