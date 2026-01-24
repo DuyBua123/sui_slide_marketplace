@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { useCurrentAccount } from "@mysten/dapp-kit";
 import { useMySlides } from "../hooks/useMySlides";
@@ -55,7 +55,7 @@ export const MySlide = () => {
     return () => window.removeEventListener("storage", handleStorageChange);
   }, [account?.address, blockchainSlides, useBlockchain, isLoadingBlockchain]);
 
-  const handleDelete = (slide) => {
+  const handleDelete = useCallback((slide) => {
     if (confirm("Are you sure you want to delete this slide?")) {
       // Check if it's a blockchain slide
       if (useBlockchain && slide.suiObjectId) {
@@ -68,7 +68,7 @@ export const MySlide = () => {
             // Mark as deleted locally
             deleteLocalSlideRecord(slide.suiObjectId);
             // Remove from local state
-            setSlides(slides.filter((s) => s.id !== slide.id));
+            setSlides(prev => prev.filter((s) => s.id !== slide.id));
             // Trigger marketplace refresh
             localStorage.setItem("marketplace_refresh", Date.now().toString());
           },
@@ -83,12 +83,12 @@ export const MySlide = () => {
         const savedSlides = JSON.parse(localStorage.getItem("slides") || "[]");
         const updated = savedSlides.filter((s) => s.id !== slide.id);
         localStorage.setItem("slides", JSON.stringify(updated));
-        setSlides(slides.filter((s) => s.id !== slide.id));
+        setSlides(prev => prev.filter((s) => s.id !== slide.id));
         // Trigger marketplace refresh
         localStorage.setItem("marketplace_refresh", Date.now().toString());
       }
     }
-  };
+  }, [useBlockchain, deleteSlide]);
 
   return (
     <div className="py-10 transition-colors duration-500">
@@ -224,25 +224,43 @@ export const MySlide = () => {
 
                 {/* Hover overlay */}
                 <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-3 backdrop-blur-[2px]">
-                  <button
-                    onClick={() => navigate(`/editor/${slide.id}`, { state: { source: useBlockchain ? 'blockchain' : 'local', slide } })}
-                    className="cursor-pointer p-3 bg-blue-600 hover:bg-blue-500 text-white rounded-xl transition-colors shadow-lg"
-                    title="Edit"
-                  >
-                    <svg
-                      className="w-5 h-5"
-                      fill="none"
-                      viewBox="0 0 24 24"
-                      stroke="currentColor"
+                  {slide.isLicensed ? (
+                    <div className="cursor-not-allowed p-3 bg-gray-500/50 text-white/50 rounded-xl transition-colors shadow-lg" title="Editing disabled for licensed slides">
+                      <svg
+                        className="w-5 h-5"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"
+                        />
+                      </svg>
+                    </div>
+                  ) : (
+                    <button
+                      onClick={() => navigate(`/editor/${slide.id}`, { state: { source: useBlockchain ? 'blockchain' : 'local', slide } })}
+                      className="cursor-pointer p-3 bg-blue-600 hover:bg-blue-500 text-white rounded-xl transition-colors shadow-lg"
+                      title="Edit"
                     >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
-                      />
-                    </svg>
-                  </button>
+                      <svg
+                        className="w-5 h-5"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
+                        />
+                      </svg>
+                    </button>
+                  )}
                   <button
                     onClick={() => navigate(`/slide/${slide.id}`, { state: { source: useBlockchain ? 'blockchain' : 'local', slide } })}
                     className="cursor-pointer p-3 bg-cyan-600 hover:bg-cyan-500 text-white rounded-xl transition-colors shadow-lg"
@@ -293,16 +311,27 @@ export const MySlide = () => {
 
               {/* Info */}
               <div className="p-4 bg-white dark:bg-transparent">
-                <h3 className="font-semibold text-gray-900 dark:text-white truncate">
-                  {slide.title}
-                </h3>
+                <div className="flex items-center gap-2 mb-1">
+                  <h3 className="font-semibold text-gray-900 dark:text-white truncate flex-1">
+                    {slide.title}
+                  </h3>
+                  {slide.isLicensed ? (
+                    <span className="px-2 py-0.5 bg-cyan-100 dark:bg-cyan-900/30 text-cyan-600 dark:text-cyan-400 text-[10px] font-bold rounded-full border border-cyan-200 dark:border-cyan-800/50">
+                      LICENSE
+                    </span>
+                  ) : (
+                    <span className="px-2 py-0.5 bg-green-100 dark:bg-green-900/30 text-green-600 dark:text-green-400 text-[10px] font-bold rounded-full border border-green-200 dark:border-green-800/50">
+                      OWNED
+                    </span>
+                  )}
+                </div>
                 <div className="flex items-center justify-between mt-1">
                   <p className="text-xs text-gray-500">
-                    {new Date(slide.createdAt).toLocaleDateString()}
+                    {slide.createdAt ? new Date(slide.createdAt).toLocaleDateString() : 'Just now'}
                   </p>
                   <div
-                    className="h-2 w-2 rounded-full bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.4)]"
-                    title="Published"
+                    className={`h-2 w-2 rounded-full ${slide.isLicensed ? 'bg-cyan-500' : 'bg-green-500'} shadow-[0_0_8px_rgba(34,197,94,0.4)]`}
+                    title={slide.isLicensed ? "Licensed Content" : "Published Content"}
                   ></div>
                 </div>
               </div>

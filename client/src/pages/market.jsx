@@ -1,8 +1,8 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useCurrentAccount } from "@mysten/dapp-kit";
-import { v4 as uuid } from "uuid";
 import { useMarketplaceSlides, useBuySlide } from "../hooks/useMarketplace";
+import { useBuyLicense } from "../hooks/useBuyLicense";
 import { CardSkeleton } from "../components/CardSkeleton";
 import AOS from "aos";
 import "aos/dist/aos.css";
@@ -11,7 +11,10 @@ export const Market = () => {
   const navigate = useNavigate();
   const account = useCurrentAccount();
   const { slides, isLoading, error, refetch } = useMarketplaceSlides();
-  const { buySlide, isLoading: isBuying } = useBuySlide();
+  const { buySlide, isLoading: isBuyingSlide } = useBuySlide();
+  const { buyLicense, isLoading: isBuyingLicense } = useBuyLicense();
+  
+  const isBuying = isBuyingSlide || isBuyingLicense;
   const [filter, setFilter] = useState("all");
   const [searchQuery, setSearchQuery] = useState("");
   const [maxPrice, setMaxPrice] = useState(100);
@@ -38,20 +41,33 @@ export const Market = () => {
   }, [refetch]);
 
   // Convert MIST to SUI (1 SUI = 1,000,000,000 MIST)
+  const formatSui = (mist) => {
+    return (mist / 1000000000).toFixed(4);
+  };
+
   const getPrice = (slide) => {
     const priceInMist = slide.price || 0;
-    return (priceInMist / 1000000000).toFixed(4);
+    return formatSui(priceInMist);
   };
 
   // Check if user owns slide or license
   const getAccessStatus = (slide) => {
-    if (!account?.address) return "none";
+    if (!account?.address || !slide) return "none";
     
-    if (slide.owner === account.address) return "owner";
+    // Normalize addresses for robust comparison
+    const userAddr = account.address.replace('0x', '').toLowerCase();
+    const ownerAddr = slide.owner?.replace('0x', '').toLowerCase();
     
-    // Check licenses in localStorage
+    // Check ownership
+    if (ownerAddr === userAddr) return "owner";
+    
+    // Check licenses in localStorage (legacy/mock)
     const licenses = JSON.parse(localStorage.getItem("licenses") || "[]");
-    if (licenses.some((l) => l.slideId === slide.id && l.buyer === account.address)) {
+    if (licenses.some((l) => {
+      const lSlideId = l.slideId?.replace('0x', '').toLowerCase();
+      const sId = slide.id?.replace('0x', '').toLowerCase();
+      return lSlideId === sId && l.buyer === account.address;
+    })) {
       return "licensed";
     }
     return "none";
@@ -86,42 +102,34 @@ export const Market = () => {
   });
 
   // Buy license (for SlideObject) or buy slide (for Listing)
-  const handleBuyLicense = async (slide) => {
+  const handlePurchase = async (slide, purchaseType) => {
     if (!account) {
       navigate("/sign-in");
       return;
     }
 
     try {
-      if (slide.type === "listing") {
-        // Buy full ownership from Listing
+      if (purchaseType === "ownership") {
+        // Buy full ownership
         await buySlide({
-          listingId: slide.id,
-          price: slide.price,
+          slideId: slide.id,
+          price: slide.salePrice,
         });
 
-        // Refresh slides list to remove sold listing
         await refetch();
         alert(`Successfully purchased full ownership of "${slide.title}"!`);
       } else {
-        // Buy license for SlideObject
-        // This would require buy_license transaction
-        // For now, store in localStorage for development
-        const licenses = JSON.parse(localStorage.getItem("licenses") || "[]");
-        licenses.push({
-          id: uuid(),
+        // Buy license
+        await buyLicense({
           slideId: slide.id,
-          buyer: account.address,
-          purchasedAt: new Date().toISOString(),
+          price: slide.price,
         });
-        localStorage.setItem("licenses", JSON.stringify(licenses));
 
-        // Refresh slides list
         await refetch();
-        alert(`License purchased for "${slide.title}"!`);
+        alert(`License successfully purchased for "${slide.title}"!`);
       }
     } catch (err) {
-      console.error("Error buying license:", err);
+      console.error("Purchase error:", err);
       alert(`Failed to purchase: ${err.message}`);
     }
   };
@@ -316,7 +324,7 @@ export const Market = () => {
                       <h3 className="font-bold text-sm text-slate-800 dark:text-white truncate mb-1">
                         {slide.title || "Untitled"}
                       </h3>
-                      <p className="text-sm text-blue-500 font-medium mb-4">
+                      <p className="text-sm text-blue-500 font-medium mb-4 truncate">
                         @{slide.author || "Creator"}
                       </p>
 
@@ -333,35 +341,36 @@ export const Market = () => {
                         </div>
                       </div>
 
-                      <div className="flex gap-2 mt-auto">
-                        <button
-                          onClick={() =>
-                            accessStatus === "none"
-                              ? handleBuyLicense(slide)
-                              : navigate(`/slide/${slide.id}`)
-                          }
-                          className={`cursor-pointer flex-1 py-2.5 rounded-xl font-bold text-sm transition-all ${
-                            accessStatus === "none"
-                              ? "bg-[#1e293b] text-white"
-                              : "bg-blue-600 text-white"
-                          }`}
-                        >
-                          {accessStatus === "none" ? (isBuying ? "..." : "Buy Now") : "View"}
-                        </button>
-                        <button className="p-2.5 bg-gray-50 dark:bg-gray-800 rounded-xl hover:bg-gray-100 transition-colors">
-                          <svg
-                            className="w-4 h-4 text-gray-500"
-                            fill="none"
-                            stroke="currentColor"
-                            viewBox="0 0 24 24"
+                      <div className="flex flex-col gap-2 mt-auto">
+                        {accessStatus === "none" ? (
+                          <>
+                            {slide.isListed && (
+                              <button
+                                onClick={() => handlePurchase(slide, "license")}
+                                disabled={isBuying}
+                                className="cursor-pointer w-full py-2 bg-[#1e293b] text-white rounded-xl font-bold text-xs hover:bg-slate-800 transition-all flex items-center justify-center gap-2"
+                              >
+                                {isBuyingLicense ? "..." : `Buy License (${getPrice(slide)} SUI)`}
+                              </button>
+                            )}
+                            {slide.isForSale && (
+                              <button
+                                onClick={() => handlePurchase(slide, "ownership")}
+                                disabled={isBuying}
+                                className="cursor-pointer w-full py-2 bg-blue-600 text-white rounded-xl font-bold text-xs hover:bg-blue-700 transition-all flex items-center justify-center gap-2"
+                              >
+                                {isBuyingSlide ? "..." : `Buy Ownership (${formatSui(slide.salePrice)} SUI)`}
+                              </button>
+                            )}
+                          </>
+                        ) : (
+                          <button
+                            onClick={() => navigate(`/slide/${slide.id}`)}
+                            className="cursor-pointer w-full py-2.5 bg-blue-600 text-white rounded-xl font-bold text-sm hover:bg-blue-700 transition-all"
                           >
-                            <path d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                            <path
-                              d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"
-                              strokeWidth={2}
-                            />
-                          </svg>
-                        </button>
+                            View Slide
+                          </button>
+                        )}
                       </div>
                     </div>
                   </div>
