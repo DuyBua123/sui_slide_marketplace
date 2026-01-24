@@ -3,14 +3,14 @@ import { uploadToWalrus } from '../utils/walrus';
 
 /**
  * SealAssetService - Encryption service for premium assets
- * Encrypts assets before uploading to Pinata IPFS
+ * Encrypts assets before uploading to Walrus (SUI-native storage)
  */
 class SealAssetService {
     /**
-     * Encrypt and upload asset to Pinata
+     * Encrypt and upload asset to Walrus
      * @param {File|Blob} file - Asset file to encrypt
      * @param {Object} metadata - Asset metadata
-     * @returns {Promise<{cid: string, encryptionKey: string, metadata: Object}>}
+     * @returns {Promise<{blobId: string, encryptionKey: string, metadata: Object}>}
      */
     async sealAndUpload(file, metadata = {}) {
         try {
@@ -29,8 +29,7 @@ class SealAssetService {
             });
 
             // 5. Upload encrypted blob to Walrus
-            // Note: Walrus currently doesn't support custom metadata in the same way as Pinata's pinFileToIPFS,
-            // but we can wrap it if needed. For now, we just upload the encrypted blob.
+            // Note: Walrus uses a simple blob upload model without custom metadata.
             const uploadResult = await uploadToWalrus(encryptedBlob);
 
             // 6. Return Blob ID + encryption key
@@ -50,8 +49,8 @@ class SealAssetService {
     }
 
     /**
-     * Decrypt and retrieve asset from Pinata
-     * @param {string} cid - IPFS CID
+     * Decrypt and retrieve asset from Walrus
+     * @param {string} blobId - Walrus Blob ID
      * @param {string} encryptionKey - Decryption key
      * @returns {Promise<string>} - Decrypted data URL
      */

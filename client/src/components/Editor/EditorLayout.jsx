@@ -21,7 +21,7 @@ import { useSlideStore, useTemporalStore } from "../../store/useSlideStore";
 import { useAutoSave } from "../../hooks/useAutoSave";
 import { useUpdateSlide } from "../../hooks/useUpdateSlide";
 import { saveSlideToBlockchain } from "../../services/blockchain/blockchainSave";
-import { fetchFromIPFS } from "../../services/exports/exportToIPFS";
+import { fetchFromWalrus } from "../../services/exports/exportToWalrus";
 
 /**
  * EditorLayout - Canva-style grid layout
@@ -86,8 +86,8 @@ export const EditorLayout = () => {
         setIsLoading(true);
         try {
           if (source === 'blockchain' && slideMeta?.contentUrl) {
-            console.log('[EDITOR] Fetching minted content from IPFS:', slideMeta.contentUrl);
-            const data = await fetchFromIPFS(slideMeta.contentUrl);
+            console.log('[EDITOR] Fetching minted content from Walrus:', slideMeta.contentUrl);
+            const data = await fetchFromWalrus(slideMeta.contentUrl);
             if (data) {
               console.log('[EDITOR] Successfully fetched minted content');
               loadFromJSON(data);
@@ -217,7 +217,7 @@ export const EditorLayout = () => {
   // Save changes to blockchain
   const handleSaveToBlockchain = useCallback(async () => {
     console.log("[BLOCKCHAIN] Save initiated - isMinted:", isMinted, "suiObjectId:", suiObjectId);
-    
+
     if (!isMinted || !suiObjectId) {
       console.warn("[BLOCKCHAIN] Cannot save - Slide must be minted first");
       setBlockchainSaveError("Slide must be minted before saving to blockchain");
@@ -239,7 +239,7 @@ export const EditorLayout = () => {
       console.log("[BLOCKCHAIN] Save successful! Transaction digest:", result.txDigest);
       console.log("[BLOCKCHAIN] Content URL:", result.contentUrl);
       console.log("[BLOCKCHAIN] Full result:", result);
-      
+
       setBlockchainSaveStatus("success");
 
       // Reset success status after 3 seconds
@@ -279,7 +279,7 @@ export const EditorLayout = () => {
   return (
     <div className="h-screen bg-[#f8f9fa] dark:bg-[#0a0a0f] text-gray-900 dark:text-white flex flex-col overflow-hidden transition-colors duration-300">
       {/* Top Header */}
-      <TopHeader 
+      <TopHeader
         projectId={id}
         onSaveToBlockchain={handleSaveToBlockchain}
         isMinted={isMinted}

@@ -1,11 +1,11 @@
 /**
  * Blockchain Save Service
  * 
- * Handles exporting slide data to IPFS and preparing it for blockchain storage
+ * Handles exporting slide data to Walrus and preparing it for blockchain storage
  */
 
 import React from 'react';
-import { exportToIPFS } from '../exports/exportToIPFS';
+import { exportToWalrus } from '../exports/exportToWalrus';
 
 /**
  * Prepare slide data for blockchain storage
@@ -24,8 +24,8 @@ export const prepareSlideDraftData = async ({ title, slides }) => {
             updatedAt: new Date().toISOString(),
         };
 
-        // Export to IPFS
-        const contentUrl = await exportToIPFS(slideData);
+        // Export to Walrus
+        const contentUrl = await exportToWalrus(slideData);
 
         // For now, use a placeholder thumbnail URL
         // In production, you'd generate an actual thumbnail

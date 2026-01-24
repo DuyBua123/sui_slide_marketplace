@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Type, Heading1, Square, Circle, Minus, Image, Upload, Loader2 } from "lucide-react";
 import { useSlideStore } from "../../store/useSlideStore";
-import { uploadToPinata } from "../../utils/pinata";
+import { uploadToWalrus } from "../../utils/walrus";
 
 /**
  * Toolbox component with element tools
@@ -77,10 +77,10 @@ export const Toolbox = () => {
     setUploadError(null);
 
     try {
-      const result = await uploadToPinata(file, file.name);
+      const result = await uploadToWalrus(file);
       addElement("image", {
         src: result.url,
-        ipfsHash: result.hash,
+        blobId: result.blobId,
         x: 100 + Math.random() * 200,
         y: 100 + Math.random() * 100,
       });
@@ -134,11 +134,10 @@ export const Toolbox = () => {
           Media
         </h3>
         <label
-          className={`flex items-center justify-center gap-2 px-3 py-3 rounded-lg cursor-pointer transition-all border ${
-            isUploading
-              ? "bg-yellow-50 dark:bg-yellow-600/20 border-yellow-200 dark:border-yellow-500/40"
-              : "bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-600/10 dark:to-indigo-600/10 hover:from-blue-100 hover:to-indigo-100 dark:hover:from-blue-600/20 dark:hover:to-indigo-600/20 border-blue-100 dark:border-blue-500/20 hover:border-blue-300 dark:hover:border-blue-500/40 shadow-sm"
-          }`}
+          className={`flex items-center justify-center gap-2 px-3 py-3 rounded-lg cursor-pointer transition-all border ${isUploading
+            ? "bg-yellow-50 dark:bg-yellow-600/20 border-yellow-200 dark:border-yellow-500/40"
+            : "bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-600/10 dark:to-indigo-600/10 hover:from-blue-100 hover:to-indigo-100 dark:hover:from-blue-600/20 dark:hover:to-indigo-600/20 border-blue-100 dark:border-blue-500/20 hover:border-blue-300 dark:hover:border-blue-500/40 shadow-sm"
+            }`}
         >
           {isUploading ? (
             <>
