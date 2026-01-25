@@ -34,7 +34,7 @@ export const useUpdateSlide = () => {
             const tx = new Transaction();
 
             tx.moveCall({
-                target: `${PACKAGE_ID}::slide_marketplace::update_slide`,
+                target: `${PACKAGE_ID}::slide_marketplace::update_slide_content`,
                 arguments: [
                     tx.object(slideObject.id || slideObject),
                     tx.pure.string(title),

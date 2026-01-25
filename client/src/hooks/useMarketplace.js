@@ -38,7 +38,7 @@ export const useMarketplaceSlides = () => {
                         owner: account.address,
                         options: { showContent: true, showType: true },
                     });
-                    
+
                     if (ownedObjects?.data) {
                         for (const obj of ownedObjects.data) {
                             const type = obj.data?.type || '';
@@ -74,7 +74,7 @@ export const useMarketplaceSlides = () => {
                         if (slideId && !slideMap.has(slideId)) {
                             // Normalize slideId for set check
                             const normSlideId = slideId.replace('0x', '').toLowerCase();
-                            
+
                             // Skip if user already has a license for this slide
                             if (userLicenses.has(normSlideId)) {
                                 console.log(`[MARKETPLACE] Skipping slide ${slideId} (user has license)`);
@@ -89,11 +89,11 @@ export const useMarketplaceSlides = () => {
 
                                 if (obj.data?.content?.dataType === 'moveObject') {
                                     const fields = obj.data.content.fields;
-                                    
+
                                     // Skip if user is the owner (normalize addresses)
                                     const ownerAddr = fields.owner?.replace('0x', '').toLowerCase();
                                     const userAddr = account?.address?.replace('0x', '').toLowerCase();
-                                    
+
                                     if (userAddr && ownerAddr === userAddr) {
                                         console.log(`[MARKETPLACE] Skipping slide ${slideId} (user is owner)`);
                                         continue;
@@ -117,14 +117,14 @@ export const useMarketplaceSlides = () => {
                                         });
                                     }
                                 }
-                            } catch (e) { 
+                            } catch (e) {
                                 console.warn(`[MARKETPLACE] Failed to fetch object ${slideId}:`, e);
                             }
                         }
                     }
                 }
-            } catch (e) { 
-                console.error('[MARKETPLACE] Fetch events failed:', e.message); 
+            } catch (e) {
+                console.error('[MARKETPLACE] Fetch events failed:', e.message);
                 throw e;
             }
 
@@ -134,10 +134,10 @@ export const useMarketplaceSlides = () => {
         } catch (err) {
             console.warn('[MARKETPLACE] Fetch failed, falling back to local storage:', err.message);
             setError(`Sync failed: ${err.message}. Showing local slides.`);
-            
+
             const userAddr = account?.address?.replace('0x', '').toLowerCase();
             const mockSlides = JSON.parse(localStorage.getItem('slides') || '[]');
-            
+
             // Filter local slides if possible
             const filteredLocal = mockSlides
                 .map(s => ({ ...s, source: 'local' }))
@@ -145,7 +145,7 @@ export const useMarketplaceSlides = () => {
                     const ownerAddr = s.owner?.replace('0x', '').toLowerCase();
                     return !userAddr || ownerAddr !== userAddr;
                 });
-                
+
             setSlides(filteredLocal);
         } finally {
             setIsLoading(false);
@@ -180,7 +180,7 @@ export const useListSlide = () => {
             const tx = new Transaction();
 
             tx.moveCall({
-                target: `${PACKAGE_ID}::slide_marketplace::update_listing_status`,
+                target: `${PACKAGE_ID}::slide_marketplace::set_listing_status`,
                 arguments: [
                     tx.object(slideId),
                     tx.pure.u64(licensePrice),
@@ -222,7 +222,7 @@ export const useBuySlide = () => {
             const [coin] = tx.splitCoins(tx.gas, [tx.pure.u64(price)]);
 
             tx.moveCall({
-                target: `${PACKAGE_ID}::slide_marketplace::buy_slide`,
+                target: `${PACKAGE_ID}::slide_marketplace::buy_ownership`,
                 arguments: [
                     tx.object(slideId),
                     coin,

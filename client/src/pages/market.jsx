@@ -13,7 +13,7 @@ export const Market = () => {
   const { slides, isLoading, error, refetch } = useMarketplaceSlides();
   const { buySlide, isLoading: isBuyingSlide } = useBuySlide();
   const { buyLicense, isLoading: isBuyingLicense } = useBuyLicense();
-  
+
   const isBuying = isBuyingSlide || isBuyingLicense;
   const [filter, setFilter] = useState("all");
   const [searchQuery, setSearchQuery] = useState("");
@@ -53,14 +53,14 @@ export const Market = () => {
   // Check if user owns slide or license
   const getAccessStatus = (slide) => {
     if (!account?.address || !slide) return "none";
-    
+
     // Normalize addresses for robust comparison
     const userAddr = account.address.replace('0x', '').toLowerCase();
     const ownerAddr = slide.owner?.replace('0x', '').toLowerCase();
-    
+
     // Check ownership
     if (ownerAddr === userAddr) return "owner";
-    
+
     // Check licenses in localStorage (legacy/mock)
     const licenses = JSON.parse(localStorage.getItem("licenses") || "[]");
     if (licenses.some((l) => {
@@ -111,10 +111,7 @@ export const Market = () => {
     try {
       if (purchaseType === "ownership") {
         // Buy full ownership
-        await buySlide({
-          slideId: slide.id,
-          price: slide.salePrice,
-        });
+        await buySlide(slide); // slide already has .id and .salePrice
 
         await refetch();
         alert(`Successfully purchased full ownership of "${slide.title}"!`);
@@ -232,11 +229,10 @@ export const Market = () => {
                   <button
                     key={f}
                     onClick={() => setFilter(f)}
-                    className={`cursor-pointer w-full flex items-center justify-between px-4 py-2.5 rounded-xl text-sm font-semibold capitalize transition-all ${
-                      filter === f
+                    className={`cursor-pointer w-full flex items-center justify-between px-4 py-2.5 rounded-xl text-sm font-semibold capitalize transition-all ${filter === f
                         ? "bg-blue-600 text-white shadow-md shadow-blue-500/20"
                         : "bg-gray-50 dark:bg-white/5 text-gray-500 hover:bg-gray-100 dark:hover:bg-white/10"
-                    }`}
+                      }`}
                   >
                     {f}
                     {filter === f && (
