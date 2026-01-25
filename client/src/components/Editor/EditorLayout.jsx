@@ -22,6 +22,9 @@ import { useAutoSave } from "../../hooks/useAutoSave";
 import { useUpdateSlide } from "../../hooks/useUpdateSlide";
 import { saveSlideToBlockchain } from "../../services/blockchain/blockchainSave";
 import { fetchFromWalrus } from "../../services/exports/exportToWalrus";
+import { useSlideVersions } from "../../hooks/useSlideVersions";
+import { VersionSelectionModal } from "./VersionSelectionModal";
+import { uploadJSONToWalrus } from "../../utils/walrus";
 
 /**
  * EditorLayout - Canva-style grid layout
@@ -42,6 +45,9 @@ export const EditorLayout = () => {
   const [blockchainSaveStatus, setBlockchainSaveStatus] = useState(null); // null | 'saving' | 'success' | 'error'
   const [blockchainSaveError, setBlockchainSaveError] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [showVersionModal, setShowVersionModal] = useState(false);
+  const [availableVersions, setAvailableVersions] = useState([]);
+  const [pendingSlideMeta, setPendingSlideMeta] = useState(null);
 
   const {
     title,
@@ -86,10 +92,42 @@ export const EditorLayout = () => {
         setIsLoading(true);
         try {
           if (source === 'blockchain' && slideMeta?.contentUrl) {
+            if (slideMeta.isLicensed && !slideMeta.isOwner) {
+              console.log('[EDITOR] Licensed slide detected - Fetching version history');
+              setIsLoading(true);
+              try {
+                // Fetch versions manually here or using a client call since it's a one-off during load
+                const result = await client.getObject({
+                  id: slideMeta.objectId || slideMeta.id,
+                  options: { showContent: true },
+                });
+
+                if (result.data?.content?.dataType === 'moveObject') {
+                  const fields = result.data.content.fields;
+                  if (fields.versions) {
+                    const mappedVersions = fields.versions.map(v => ({
+                      version: v.version,
+                      contentUrl: v.content_url,
+                      timestamp: parseInt(v.timestamp),
+                    })).sort((a, b) => b.version - a.version);
+
+                    setAvailableVersions(mappedVersions);
+                    setPendingSlideMeta(slideMeta);
+                    setShowVersionModal(true);
+                    setIsLoading(false);
+                    return;
+                  }
+                }
+              } catch (e) {
+                console.error('[EDITOR] Failed to load version history:', e);
+              }
+            }
+
             console.log('[EDITOR] Fetching minted content from Walrus:', slideMeta.contentUrl);
             const data = await fetchFromWalrus(slideMeta.contentUrl);
             if (data) {
               console.log('[EDITOR] Successfully fetched minted content');
+
               loadFromJSON(data);
               setCurrentSlideData({ ...slideMeta, data });
               setIsMinted(true);
@@ -254,6 +292,40 @@ export const EditorLayout = () => {
     }
   }, [isMinted, suiObjectId, title, slides, updateSlide]);
 
+  // Handle version selection (Forking)
+  const handleVersionSelect = async (selectedVersion) => {
+    setShowVersionModal(false);
+    setIsLoading(true);
+
+    try {
+      console.log(`[EDITOR] Forking version ${selectedVersion.version} from Walrus:`, selectedVersion.contentUrl);
+      const data = await fetchFromWalrus(selectedVersion.contentUrl);
+
+      if (data) {
+        const newId = crypto.randomUUID();
+        const newProject = {
+          id: newId,
+          title: `${pendingSlideMeta.title} (v${selectedVersion.version} Copy)`,
+          data: data,
+          thumbnail: pendingSlideMeta.thumbnailUrl,
+          createdAt: new Date().toISOString()
+        };
+
+        const savedSlides = JSON.parse(localStorage.getItem("slides") || "[]");
+        localStorage.setItem("slides", JSON.stringify([...savedSlides, newProject]));
+
+        // Load and redirect
+        loadFromJSON(data);
+        setTitle(`${pendingSlideMeta.title} (v${selectedVersion.version} Copy)`);
+        navigate(`/editor/${newId}`, { replace: true });
+      }
+    } catch (err) {
+      console.error('[EDITOR] Fork failed:', err);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   // Render contextual toolbar
   const renderContextualToolbar = () => {
     if (selectedElement?.type === "text") {
@@ -354,6 +426,17 @@ export const EditorLayout = () => {
         onClose={() => setShowSellModal(false)}
         slideId={suiObjectId}
         slideTitle={title}
+      />
+
+      <VersionSelectionModal
+        isOpen={showVersionModal}
+        onClose={() => {
+          setShowVersionModal(false);
+          navigate('/'); // Redirect home if they cancel version selection
+        }}
+        versions={availableVersions}
+        onSelect={handleVersionSelect}
+        isLoading={false}
       />
     </div>
   );

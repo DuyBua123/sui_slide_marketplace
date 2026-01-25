@@ -5,8 +5,10 @@ import { useListSlide } from "../../hooks/useMarketplace";
  * Modal for listing a slide for sale
  */
 export const SellSlideModal = ({ isOpen, onClose, slideId, slideTitle }) => {
-  const [price, setPrice] = useState("");
-  const [priceInSui, setPriceInSui] = useState("1");
+  const [licensePriceSui, setLicensePriceSui] = useState("1");
+  const [salePriceSui, setSalePriceSui] = useState("10");
+  const [isListed, setIsListed] = useState(true);
+  const [isForSale, setIsForSale] = useState(false);
   const { listSlide, isLoading, error } = useListSlide();
   const [success, setSuccess] = useState(false);
 
@@ -15,24 +17,22 @@ export const SellSlideModal = ({ isOpen, onClose, slideId, slideTitle }) => {
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    // Convert SUI to MIST (1 SUI = 1e9 MIST)
-    const priceInMist = Math.floor(parseFloat(priceInSui) * 1_000_000_000);
-
-    if (priceInMist <= 0) {
-      alert("Please enter a valid price");
-      return;
-    }
+    // Convert SUI to MIST
+    const licensePriceMist = Math.floor(parseFloat(licensePriceSui) * 1_000_000_000);
+    const salePriceMist = Math.floor(parseFloat(salePriceSui) * 1_000_000_000);
 
     try {
       await listSlide({
         slideId,
-        price: priceInMist,
+        licensePrice: licensePriceMist,
+        isListed: isListed,
+        price: salePriceMist, // Mapping price to sale_price for useListSlide hook
+        isForSale: isForSale,
       });
       setSuccess(true);
       setTimeout(() => {
         onClose();
         setSuccess(false);
-        setPriceInSui("1");
       }, 2000);
     } catch (err) {
       console.error("Failed to list slide:", err);
@@ -108,30 +108,52 @@ export const SellSlideModal = ({ isOpen, onClose, slideId, slideTitle }) => {
 
             {/* Pricing Form */}
             <form onSubmit={handleSubmit}>
-              <div className="mb-6">
-                <label className="block text-[11px] font-black text-gray-500 dark:text-gray-400 mb-2 uppercase tracking-wider">
-                  Sale Price (SUI)
-                </label>
-                <div className="relative group">
-                  <input
-                    type="number"
-                    step="0.1"
-                    min="0.1"
-                    value={priceInSui}
-                    onChange={(e) => setPriceInSui(e.target.value)}
-                    className="w-full px-5 py-4 bg-white dark:bg-black/30 border-2 border-gray-100 dark:border-white/10 rounded-2xl text-gray-900 dark:text-white text-xl font-black focus:border-blue-500 dark:focus:border-cyan-500 focus:outline-none transition-all shadow-sm"
-                    placeholder="1.0"
-                  />
-                  <div className="absolute right-4 top-1/2 -translate-y-1/2 flex items-center gap-2 bg-gray-100 dark:bg-black/40 px-3 py-1.5 rounded-lg">
-                    <div className="w-2 h-2 bg-blue-500 dark:bg-cyan-400 rounded-full animate-pulse" />
-                    <span className="text-gray-700 dark:text-gray-300 font-black text-xs">
-                      SUI
-                    </span>
-                  </div>
+              {/* License Section */}
+              <div className="mb-6 p-4 bg-gray-50 dark:bg-white/5 rounded-2xl border border-gray-100 dark:border-white/5">
+                <div className="flex items-center justify-between mb-4">
+                  <label className="text-[11px] font-black text-gray-500 dark:text-gray-400 uppercase tracking-widest">
+                    Enable Licensing (Usage)
+                  </label>
+                  <label className="relative inline-flex items-center cursor-pointer">
+                    <input type="checkbox" checked={isListed} onChange={(e) => setIsListed(e.target.checked)} className="sr-only peer" />
+                    <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-0.5 after:left-0.5 after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-blue-600"></div>
+                  </label>
                 </div>
-                <p className="text-[11px] text-gray-400 dark:text-gray-500 mt-3 font-mono font-medium">
-                  ≈ {(parseFloat(priceInSui) * 1_000_000_000 || 0).toLocaleString()} MIST
-                </p>
+                {isListed && (
+                  <div className="relative group">
+                    <input
+                      type="number" step="0.1" min="0" value={licensePriceSui}
+                      onChange={(e) => setLicensePriceSui(e.target.value)}
+                      className="w-full px-5 py-3 bg-white dark:bg-black/30 border-2 border-gray-100 dark:border-white/10 rounded-xl text-gray-900 dark:text-white text-lg font-black focus:border-blue-500 outline-none transition-all"
+                      placeholder="1.0"
+                    />
+                    <div className="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-black text-gray-400">SUI</div>
+                  </div>
+                )}
+              </div>
+
+              {/* Ownership Section */}
+              <div className="mb-6 p-4 bg-gray-50 dark:bg-white/5 rounded-2xl border border-gray-100 dark:border-white/5">
+                <div className="flex items-center justify-between mb-4">
+                  <label className="text-[11px] font-black text-gray-500 dark:text-gray-400 uppercase tracking-widest">
+                    Enable Ownership Sale
+                  </label>
+                  <label className="relative inline-flex items-center cursor-pointer">
+                    <input type="checkbox" checked={isForSale} onChange={(e) => setIsForSale(e.target.checked)} className="sr-only peer" />
+                    <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-0.5 after:left-0.5 after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-green-600"></div>
+                  </label>
+                </div>
+                {isForSale && (
+                  <div className="relative group">
+                    <input
+                      type="number" step="0.1" min="0" value={salePriceSui}
+                      onChange={(e) => setSalePriceSui(e.target.value)}
+                      className="w-full px-5 py-3 bg-white dark:bg-black/30 border-2 border-gray-100 dark:border-white/10 rounded-xl text-gray-900 dark:text-white text-lg font-black focus:border-green-500 outline-none transition-all"
+                      placeholder="10.0"
+                    />
+                    <div className="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-black text-gray-400">SUI</div>
+                  </div>
+                )}
               </div>
 
               {/* Warning Box */}
