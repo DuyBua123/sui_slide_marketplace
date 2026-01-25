@@ -4,8 +4,10 @@ import { Stage, Layer, Rect, Circle, Line, Text, Image as KonvaImage } from "rea
 import { motion, AnimatePresence } from "framer-motion";
 import Konva from "konva";
 import { animationPresets } from "../components/Editor/animationPresets";
-import { ChevronLeft, ChevronRight, X, Maximize, Minimize, Play, Pause } from "lucide-react";
+import { ChevronLeft, ChevronRight, X, Maximize, Minimize, Play, Pause, ShieldCheck } from "lucide-react";
 import { fetchFromWalrus } from "../services/exports/exportToWalrus";
+import { ManageAccessModal } from "../components/Editor/ManageAccessModal";
+import { useCurrentAccount } from "@mysten/dapp-kit";
 
 const CANVAS_WIDTH = 960;
 const CANVAS_HEIGHT = 540;
@@ -59,6 +61,7 @@ export const Slide = () => {
   const location = useLocation();
   const containerRef = useRef(null);
   const stageRef = useRef(null);
+  const account = useCurrentAccount();
 
   const [presentation, setPresentation] = useState(null);
   const [currentIndex, setCurrentIndex] = useState(0);
@@ -69,6 +72,7 @@ export const Slide = () => {
   const [autoplayInterval] = useState(5);
   const [animatedElements, setAnimatedElements] = useState(new Set());
   const [isLoading, setIsLoading] = useState(true);
+  const [showAccessModal, setShowAccessModal] = useState(false);
   const controlsTimeout = useRef(null);
 
   // --- LOGIC 1: ẨN CON TRỎ & CONTROL BAR ---
@@ -320,6 +324,15 @@ export const Slide = () => {
         </motion.div>
       </AnimatePresence>
 
+      {/* Access Management Modal */}
+      {location.state?.slide && (
+        <ManageAccessModal
+          isOpen={showAccessModal}
+          onClose={() => setShowAccessModal(false)}
+          slide={location.state.slide}
+        />
+      )}
+
       {/* Control Bar */}
       <motion.div
         initial={{ opacity: 0, y: 20 }}
@@ -344,13 +357,24 @@ export const Slide = () => {
           disabled={
             currentIndex === presentation.slides.length - 1 &&
             animatedElements.size >=
-              currentSlide.elements.filter((e) => e.animation?.appearOnClick).length
+            currentSlide.elements.filter((e) => e.animation?.appearOnClick).length
           }
         >
           <ChevronRight />
         </button>
 
         <div className="w-px h-4 bg-white/20 mx-2" />
+
+        {/* Manage Access (Owner Only) */}
+        {location.state?.slide?.isOwner && location.state?.slide?.suiObjectId && (
+          <button
+            onClick={() => setShowAccessModal(true)}
+            className="cursor-pointer text-white hover:text-blue-400"
+            title="Manage Access"
+          >
+            <ShieldCheck size={20} />
+          </button>
+        )}
 
         <button
           onClick={() => setIsAutoplay(!isAutoplay)}

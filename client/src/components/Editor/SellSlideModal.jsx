@@ -4,13 +4,39 @@ import { useListSlide } from "../../hooks/useMarketplace";
 /**
  * Modal for listing a slide for sale
  */
-export const SellSlideModal = ({ isOpen, onClose, slideId, slideTitle }) => {
+export const SellSlideModal = ({ isOpen, onClose, slideId, slideTitle, initialData = null }) => {
   const [licensePriceSui, setLicensePriceSui] = useState("1");
   const [salePriceSui, setSalePriceSui] = useState("10");
   const [isListed, setIsListed] = useState(true);
   const [isForSale, setIsForSale] = useState(false);
   const { listSlide, isLoading, error } = useListSlide();
   const [success, setSuccess] = useState(false);
+
+  // Initialize with existing data if provided
+  useState(() => {
+    if (initialData) {
+      setLicensePriceSui(initialData.price ? (initialData.price / 1_000_000_000).toString() : "1");
+      setSalePriceSui(initialData.salePrice ? (initialData.salePrice / 1_000_000_000).toString() : "10");
+      setIsListed(initialData.isListed ?? true);
+      setIsForSale(initialData.isForSale ?? false);
+    }
+  }, [initialData, isOpen]);
+
+  // Reset/Sync when opening
+  if (isOpen && initialData && licensePriceSui === "1" && !initialData.wasReset) {
+    // Logic to sync handled in effect below
+  }
+
+  useState(() => {
+    // Quick fix: re-sync when isOpen changes to true
+    if (isOpen && initialData) {
+      setLicensePriceSui(initialData.price ? (initialData.price / 1_000_000_000).toString() : "1");
+      setSalePriceSui(initialData.salePrice ? (initialData.salePrice / 1_000_000_000).toString() : "10");
+      setIsListed(initialData.isListed);
+      setIsForSale(initialData.isForSale);
+    }
+  }, [isOpen]);
+
 
   if (!isOpen) return null;
 
@@ -35,7 +61,7 @@ export const SellSlideModal = ({ isOpen, onClose, slideId, slideTitle }) => {
         setSuccess(false);
       }, 2000);
     } catch (err) {
-      console.error("Failed to list slide:", err);
+      console.error("Failed to list/update slide:", err);
     }
   };
 
@@ -79,7 +105,7 @@ export const SellSlideModal = ({ isOpen, onClose, slideId, slideTitle }) => {
             {/* Header */}
             <div className="flex items-center justify-between mb-6">
               <h2 className="text-xl font-black text-gray-900 dark:text-white tracking-tight">
-                Sell Slide Asset
+                {initialData ? "Manage Listing" : "Sell Slide Asset"}
               </h2>
               <button
                 onClick={onClose}
@@ -99,7 +125,7 @@ export const SellSlideModal = ({ isOpen, onClose, slideId, slideTitle }) => {
             {/* Preview Card */}
             <div className="bg-gray-50 dark:bg-white/5 border border-gray-100 dark:border-white/5 rounded-2xl p-4 mb-6 transition-all">
               <p className="text-[10px] uppercase font-black tracking-widest text-gray-400 dark:text-gray-500 mb-1">
-                Listing Asset
+                {initialData ? "Editing Asset" : "Listing Asset"}
               </p>
               <p className="text-lg font-bold text-gray-900 dark:text-white truncate">
                 {slideTitle || "Untitled Slide"}
@@ -207,7 +233,7 @@ export const SellSlideModal = ({ isOpen, onClose, slideId, slideTitle }) => {
                 </button>
                 <button
                   type="submit"
-                  disabled={isLoading || !priceInSui}
+                  disabled={isLoading || (!isListed && !isForSale)}
                   className="cursor-pointer flex-[1.5] px-4 py-4 bg-gray-900 dark:bg-gradient-to-r dark:from-green-600 dark:to-emerald-600 hover:bg-black dark:hover:from-green-500 dark:hover:to-emerald-500 text-white rounded-2xl font-black shadow-xl shadow-gray-900/10 dark:shadow-emerald-500/20 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 active:scale-[0.97]"
                 >
                   {isLoading ? (
@@ -227,7 +253,7 @@ export const SellSlideModal = ({ isOpen, onClose, slideId, slideTitle }) => {
                       />
                     </svg>
                   )}
-                  <span>{isLoading ? "Listing..." : "List for Sale"}</span>
+                  <span>{isLoading ? "Processing..." : (initialData ? "Update Listing" : "List for Sale")}</span>
                 </button>
               </div>
             </form>
