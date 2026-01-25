@@ -200,7 +200,7 @@ export const useListSlide = () => {
         }
     };
 
-    return { listSlide, isLoading, error };
+    return { listSlide, updateListing: listSlide, isLoading, error };
 };
 
 /**

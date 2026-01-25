@@ -5,8 +5,9 @@ import { useMySlides } from "../hooks/useMySlides";
 import { useDeleteSlide } from "../hooks/useDeleteSlide";
 import { deleteLocalSlideRecord } from "../utils/deletedSlidesTracker";
 import { ManageAccessModal } from "../components/Editor/ManageAccessModal";
+import { SellSlideModal } from "../components/Editor/SellSlideModal";
 import { fetchFromWalrus } from "../services/exports/exportToWalrus";
-import { ShieldCheck, Play, Edit, Trash2, Settings2 } from "lucide-react";
+import { ShieldCheck, Play, Edit, Trash2, Settings2, Store } from "lucide-react";
 
 /**
  * My Slides Page - Gallery of user's owned slides (from blockchain + localStorage)
@@ -21,6 +22,8 @@ export const MySlide = () => {
   const [useBlockchain, setUseBlockchain] = useState(true);
   const [selectedSlideForAccess, setSelectedSlideForAccess] = useState(null);
   const [showAccessModal, setShowAccessModal] = useState(false);
+  const [selectedSlideForSale, setSelectedSlideForSale] = useState(null);
+  const [showSellModal, setShowSellModal] = useState(false);
 
   // Load slides from both blockchain and localStorage
   useEffect(() => {
@@ -200,6 +203,9 @@ export const MySlide = () => {
                     <button onClick={() => { setSelectedSlideForAccess(slide); setShowAccessModal(true); }} className="p-3 bg-red-600 text-white rounded-xl shadow-lg hover:scale-110 transition-all"><ShieldCheck className="w-5 h-5" /></button>
                   )}
                   <button onClick={() => navigate(`/slide/${slide.id}`, { state: { source: useBlockchain ? 'blockchain' : 'local', slide } })} className="p-3 bg-cyan-600 text-white rounded-xl shadow-lg hover:scale-110 transition-all"><Play className="w-5 h-5" /></button>
+                  {slide.isOwner && slide.suiObjectId && (
+                    <button onClick={() => { setSelectedSlideForSale(slide); setShowSellModal(true); }} className="p-3 bg-purple-600 text-white rounded-xl shadow-lg hover:scale-110 transition-all"><Store className="w-5 h-5" /></button>
+                  )}
                   <button onClick={() => handleDelete(slide)} disabled={isDeletingBlockchain} className="p-3 bg-white/10 text-white rounded-xl shadow-lg hover:bg-red-600 transition-all"><Trash2 className="w-5 h-5" /></button>
                 </div>
               </div>
@@ -225,6 +231,21 @@ export const MySlide = () => {
           isOpen={showAccessModal}
           onClose={() => setShowAccessModal(false)}
           slide={selectedSlideForAccess}
+        />
+      )}
+
+      {selectedSlideForSale && (
+        <SellSlideModal
+          isOpen={showSellModal}
+          onClose={() => setShowSellModal(false)}
+          slideId={selectedSlideForSale.suiObjectId}
+          slideTitle={selectedSlideForSale.title}
+          initialData={{
+            price: selectedSlideForSale.price,
+            salePrice: selectedSlideForSale.salePrice,
+            isListed: selectedSlideForSale.isListed,
+            isForSale: selectedSlideForSale.isForSale
+          }}
         />
       )}
     </div>
