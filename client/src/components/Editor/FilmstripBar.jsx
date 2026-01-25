@@ -1,13 +1,12 @@
 import { useState } from "react";
-import { Plus, Grid3x3, ZoomIn, ZoomOut, Maximize2, Copy, Trash2 } from "lucide-react";
+import { Plus, Trash2, Copy, MonitorPlay, Grid3x3, ZoomIn, ZoomOut, Maximize2 } from "lucide-react";
 import { useSlideStore } from "../../store/useSlideStore";
+import { SlideThumbnail } from "./SlideThumbnail";
 
 /**
  * Enhanced Filmstrip Bar - Canva style with grid view and zoom controls
  */
 export const FilmstripBar = ({ isBlocked }) => {
-  const [viewMode, setViewMode] = useState("filmstrip"); // 'filmstrip' | 'grid'
-  const [zoom, setZoom] = useState(100);
   const [thumbnails, setThumbnails] = useState({});
 
   const {
@@ -18,6 +17,10 @@ export const FilmstripBar = ({ isBlocked }) => {
     deleteSlide,
     duplicateSlide,
     reorderSlides,
+    zoom,
+    setZoom,
+    viewMode,
+    setViewMode,
   } = useSlideStore();
 
   const [draggedIndex, setDraggedIndex] = useState(null);
@@ -50,7 +53,9 @@ export const FilmstripBar = ({ isBlocked }) => {
   };
 
   const handleZoomChange = (delta) => {
-    setZoom((prev) => Math.max(10, Math.min(200, prev + delta)));
+    const currentZoomPercent = zoom * 100;
+    const newZoomPercent = Math.max(10, Math.min(200, currentZoomPercent + delta));
+    setZoom(newZoomPercent / 100);
   };
 
   return (
@@ -80,15 +85,15 @@ export const FilmstripBar = ({ isBlocked }) => {
             {/* Thumbnail Slide */}
             <div
               className={`w-28 h-16 rounded-xl border-2 transition-all overflow-hidden relative ${index === currentSlideIndex
-                  ? "border-purple-600 shadow-lg shadow-purple-600/20 scale-105 z-10"
-                  : "border-gray-200 dark:border-white/10 hover:border-purple-300 dark:hover:border-white/30"
+                ? "border-purple-600 shadow-lg shadow-purple-600/20 scale-105 z-10"
+                : "border-gray-200 dark:border-white/10 hover:border-purple-300 dark:hover:border-white/30"
                 }`}
-              style={{
-                background: slide.background || "#ffffff", // Mặc định trắng cho Light
-              }}
             >
-              {/* Slide Number Label */}
-              <div className="absolute bottom-1 right-2 text-[9px] font-black text-gray-400 dark:text-gray-500">
+              <div className="absolute inset-0 flex items-center justify-center">
+                <SlideThumbnail slide={slide} width={120} height={67.5} />
+              </div>
+
+              <div className="absolute bottom-1 right-1 bg-black/50 text-white text-[10px] px-1.5 rounded-sm font-bold opacity-0 group-hover:opacity-100 transition-opacity">
                 {index + 1}
               </div>
 
@@ -128,8 +133,8 @@ export const FilmstripBar = ({ isBlocked }) => {
           onClick={() => !isBlocked && addSlide()}
           disabled={isBlocked}
           className={`flex-shrink-0 w-28 h-16 rounded-xl border-2 border-dashed transition-all flex flex-col items-center justify-center gap-1 group ${isBlocked
-              ? "border-gray-200 bg-gray-50 cursor-not-allowed"
-              : "border-gray-300 dark:border-white/20 hover:border-purple-500 hover:bg-purple-50 dark:hover:bg-purple-500/10 cursor-pointer"
+            ? "border-gray-200 bg-gray-50 cursor-not-allowed"
+            : "border-gray-300 dark:border-white/20 hover:border-purple-500 hover:bg-purple-50 dark:hover:bg-purple-500/10 cursor-pointer"
             }`}
           title={isBlocked ? "License expired" : "Add Page"}
         >
@@ -151,7 +156,7 @@ export const FilmstripBar = ({ isBlocked }) => {
             <ZoomOut className="w-3.5 h-3.5" />
           </button>
           <span className="text-[11px] font-black text-gray-700 dark:text-gray-300 w-10 text-center">
-            {zoom}%
+            {Math.round(zoom * 100)}%
           </span>
           <button
             onClick={() => handleZoomChange(10)}
@@ -166,8 +171,8 @@ export const FilmstripBar = ({ isBlocked }) => {
           <button
             onClick={() => setViewMode(viewMode === "filmstrip" ? "grid" : "filmstrip")}
             className={`cursor-pointer p-2 rounded-xl transition-all ${viewMode === "grid"
-                ? "bg-purple-600 text-white shadow-lg shadow-purple-600/20"
-                : "text-gray-500 hover:bg-gray-100 dark:hover:bg-white/10"
+              ? "bg-purple-600 text-white shadow-lg shadow-purple-600/20"
+              : "text-gray-500 hover:bg-gray-100 dark:hover:bg-white/10"
               }`}
           >
             <Grid3x3 className="w-4 h-4" />

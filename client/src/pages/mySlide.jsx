@@ -26,7 +26,8 @@ export const MySlide = () => {
   const [selectedSlideForSale, setSelectedSlideForSale] = useState(null);
   const [showSellModal, setShowSellModal] = useState(false);
 
-  const isExpired = (slide) => {
+  // Helper functions
+  const checkIsExpired = (slide) => {
     if (!slide.expiresAt || slide.expiresAt === "0") return false;
     return Date.now() > parseInt(slide.expiresAt);
   };
@@ -34,7 +35,7 @@ export const MySlide = () => {
   const getTimeRemaining = (slide) => {
     if (!slide.expiresAt || slide.expiresAt === "0") return "Unlimited";
     const remaining = parseInt(slide.expiresAt) - Date.now();
-    if (remaining <= 0) return "0h";
+    if (remaining <= 0) return "Expired";
     const days = Math.floor(remaining / (1000 * 60 * 60 * 24));
     if (days > 0) return `${days}d`;
     const hours = Math.floor(remaining / (1000 * 60 * 60));
@@ -48,7 +49,13 @@ export const MySlide = () => {
         if (isLoadingBlockchain) {
           setIsLoading(true);
         } else {
-          setSlides(blockchainSlides);
+          // Map expiry status
+          const processed = blockchainSlides.map(s => ({
+            ...s,
+            isExpired: checkIsExpired(s),
+            remainingText: getTimeRemaining(s)
+          }));
+          setSlides(processed);
           setIsLoading(false);
         }
       } else {
@@ -58,7 +65,9 @@ export const MySlide = () => {
         ).map(s => ({
           ...s,
           isOwner: true,
-          isLicensed: false
+          isLicensed: false,
+          isExpired: false, // Local slides don't expire usually
+          remainingText: "Unlimited"
         }));
         setSlides(userSlides);
         setIsLoading(false);
@@ -260,7 +269,7 @@ export const MySlide = () => {
                       <div className="flex items-center gap-1.5">
                         <Clock className={`w-3 h-3 ${slide.isExpired ? 'text-red-500' : 'text-cyan-500'}`} />
                         <span className={`text-[10px] font-black uppercase tracking-widest ${slide.isExpired ? 'text-red-500' : 'text-gray-500'}`}>
-                          {slide.isExpired ? 'Expired' : `Expires in ${slide.remainingDays}d`}
+                          {slide.isExpired ? 'Expired' : `Expires in ${slide.remainingText}`}
                         </span>
                       </div>
                     </div>
