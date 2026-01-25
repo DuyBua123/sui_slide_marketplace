@@ -93,6 +93,22 @@ export const useSlideStore = create(
         set({ slides: newSlides, currentSlideIndex: insertIndex, selectedId: null });
       },
 
+      insertSlide: (slideData, afterIndex = null) => {
+        const { slides, currentSlideIndex } = get();
+        const insertIndex = afterIndex !== null ? afterIndex + 1 : currentSlideIndex + 1;
+
+        // Ensure unique IDs
+        const newSlide = {
+          ...slideData,
+          id: uuid(),
+          elements: slideData.elements.map(el => ({ ...el, id: uuid() })),
+        };
+
+        const newSlides = [...slides];
+        newSlides.splice(insertIndex, 0, newSlide);
+        set({ slides: newSlides, currentSlideIndex: insertIndex, selectedId: null });
+      },
+
       deleteSlide: (index) => {
         const { slides, currentSlideIndex } = get();
         if (slides.length <= 1) return; // Keep at least one slide
