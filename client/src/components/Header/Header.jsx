@@ -40,6 +40,12 @@ export const Header = () => {
           >
             My Assets
           </Link>
+          <Link
+            to={ROUTE.DASHBOARD}
+            className="text-gray-600 dark:text-gray-400 hover:text-blue-600 dark:hover:text-white transition-colors text-sm font-medium"
+          >
+            Dashboard
+          </Link>
         </nav>
 
         <div className="flex items-center gap-2 md:gap-4">
@@ -95,6 +101,13 @@ export const Header = () => {
             className="p-4 hover:bg-gray-100 dark:hover:bg-white/5 rounded-xl text-gray-700 dark:text-gray-300 transition-colors"
           >
             My Assets
+          </Link>
+          <Link
+            to={ROUTE.DASHBOARD}
+            onClick={closeMenu}
+            className="p-4 hover:bg-gray-100 dark:hover:bg-white/5 rounded-xl text-gray-700 dark:text-gray-300 transition-colors"
+          >
+            Dashboard
           </Link>
         </div>
       </div>
