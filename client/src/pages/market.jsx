@@ -367,6 +367,13 @@ export const Market = () => {
                             View Slide
                           </button>
                         )}
+
+                        <button
+                          onClick={() => navigate(`/market/${slide.id}`)}
+                          className="cursor-pointer w-full py-2 border border-gray-200 dark:border-white/10 text-slate-600 dark:text-white rounded-xl font-bold text-xs hover:bg-gray-50 dark:hover:bg-white/5 transition-all"
+                        >
+                          View Details
+                        </button>
                       </div>
                     </div>
                   </div>
