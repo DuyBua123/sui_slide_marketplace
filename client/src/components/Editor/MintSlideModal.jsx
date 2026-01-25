@@ -65,10 +65,7 @@ export const MintSlideModal = ({ isOpen, onClose, slideData, onMintSuccess }) =>
 
       const result = await mintSlide({
         title: slideData?.title || "Untitled Slide",
-        title: slideData?.title || "Untitled Slide",
         contentUrl: contentUrl || "",
-        thumbnailUrl: thumbnailUrl || "",
-        price: priceInMist,
         thumbnailUrl: thumbnailUrl || "",
         price: priceInMist,
         salePrice: salePriceInMist,
@@ -321,7 +318,7 @@ export const MintSlideModal = ({ isOpen, onClose, slideData, onMintSuccess }) =>
                   </div>
                 )}
                 <p className="text-[10px] text-gray-400 dark:text-gray-500 mt-3 font-medium leading-relaxed">
-                  {isForSale 
+                  {isForSale
                     ? "* Others can purchase full ownership of this slide object."
                     : "* Only licensing is enabled by default."}
                 </p>
