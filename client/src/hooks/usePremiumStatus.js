@@ -38,7 +38,6 @@ export const usePremiumStatus = () => {
 
             // User is premium if they own at least one PremiumPass
             setIsPremium(data.length > 0);
-
         } catch (error) {
             console.error('Failed to check premium status:', error);
             setIsPremium(false);
