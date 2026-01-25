@@ -5,6 +5,7 @@ import { useMySlides } from "../hooks/useMySlides";
 import { useDeleteSlide } from "../hooks/useDeleteSlide";
 import { deleteLocalSlideRecord } from "../utils/deletedSlidesTracker";
 import { ManageAccessModal } from "../components/Editor/ManageAccessModal";
+import { fetchFromWalrus } from "../services/exports/exportToWalrus";
 import { ShieldCheck, Play, Edit, Trash2, Settings2 } from "lucide-react";
 
 /**
@@ -52,6 +53,54 @@ export const MySlide = () => {
     window.addEventListener("storage", handleStorageChange);
     return () => window.removeEventListener("storage", handleStorageChange);
   }, [account?.address, blockchainSlides, useBlockchain, isLoadingBlockchain]);
+
+  // Handle forking a licensed slide
+  const handleFork = async (slide) => {
+    setIsLoading(true);
+    try {
+      console.log('Forking slide:', slide.title);
+      let content = null;
+
+      // Fetch content from Walrus if available
+      if (slide.contentUrl) {
+        content = await fetchFromWalrus(slide.contentUrl);
+      }
+
+      if (!content) {
+        throw new Error('Could not fetch slide content');
+      }
+
+      // Create new local slide
+      const newId = crypto.randomUUID();
+      const newSlide = {
+        id: newId,
+        title: `${content.title || slide.title} (Copy)`,
+        thumbnail: slide.thumbnail, // Use original thumbnail initially
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+        owner: 'local',
+        data: {
+          ...content,
+          id: newId,
+          title: `${content.title || slide.title} (Copy)`,
+        }
+      };
+
+      // Save to localStorage
+      const savedSlides = JSON.parse(localStorage.getItem("slides") || "[]");
+      savedSlides.push(newSlide);
+      localStorage.setItem("slides", JSON.stringify(savedSlides));
+
+      // Navigate to editor with local source
+      navigate(`/editor/${newId}`, { state: { source: 'local', slide: newSlide } });
+
+    } catch (error) {
+      console.error('Error forking slide:', error);
+      alert('Failed to create a local copy of this slide. Please try again.');
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   const handleDelete = useCallback((slide) => {
     if (confirm("Are you sure you want to delete this slide?")) {
@@ -138,9 +187,15 @@ export const MySlide = () => {
                 )}
 
                 <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-all flex items-center justify-center gap-3 backdrop-blur-sm">
-                  {!slide.isLicensed && (
-                    <button onClick={() => navigate(`/editor/${slide.id}`, { state: { source: useBlockchain ? 'blockchain' : 'local', slide } })} className="p-3 bg-blue-600 text-white rounded-xl shadow-lg hover:scale-110 transition-all"><Edit className="w-5 h-5" /></button>
-                  )}
+                  <button onClick={() => {
+                    if (slide.isLicensed) {
+                      handleFork(slide);
+                    } else {
+                      navigate(`/editor/${slide.id}`, { state: { source: useBlockchain ? 'blockchain' : 'local', slide } });
+                    }
+                  }} className="p-3 bg-blue-600 text-white rounded-xl shadow-lg hover:scale-110 transition-all">
+                    <Edit className="w-5 h-5" />
+                  </button>
                   {slide.isOwner && slide.suiObjectId && (
                     <button onClick={() => { setSelectedSlideForAccess(slide); setShowAccessModal(true); }} className="p-3 bg-red-600 text-white rounded-xl shadow-lg hover:scale-110 transition-all"><ShieldCheck className="w-5 h-5" /></button>
                   )}
