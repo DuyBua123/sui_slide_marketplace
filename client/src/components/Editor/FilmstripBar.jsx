@@ -5,7 +5,7 @@ import { useSlideStore } from "../../store/useSlideStore";
 /**
  * Enhanced Filmstrip Bar - Canva style with grid view and zoom controls
  */
-export const FilmstripBar = () => {
+export const FilmstripBar = ({ isBlocked }) => {
   const [viewMode, setViewMode] = useState("filmstrip"); // 'filmstrip' | 'grid'
   const [zoom, setZoom] = useState(100);
   const [thumbnails, setThumbnails] = useState({});
@@ -25,16 +25,22 @@ export const FilmstripBar = () => {
 
   // Drag handlers
   const handleDragStart = (e, index) => {
+    if (isBlocked) {
+      e.preventDefault();
+      return;
+    }
     setDraggedIndex(index);
     e.dataTransfer.effectAllowed = "move";
   };
 
   const handleDragOver = (e, index) => {
+    if (isBlocked) return;
     e.preventDefault();
     setDragOverIndex(index);
   };
 
   const handleDrop = (e, toIndex) => {
+    if (isBlocked) return;
     e.preventDefault();
     if (draggedIndex !== null && draggedIndex !== toIndex) {
       reorderSlides(draggedIndex, toIndex);
@@ -54,7 +60,7 @@ export const FilmstripBar = () => {
         {slides.map((slide, index) => (
           <div
             key={slide.id}
-            draggable
+            draggable={!isBlocked}
             onClick={() => setCurrentSlideIndex(index)}
             onDragStart={(e) => handleDragStart(e, index)}
             onDragOver={(e) => handleDragOver(e, index)}
@@ -63,9 +69,8 @@ export const FilmstripBar = () => {
               setDraggedIndex(null);
               setDragOverIndex(null);
             }}
-            className={`relative group cursor-pointer transition-all ${
-              draggedIndex === index ? "opacity-50" : ""
-            }`}
+            className={`relative group cursor-pointer transition-all ${draggedIndex === index ? "opacity-50" : ""
+              }`}
           >
             {/* Drop indicator: Thanh chỉ hướng khi kéo thả */}
             {dragOverIndex === index && draggedIndex !== index && (
@@ -74,11 +79,10 @@ export const FilmstripBar = () => {
 
             {/* Thumbnail Slide */}
             <div
-              className={`w-28 h-16 rounded-xl border-2 transition-all overflow-hidden relative ${
-                index === currentSlideIndex
+              className={`w-28 h-16 rounded-xl border-2 transition-all overflow-hidden relative ${index === currentSlideIndex
                   ? "border-purple-600 shadow-lg shadow-purple-600/20 scale-105 z-10"
                   : "border-gray-200 dark:border-white/10 hover:border-purple-300 dark:hover:border-white/30"
-              }`}
+                }`}
               style={{
                 background: slide.background || "#ffffff", // Mặc định trắng cho Light
               }}
@@ -89,41 +93,48 @@ export const FilmstripBar = () => {
               </div>
 
               {/* Hover Actions Overlay */}
-              <div className="absolute inset-0 bg-black/40 dark:bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-1.5 backdrop-blur-[1px]">
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    duplicateSlide(index);
-                  }}
-                  className="cursor-pointer p-1.5 bg-white hover:bg-gray-100 text-gray-800 rounded-lg transition-colors shadow-sm"
-                  title="Duplicate"
-                >
-                  <Copy className="w-3 h-3" />
-                </button>
-                {slides.length > 1 && (
+              {!isBlocked && (
+                <div className="absolute inset-0 bg-black/40 dark:bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-1.5 backdrop-blur-[1px]">
                   <button
                     onClick={(e) => {
                       e.stopPropagation();
-                      deleteSlide(index);
+                      duplicateSlide(index);
                     }}
-                    className="cursor-pointer p-1.5 bg-red-500 hover:bg-red-600 text-white rounded-lg transition-colors shadow-sm"
-                    title="Delete"
+                    className="cursor-pointer p-1.5 bg-white hover:bg-gray-100 text-gray-800 rounded-lg transition-colors shadow-sm"
+                    title="Duplicate"
                   >
-                    <Trash2 className="w-3 h-3" />
+                    <Copy className="w-3 h-3" />
                   </button>
-                )}
-              </div>
+                  {slides.length > 1 && (
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        deleteSlide(index);
+                      }}
+                      className="cursor-pointer p-1.5 bg-red-500 hover:bg-red-600 text-white rounded-lg transition-colors shadow-sm"
+                      title="Delete"
+                    >
+                      <Trash2 className="w-3 h-3" />
+                    </button>
+                  )}
+                </div>
+              )}
             </div>
           </div>
         ))}
 
         {/* Add New Slide Button */}
         <button
-          onClick={() => addSlide()}
-          className="cursor-pointer flex-shrink-0 w-28 h-16 rounded-xl border-2 border-dashed border-gray-300 dark:border-white/20 hover:border-purple-500 hover:bg-purple-50 dark:hover:bg-purple-500/10 transition-all flex flex-col items-center justify-center gap-1 group"
+          onClick={() => !isBlocked && addSlide()}
+          disabled={isBlocked}
+          className={`flex-shrink-0 w-28 h-16 rounded-xl border-2 border-dashed transition-all flex flex-col items-center justify-center gap-1 group ${isBlocked
+              ? "border-gray-200 bg-gray-50 cursor-not-allowed"
+              : "border-gray-300 dark:border-white/20 hover:border-purple-500 hover:bg-purple-50 dark:hover:bg-purple-500/10 cursor-pointer"
+            }`}
+          title={isBlocked ? "License expired" : "Add Page"}
         >
-          <Plus className="w-5 h-5 text-gray-400 group-hover:text-purple-600 transition-colors" />
-          <span className="text-[9px] font-bold text-gray-400 group-hover:text-purple-600 uppercase tracking-tighter">
+          <Plus className={`w-5 h-5 transition-colors ${isBlocked ? "text-gray-300" : "text-gray-400 group-hover:text-purple-600"}`} />
+          <span className={`text-[9px] font-bold uppercase tracking-tighter ${isBlocked ? "text-gray-300" : "text-gray-400 group-hover:text-purple-600"}`}>
             Add Page
           </span>
         </button>
@@ -154,11 +165,10 @@ export const FilmstripBar = () => {
         <div className="flex items-center gap-1">
           <button
             onClick={() => setViewMode(viewMode === "filmstrip" ? "grid" : "filmstrip")}
-            className={`cursor-pointer p-2 rounded-xl transition-all ${
-              viewMode === "grid"
+            className={`cursor-pointer p-2 rounded-xl transition-all ${viewMode === "grid"
                 ? "bg-purple-600 text-white shadow-lg shadow-purple-600/20"
                 : "text-gray-500 hover:bg-gray-100 dark:hover:bg-white/10"
-            }`}
+              }`}
           >
             <Grid3x3 className="w-4 h-4" />
           </button>

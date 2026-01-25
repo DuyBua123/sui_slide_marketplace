@@ -99,7 +99,7 @@ export const DesignPanel = () => {
   // Render Detail View
   if (selectedSlide) {
     return (
-      <div className="flex flex-col h-full bg-white dark:bg-gray-950 transition-colors">
+      <div className={`flex flex-col h-full bg-white dark:bg-gray-950 transition-colors ${isBlocked ? 'grayscale-[0.5]' : ''}`}>
         <div className="p-4 border-b border-gray-100 dark:border-white/5 flex items-center gap-3">
           <button
             onClick={() => setSelectedSlide(null)}
@@ -116,9 +116,16 @@ export const DesignPanel = () => {
         </div>
 
         <div className="p-4 border-b border-gray-100 dark:border-white/5">
+          {isBlocked ? (
+            <div className="p-3 bg-red-500/10 border border-red-500/20 rounded-xl mb-2">
+              <p className="text-[10px] font-black text-red-500 uppercase tracking-widest leading-tight">
+                License Expired. Renew to enable insertion.
+              </p>
+            </div>
+          ) : null}
           <button
             onClick={handleApplyAll}
-            disabled={!fetchedSlideData}
+            disabled={!fetchedSlideData || isBlocked}
             className="w-full py-2.5 bg-purple-600 hover:bg-purple-500 text-white rounded-lg text-xs font-bold transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
           >
             <Layers className="w-4 h-4" />
@@ -137,15 +144,15 @@ export const DesignPanel = () => {
               {fetchedSlideData.slides.map((page, idx) => (
                 <div
                   key={idx}
-                  onClick={() => handleInsertPage(page)}
-                  className="group relative aspect-video bg-gray-100 dark:bg-white/5 rounded-lg border border-gray-200 dark:border-white/10 overflow-hidden cursor-pointer hover:ring-2 hover:ring-purple-500 transition-all"
+                  onClick={() => !isBlocked && handleInsertPage(page)}
+                  className={`group relative aspect-video bg-gray-100 dark:bg-white/5 rounded-lg border border-gray-200 dark:border-white/10 overflow-hidden ${isBlocked ? 'cursor-not-allowed' : 'cursor-pointer hover:ring-2 hover:ring-purple-500'} transition-all`}
                 >
                   {/* Mini thumbnail visualization could go here, for now using color */}
                   <div className="w-full h-full" style={{ background: page.background || '#fff' }}>
                     {/* Simple representation of elements count */}
-                    <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 bg-black/40 transition-opacity">
+                    <div className={`absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 ${isBlocked ? 'bg-black/60' : 'bg-black/40'} transition-opacity`}>
                       <span className="text-white text-xs font-bold flex items-center gap-1">
-                        <CheckCircle2 className="w-3 h-3" /> Insert
+                        {isBlocked ? 'Locked' : <><CheckCircle2 className="w-3 h-3" /> Insert</>}
                       </span>
                     </div>
                   </div>
@@ -188,8 +195,8 @@ export const DesignPanel = () => {
               key={filter}
               onClick={() => setActiveFilter(filter)}
               className={`px-3 py-1.5 rounded-lg text-[10px] font-bold uppercase tracking-wider whitespace-nowrap transition-all ${activeFilter === filter
-                  ? 'bg-purple-100 dark:bg-purple-500/20 text-purple-600 dark:text-purple-300'
-                  : 'bg-gray-50 dark:bg-white/5 text-gray-500 hover:bg-gray-100 dark:hover:bg-white/10'
+                ? 'bg-purple-100 dark:bg-purple-500/20 text-purple-600 dark:text-purple-300'
+                : 'bg-gray-50 dark:bg-white/5 text-gray-500 hover:bg-gray-100 dark:hover:bg-white/10'
                 }`}
             >
               {filter}

@@ -49,6 +49,13 @@ export const EditorLayout = () => {
   const [showVersionModal, setShowVersionModal] = useState(false);
   const [availableVersions, setAvailableVersions] = useState([]);
   const [pendingSlideMeta, setPendingSlideMeta] = useState(null);
+  const [isExpired, setIsExpired] = useState(false);
+
+  const checkIsExpired = (meta) => {
+    if (!meta?.isLicensed || meta?.isOwner) return false;
+    if (!meta?.expiresAt || meta?.expiresAt === "0") return false;
+    return Date.now() > parseInt(meta.expiresAt);
+  };
 
   const {
     title,
@@ -93,6 +100,7 @@ export const EditorLayout = () => {
         setIsLoading(true);
         try {
           if (source === 'blockchain' && slideMeta?.contentUrl) {
+            setIsExpired(checkIsExpired(slideMeta));
             if (slideMeta.isLicensed && !slideMeta.isOwner) {
               console.log('[EDITOR] Licensed slide detected - Fetching version history');
               setIsLoading(true);
@@ -403,6 +411,20 @@ export const EditorLayout = () => {
         {renderContextualToolbar()}
       </div>
 
+      {/* Expiry Banner */}
+      {isExpired && (
+        <div className="bg-red-500 text-white px-4 py-2 text-center text-xs font-black uppercase tracking-widest flex items-center justify-center gap-4 animate-pulse">
+          <AlertCircle className="w-4 h-4" />
+          License Expired - Clone and Insert Page actions are disabled
+          <button
+            onClick={() => navigate(`/market/${suiObjectId || id}`)}
+            className="bg-white text-red-500 px-3 py-1 rounded-full hover:bg-white/90 transition-colors"
+          >
+            Renew License
+          </button>
+        </div>
+      )}
+
       {/* Main Content Area */}
       <div className="flex-1 flex overflow-hidden">
         {/* Left Icon Rail */}
@@ -416,17 +438,16 @@ export const EditorLayout = () => {
                 <h3 className="text-sm font-black uppercase tracking-widest text-gray-800 dark:text-white">
                   {activeTab}
                 </h3>
-                {/* Có thể thêm nút đóng nhanh sidebar ở đây */}
               </div>
 
               <div className="text-gray-700 dark:text-gray-300">
-                {activeTab === "elements" && <ElementsPanel />}
-                {activeTab === "text" && <TextPanel />}
-                {activeTab === "uploads" && <UploadsPanel />}
-                {activeTab === "design" && <DesignPanel />}
-                {activeTab === "brand" && <BrandPanel />}
-                {activeTab === "animate" && <AnimatePanel />}
-                {activeTab === "charts" && <ChartsPanel />}
+                {activeTab === "elements" && <ElementsPanel isBlocked={isExpired} />}
+                {activeTab === "text" && <TextPanel isBlocked={isExpired} />}
+                {activeTab === "uploads" && <UploadsPanel isBlocked={isExpired} />}
+                {activeTab === "design" && <DesignPanel isBlocked={isExpired} />}
+                {activeTab === "brand" && <BrandPanel isBlocked={isExpired} />}
+                {activeTab === "animate" && <AnimatePanel isBlocked={isExpired} />}
+                {activeTab === "charts" && <ChartsPanel isBlocked={isExpired} />}
               </div>
             </div>
           </div>
@@ -436,14 +457,14 @@ export const EditorLayout = () => {
         <div className="flex-1 flex flex-col overflow-hidden bg-[#f0f2f5] dark:bg-[#0a0a0f]">
           {/* Canvas container with Rulers */}
           <div className="flex-1 relative">
-            <CanvasWithRulers />
+            <CanvasWithRulers isBlocked={isExpired} />
           </div>
         </div>
       </div>
 
       {/* Bottom Filmstrip - Thanh trượt slide phía dưới */}
       <div className="bg-white dark:bg-[#0d0d0d] border-t py-2 border-gray-200 dark:border-white/5 shadow-[0_-4px_20px_rgba(0,0,0,0.03)] dark:shadow-none">
-        <FilmstripBar />
+        <FilmstripBar isBlocked={isExpired} />
       </div>
 
       {/* Modals */}

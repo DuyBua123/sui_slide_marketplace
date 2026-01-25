@@ -104,7 +104,10 @@ export const useMarketplaceSlides = () => {
                                         slideMap.set(slideId, {
                                             id: slideId,
                                             title: fields.title || 'Untitled Slide',
-                                            price: fields.price || 0,
+                                            price: fields.monthly_price || 0, // Fallback for legacy code
+                                            monthlyPrice: fields.monthly_price || 0,
+                                            yearlyPrice: fields.yearly_price || 0,
+                                            lifetimePrice: fields.lifetime_price || 0,
                                             salePrice: fields.sale_price || 0,
                                             isListed: fields.is_listed,
                                             isForSale: fields.is_for_sale,
@@ -172,7 +175,7 @@ export const useListSlide = () => {
 
     const { mutateAsync: signAndExecute } = useSignAndExecuteTransaction();
 
-    const listSlide = async ({ slideId, price, isForSale = true, licensePrice = 0, isListed = true }) => {
+    const listSlide = async ({ slideId, price, isForSale = true, monthlyPrice = 0, yearlyPrice = 0, lifetimePrice = 0, isListed = true }) => {
         setIsLoading(true);
         setError(null);
 
@@ -183,7 +186,9 @@ export const useListSlide = () => {
                 target: `${PACKAGE_ID}::slide_marketplace::set_listing_status`,
                 arguments: [
                     tx.object(slideId),
-                    tx.pure.u64(licensePrice),
+                    tx.pure.u64(monthlyPrice),
+                    tx.pure.u64(yearlyPrice),
+                    tx.pure.u64(lifetimePrice),
                     tx.pure.bool(isListed),
                     tx.pure.u64(price),
                     tx.pure.bool(isForSale),
@@ -262,13 +267,15 @@ export const useDelistSlide = () => {
 
             // Stop full ownership sale but keep license settings
             tx.moveCall({
-                target: `${PACKAGE_ID}::slide_marketplace::update_listing_status`,
+                target: `${PACKAGE_ID}::slide_marketplace::set_listing_status`,
                 arguments: [
                     tx.object(slideId),
-                    tx.pure.u64(currentLicensePrice || 0),
+                    tx.pure.u64(currentLicensePrice || 0), // monthly
+                    tx.pure.u64(0), // yearly
+                    tx.pure.u64(0), // lifetime
                     tx.pure.bool(currentIsListed || false),
-                    tx.pure.u64(0),
-                    tx.pure.bool(false),
+                    tx.pure.u64(0), // sale_price
+                    tx.pure.bool(false), // is_for_sale
                 ],
             });
 

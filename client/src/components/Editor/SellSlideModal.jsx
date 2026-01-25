@@ -5,9 +5,11 @@ import { useListSlide } from "../../hooks/useMarketplace";
  * Modal for listing a slide for sale
  */
 export const SellSlideModal = ({ isOpen, onClose, slideId, slideTitle, initialData = null }) => {
-  const [licensePriceSui, setLicensePriceSui] = useState("1");
-  const [salePriceSui, setSalePriceSui] = useState("10");
-  const [isListed, setIsListed] = useState(true);
+  const [monthlyPriceSui, setMonthlyPriceSui] = useState("1");
+  const [yearlyPriceSui, setYearlyPriceSui] = useState("10");
+  const [lifetimePriceSui, setLifetimePriceSui] = useState("50");
+  const [salePriceSui, setSalePriceSui] = useState("100");
+  const [isListed, setIsListed] = useState(false);
   const [isForSale, setIsForSale] = useState(false);
   const { listSlide, isLoading, error } = useListSlide();
   const [success, setSuccess] = useState(false);
@@ -15,23 +17,28 @@ export const SellSlideModal = ({ isOpen, onClose, slideId, slideTitle, initialDa
   // Initialize with existing data if provided
   useState(() => {
     if (initialData) {
-      setLicensePriceSui(initialData.price ? (initialData.price / 1_000_000_000).toString() : "1");
-      setSalePriceSui(initialData.salePrice ? (initialData.salePrice / 1_000_000_000).toString() : "10");
+      setMonthlyPriceSui(initialData.monthlyPrice ? (initialData.monthlyPrice / 1_000_000_000).toString() : "1");
+      setYearlyPriceSui(initialData.yearlyPrice ? (initialData.yearlyPrice / 1_000_000_000).toString() : "10");
+      setLifetimePriceSui(initialData.lifetimePrice ? (initialData.lifetimePrice / 1_000_000_000).toString() : "50");
+      setSalePriceSui(initialData.salePrice ? (initialData.salePrice / 1_000_000_000).toString() : "100");
       setIsListed(initialData.isListed ?? true);
       setIsForSale(initialData.isForSale ?? false);
     }
   }, [initialData, isOpen]);
 
   // Reset/Sync when opening
-  if (isOpen && initialData && licensePriceSui === "1" && !initialData.wasReset) {
+  if (isOpen && initialData && monthlyPriceSui === "1" && !initialData.wasReset) {
     // Logic to sync handled in effect below
   }
 
   useState(() => {
     // Quick fix: re-sync when isOpen changes to true
     if (isOpen && initialData) {
-      setLicensePriceSui(initialData.price ? (initialData.price / 1_000_000_000).toString() : "1");
-      setSalePriceSui(initialData.salePrice ? (initialData.salePrice / 1_000_000_000).toString() : "10");
+      setMonthlyPriceSui(initialData.monthlyPrice ? (initialData.monthlyPrice / 1_000_000_000).toString() : "1");
+      setYearlyPriceSui(initialData.yearlyPrice ? (initialData.yearlyPrice / 1_000_000_000).toString() : "10");
+      setLifetimePriceSui(initialData.lifetimePrice ? (initialData.lifetimePrice / 1_000_000_000).toString() : "50");
+
+      setSalePriceSui(initialData.salePrice ? (initialData.salePrice / 1_000_000_000).toString() : "100");
       setIsListed(initialData.isListed);
       setIsForSale(initialData.isForSale);
     }
@@ -44,13 +51,17 @@ export const SellSlideModal = ({ isOpen, onClose, slideId, slideTitle, initialDa
     e.preventDefault();
 
     // Convert SUI to MIST
-    const licensePriceMist = Math.floor(parseFloat(licensePriceSui) * 1_000_000_000);
+    const monthlyPriceMist = Math.floor(parseFloat(monthlyPriceSui) * 1_000_000_000);
+    const yearlyPriceMist = Math.floor(parseFloat(yearlyPriceSui) * 1_000_000_000);
+    const lifetimePriceMist = Math.floor(parseFloat(lifetimePriceSui) * 1_000_000_000);
     const salePriceMist = Math.floor(parseFloat(salePriceSui) * 1_000_000_000);
 
     try {
       await listSlide({
         slideId,
-        licensePrice: licensePriceMist,
+        monthlyPrice: monthlyPriceMist,
+        yearlyPrice: yearlyPriceMist,
+        lifetimePrice: lifetimePriceMist,
         isListed: isListed,
         price: salePriceMist, // Mapping price to sale_price for useListSlide hook
         isForSale: isForSale,
@@ -74,7 +85,7 @@ export const SellSlideModal = ({ isOpen, onClose, slideId, slideTitle, initialDa
       />
 
       {/* Modal Container */}
-      <div className="relative bg-white dark:bg-gray-900 border border-gray-200 dark:border-white/10 rounded-2xl p-6 max-w-md w-full mx-4 shadow-2xl transition-all">
+      <div className="relative bg-white dark:bg-gray-900 border border-gray-200 dark:border-white/10 rounded-2xl p-6 max-w-md w-full mx-4 shadow-2xl transition-all max-h-[90vh] overflow-y-auto custom-scrollbar">
         {success ? (
           /* Success State */
           <div className="text-center py-8">
@@ -138,7 +149,7 @@ export const SellSlideModal = ({ isOpen, onClose, slideId, slideTitle, initialDa
               <div className="mb-6 p-4 bg-gray-50 dark:bg-white/5 rounded-2xl border border-gray-100 dark:border-white/5">
                 <div className="flex items-center justify-between mb-4">
                   <label className="text-[11px] font-black text-gray-500 dark:text-gray-400 uppercase tracking-widest">
-                    Enable Licensing (Usage)
+                    Enable Licensing (Multi-Tier)
                   </label>
                   <label className="relative inline-flex items-center cursor-pointer">
                     <input type="checkbox" checked={isListed} onChange={(e) => setIsListed(e.target.checked)} className="sr-only peer" />
@@ -146,14 +157,37 @@ export const SellSlideModal = ({ isOpen, onClose, slideId, slideTitle, initialDa
                   </label>
                 </div>
                 {isListed && (
-                  <div className="relative group">
-                    <input
-                      type="number" step="0.1" min="0" value={licensePriceSui}
-                      onChange={(e) => setLicensePriceSui(e.target.value)}
-                      className="w-full px-5 py-3 bg-white dark:bg-black/30 border-2 border-gray-100 dark:border-white/10 rounded-xl text-gray-900 dark:text-white text-lg font-black focus:border-blue-500 outline-none transition-all"
-                      placeholder="1.0"
-                    />
-                    <div className="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-black text-gray-400">SUI</div>
+                  <div className="space-y-4">
+                    {/* Monthly */}
+                    <div>
+                      <label className="text-[10px] font-bold text-gray-400 mb-1 block">Monthly Price (SUI)</label>
+                      <input
+                        type="number" step="0.1" min="0" value={monthlyPriceSui}
+                        onChange={(e) => setMonthlyPriceSui(e.target.value)}
+                        className="w-full px-4 py-2 bg-white dark:bg-black/30 border border-gray-100 dark:border-white/10 rounded-xl text-sm font-bold focus:border-blue-500 outline-none"
+                        placeholder="1.0"
+                      />
+                    </div>
+                    {/* Yearly */}
+                    <div>
+                      <label className="text-[10px] font-bold text-gray-400 mb-1 block">Yearly Price (SUI)</label>
+                      <input
+                        type="number" step="0.1" min="0" value={yearlyPriceSui}
+                        onChange={(e) => setYearlyPriceSui(e.target.value)}
+                        className="w-full px-4 py-2 bg-white dark:bg-black/30 border border-gray-100 dark:border-white/10 rounded-xl text-sm font-bold focus:border-blue-500 outline-none"
+                        placeholder="10.0"
+                      />
+                    </div>
+                    {/* Lifetime */}
+                    <div>
+                      <label className="text-[10px] font-bold text-gray-400 mb-1 block">Lifetime Price (SUI)</label>
+                      <input
+                        type="number" step="0.1" min="0" value={lifetimePriceSui}
+                        onChange={(e) => setLifetimePriceSui(e.target.value)}
+                        className="w-full px-4 py-2 bg-white dark:bg-black/30 border border-gray-100 dark:border-white/10 rounded-xl text-sm font-bold focus:border-blue-500 outline-none"
+                        placeholder="50.0"
+                      />
+                    </div>
                   </div>
                 )}
               </div>

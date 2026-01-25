@@ -147,8 +147,8 @@ export const ShareModal = ({ isOpen, onClose }) => {
                 <h4 className="font-black text-purple-900 dark:text-purple-300 mb-1 uppercase text-sm">
                   Live Presentation Link
                 </h4>
-                <p className="text-sm text-purple-700/60 dark:text-purple-400/60 font-medium">
-                  Share this URL to allow anyone to view your presentation in real-time.
+                <p className="text-xs text-blue-700/70 dark:text-cyan-400/70 mt-1 leading-relaxed font-medium">
+                  Your slide is stored on Walrus decentralized storage. Sharing provides read-only access to others.
                 </p>
               </div>
 

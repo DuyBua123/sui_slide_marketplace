@@ -38,7 +38,8 @@ export const ManageAccessModal = ({ isOpen, onClose, slide }) => {
                         uniqueBuyers.push({
                             address: buyer,
                             version: e.parsedJson.version,
-                            timestamp: e.timestampMs
+                            timestamp: e.timestampMs,
+                            durationType: e.parsedJson.duration_type || 1
                         });
                     }
                 }
@@ -50,6 +51,25 @@ export const ManageAccessModal = ({ isOpen, onClose, slide }) => {
             setIsLoading(false);
         }
     }, [slide?.objectId, client]);
+
+    const getRevocationStatus = (buyer) => {
+        const now = Date.now();
+        const issuedAt = parseInt(buyer.timestamp);
+        const elapsed = now - issuedAt;
+
+        const DURATION_MONTH = 2592000000;
+        const DURATION_YEAR = 31536000000;
+
+        let minDuration = 0;
+        if (buyer.durationType === 1) minDuration = DURATION_MONTH * 0.3;
+        else if (buyer.durationType === 2) minDuration = DURATION_YEAR * 0.3;
+        else minDuration = DURATION_YEAR; // Lifetime
+
+        if (elapsed >= minDuration) return { canRevoke: true };
+
+        const remaining = Math.ceil((minDuration - elapsed) / (1000 * 60 * 60 * 24));
+        return { canRevoke: false, daysLeft: remaining };
+    };
 
     useEffect(() => {
         if (isOpen) fetchBuyers();
@@ -116,38 +136,51 @@ export const ManageAccessModal = ({ isOpen, onClose, slide }) => {
                                 <span className="text-[10px] font-black uppercase text-gray-400 tracking-[0.2em]">Registered Buyers</span>
                                 <span className="text-[10px] font-black uppercase text-gray-400 tracking-[0.2em]">{buyers.length} Users</span>
                             </div>
-                            {buyers.map((buyer) => (
-                                <div
-                                    key={buyer.address}
-                                    className="p-4 bg-gray-50 dark:bg-white/5 rounded-2xl border border-transparent dark:border-white/5 flex items-center justify-between group hover:border-red-500/20 transition-all"
-                                >
-                                    <div className="flex items-center gap-4 overflow-hidden">
-                                        <div className="w-12 h-12 bg-white dark:bg-black/30 rounded-xl flex items-center justify-center text-gray-400 dark:text-gray-600 border border-gray-100 dark:border-white/5">
-                                            <CheckCircle2 className="w-6 h-6" />
+                            {buyers.map((buyer) => {
+                                const status = getRevocationStatus(buyer);
+                                return (
+                                    <div
+                                        key={buyer.address}
+                                        className="p-4 bg-gray-50 dark:bg-white/5 rounded-2xl border border-transparent dark:border-white/5 flex items-center justify-between group hover:border-red-500/20 transition-all"
+                                    >
+                                        <div className="flex items-center gap-4 overflow-hidden">
+                                            <div className="w-12 h-12 bg-white dark:bg-black/30 rounded-xl flex items-center justify-center text-gray-400 dark:text-gray-600 border border-gray-100 dark:border-white/5">
+                                                <CheckCircle2 className="w-6 h-6" />
+                                            </div>
+                                            <div className="overflow-hidden">
+                                                <p className="font-mono text-[11px] font-bold dark:text-gray-300 truncate w-[180px] sm:w-[200px]">
+                                                    {buyer.address}
+                                                </p>
+                                                <p className="text-[10px] text-gray-500 mt-1 uppercase font-bold tracking-tight">
+                                                    {buyer.durationType === 1 ? 'Month' : buyer.durationType === 2 ? 'Year' : 'Lifetime'} • {new Date(parseInt(buyer.timestamp)).toLocaleDateString()}
+                                                </p>
+                                            </div>
                                         </div>
-                                        <div className="overflow-hidden">
-                                            <p className="font-mono text-[11px] font-bold dark:text-gray-300 truncate w-[180px] sm:w-[280px]">
-                                                {buyer.address}
-                                            </p>
-                                            <p className="text-[10px] text-gray-500 mt-1 uppercase font-bold tracking-tight">
-                                                Bought v{buyer.version} • {new Date(parseInt(buyer.timestamp)).toLocaleDateString()}
-                                            </p>
+                                        <div className="flex flex-col items-end gap-1">
+                                            <button
+                                                onClick={() => handleRevoke(buyer.address)}
+                                                disabled={revokingAddress === buyer.address || !status.canRevoke}
+                                                className={`p-3 rounded-xl transition-all flex items-center gap-2 group/btn active:scale-90 ${!status.canRevoke
+                                                        ? 'bg-gray-100 dark:bg-white/5 text-gray-400 cursor-not-allowed'
+                                                        : 'bg-red-100 dark:bg-red-500/10 text-red-600 dark:text-red-400 hover:bg-red-600 hover:text-white dark:hover:bg-red-500 shadow-sm'
+                                                    }`}
+                                            >
+                                                {revokingAddress === buyer.address ? (
+                                                    <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin" />
+                                                ) : (
+                                                    <UserX className="w-5 h-5" />
+                                                )}
+                                                <span className="hidden sm:inline text-xs font-black uppercase tracking-widest">Revoke</span>
+                                            </button>
+                                            {!status.canRevoke && (
+                                                <span className="text-[9px] font-bold text-orange-500 uppercase tracking-tighter">
+                                                    Revokable in {status.daysLeft}d
+                                                </span>
+                                            )}
                                         </div>
                                     </div>
-                                    <button
-                                        onClick={() => handleRevoke(buyer.address)}
-                                        disabled={revokingAddress === buyer.address}
-                                        className="p-3 bg-red-100 dark:bg-red-500/10 text-red-600 dark:text-red-400 rounded-xl hover:bg-red-600 hover:text-white dark:hover:bg-red-500 transition-all flex items-center gap-2 group/btn active:scale-90"
-                                    >
-                                        {revokingAddress === buyer.address ? (
-                                            <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin" />
-                                        ) : (
-                                            <UserX className="w-5 h-5" />
-                                        )}
-                                        <span className="hidden sm:inline text-xs font-black uppercase tracking-widest">Revoke</span>
-                                    </button>
-                                </div>
-                            ))}
+                                );
+                            })}
                         </div>
                     )}
                 </div>
