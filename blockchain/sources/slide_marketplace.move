@@ -299,4 +299,25 @@ module 0x0::slide_marketplace {
     public fun is_blocked(slide: &SlideObject, user: address): bool {
         table::contains(&slide.blocked_buyers, user)
     }
+    public entry fun delete_slide(slide: SlideObject, ctx: &TxContext) {
+        let SlideObject { 
+            id, 
+            owner, 
+            title: _, 
+            content_url: _, 
+            thumbnail_url: _, 
+            published_version: _, 
+            versions: _, 
+            price: _, 
+            is_listed: _, 
+            blocked_buyers, 
+            sale_price: _, 
+            is_for_sale: _ 
+        } = slide;
+
+        assert!(owner == ctx.sender(), ENotOwner);
+        
+        table::drop(blocked_buyers);
+        object::delete(id);
+    }
 }

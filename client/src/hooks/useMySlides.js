@@ -1,7 +1,7 @@
 import { useEffect, useState, useCallback } from 'react';
 import { useCurrentAccount, useSuiClient } from '@mysten/dapp-kit';
 import { isSlideDeleted } from '../utils/deletedSlidesTracker';
- 
+
 const PACKAGE_ID = import.meta.env.VITE_PACKAGE_ID || '0x0';
 
 /**
@@ -52,18 +52,18 @@ export const useMySlides = () => {
                                 id: slideId,
                                 options: { showContent: true },
                             });
-                            
+
                             if (obj.data?.content?.dataType === 'moveObject') {
                                 const fields = obj.data.content.fields;
                                 const owner = fields.owner?.replace('0x', '').toLowerCase();
-                                
+
                                 if (owner === userAddr && !isSlideDeleted(slideId)) {
                                     slideOwnershipMap.set(slideId, {
                                         id: slideId,
                                         objectId: slideId,
                                         title: fields.title || 'Untitled Slide',
                                         contentUrl: fields.content_url || '',
-                                        thumbnailUrl: fields.thumbnail_url || '',
+                                        thumbnail: fields.thumbnail_url || '',
                                         price: fields.price || 0,
                                         isListed: fields.is_listed || false,
                                         owner: fields.owner,
@@ -101,7 +101,7 @@ export const useMySlides = () => {
                     if (type.includes('SlideLicense')) {
                         const fields = obj.data?.content?.fields || obj.data?.content?.data?.fields;
                         const slideId = fields?.slide_id;
-                        
+
                         if (slideId && !slideOwnershipMap.has(slideId)) {
                             try {
                                 const slideObj = await client.getObject({
@@ -117,7 +117,7 @@ export const useMySlides = () => {
                                         objectId: slideId,
                                         title: sFields.title || fields.slide_title || 'Untitled Slide',
                                         contentUrl: sFields.content_url || '',
-                                        thumbnailUrl: sFields.thumbnail_url || '',
+                                        thumbnail: sFields.thumbnail_url || '',
                                         price: sFields.price || 0,
                                         owner: sFields.owner,
                                         isOwner: false,
@@ -136,7 +136,7 @@ export const useMySlides = () => {
 
             const ownedSlides = Array.from(slideOwnershipMap.values());
             const allSlides = [...ownedSlides, ...parsedLicensedSlides];
-            
+
             console.log(`[BLOCKCHAIN] Total assets: ${allSlides.length} (${ownedSlides.length} owned, ${parsedLicensedSlides.length} licensed)`);
             setSlides(allSlides);
         } catch (err) {
