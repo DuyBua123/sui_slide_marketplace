@@ -1,28 +1,15 @@
-﻿import { useState, useEffect, useRef, useCallback } from 'react';
-import { useParams, useNavigate, useLocation } from 'react-router-dom';
-import { useCurrentAccount } from "@mysten/dapp-kit";
-import { ManageAccessModal } from '../components/Editor/ManageAccessModal';
-import { Stage, Layer, Rect, Circle, Line, Text, Image as KonvaImage } from 'react-konva';
-import { motion, AnimatePresence } from 'framer-motion';
-import Konva from 'konva';
-import { animationPresets } from '../components/Editor/animationPresets';
-import { fetchFromWalrus } from '../services/exports/exportToWalrus';
-import {
-  ChevronLeft,
-  ChevronRight,
-  X,
-  Maximize,
-  Minimize,
-  Play,
-  Pause,
-  Settings,
-  ShieldCheck,
-} from "lucide-react";
+﻿import { useState, useEffect, useRef, useCallback } from "react";
+import { useParams, useNavigate, useLocation } from "react-router-dom";
+import { Stage, Layer, Rect, Circle, Line, Text, Image as KonvaImage } from "react-konva";
+import { motion, AnimatePresence } from "framer-motion";
+import Konva from "konva";
+import { animationPresets } from "../components/Editor/animationPresets";
+import { ChevronLeft, ChevronRight, X, Maximize, Minimize, Play, Pause } from "lucide-react";
+import { fetchFromWalrus } from "../services/exports/exportToWalrus";
 
 const CANVAS_WIDTH = 960;
 const CANVAS_HEIGHT = 540;
 
-// Slide transition variants
 const slideTransitions = {
   none: { initial: {}, animate: {}, exit: {} },
   fade: {
@@ -40,17 +27,10 @@ const slideTransitions = {
     animate: { x: 0, opacity: 1, transition: { duration: 0.5, ease: "easeOut" } },
     exit: { x: "100%", opacity: 0, transition: { duration: 0.4 } },
   },
-  scale: {
-    initial: { scale: 0.5, opacity: 0 },
-    animate: { scale: 1, opacity: 1, transition: { duration: 0.4 } },
-    exit: { scale: 1.5, opacity: 0, transition: { duration: 0.3 } },
-  },
 };
 
-// Image loader component
 const URLImage = ({ element }) => {
   const [image, setImage] = useState(null);
-
   useEffect(() => {
     if (!element.src) return;
     const img = new window.Image();
@@ -60,7 +40,6 @@ const URLImage = ({ element }) => {
   }, [element.src]);
 
   if (!image) return null;
-
   return (
     <KonvaImage
       id={element.id}
@@ -74,495 +53,331 @@ const URLImage = ({ element }) => {
   );
 };
 
-/**
- * Presentation Mode - Full screen slide viewer with navigation
- */
 export const Slide = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const location = useLocation();
   const containerRef = useRef(null);
   const stageRef = useRef(null);
+
   const [presentation, setPresentation] = useState(null);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [scale, setScale] = useState(1);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [showControls, setShowControls] = useState(true);
   const [isAutoplay, setIsAutoplay] = useState(false);
-  const [autoplayInterval, setAutoplayInterval] = useState(5);
-  const [showSettings, setShowSettings] = useState(false);
-  const [showAccessModal, setShowAccessModal] = useState(false);
-  const account = useCurrentAccount();
-  const [clickSequence, setClickSequence] = useState(0);
+  const [autoplayInterval] = useState(5);
   const [animatedElements, setAnimatedElements] = useState(new Set());
   const [isLoading, setIsLoading] = useState(true);
   const controlsTimeout = useRef(null);
 
-  // Load presentation
+  // --- LOGIC 1: ẨN CON TRỎ & CONTROL BAR ---
+  useEffect(() => {
+    const handleInteraction = () => {
+      setShowControls(true);
+      if (controlsTimeout.current) clearTimeout(controlsTimeout.current);
+      controlsTimeout.current = setTimeout(() => setShowControls(false), 2000);
+    };
+    window.addEventListener("mousemove", handleInteraction);
+    window.addEventListener("keydown", handleInteraction);
+    return () => {
+      window.removeEventListener("mousemove", handleInteraction);
+      window.removeEventListener("keydown", handleInteraction);
+      if (controlsTimeout.current) clearTimeout(controlsTimeout.current);
+    };
+  }, []);
+
+  // --- LOGIC 2: LOAD DATA ---
   useEffect(() => {
     const loadPresentation = async () => {
       setIsLoading(true);
-      const source = location.state?.source;
-      const slideMeta = location.state?.slide;
-
-      console.log('Loading presentation, id:', id, 'source:', source);
-
       try {
-        if (source === 'blockchain' && slideMeta?.contentUrl) {
-          console.log('Fetching from Walrus:', slideMeta.contentUrl);
+        const source = location.state?.source;
+        const slideMeta = location.state?.slide;
+        if (source === "blockchain" && slideMeta?.contentUrl) {
           const data = await fetchFromWalrus(slideMeta.contentUrl);
           if (data) {
-            console.log('Successfully fetched from Walrus:', data.title);
             setPresentation(data);
-            setIsLoading(false);
             return;
           }
         }
-
-        // Fallback to localStorage
         const slides = JSON.parse(localStorage.getItem("slides") || "[]");
-        console.log('Available local slides:', slides.map(s => ({ id: s.id, title: s.title || s.data?.title })));
-
         const found = slides.find((s) => s.id === id);
-
-        if (found?.data) {
-          console.log('Found local presentation:', found.data.title);
-          setPresentation(found.data);
-        } else {
-          console.warn('Presentation not found for id:', id);
-          navigate("/my-slide");
-        }
+        if (found?.data) setPresentation(found.data);
+        else navigate("/my-slide");
       } catch (error) {
-        console.error('Error loading presentation:', error);
-        // Maybe show alert or navigate back
+        console.error("Load error:", error);
       } finally {
         setIsLoading(false);
       }
     };
-
     loadPresentation();
   }, [id, navigate, location.state]);
 
-  // Responsive scaling
+  // --- LOGIC 3: SCALE & FULLSCREEN (ĐÃ TỐI ƯU) ---
+  const handleResize = useCallback(() => {
+    const width = window.innerWidth;
+    const height = window.innerHeight;
+    const scaleX = width / CANVAS_WIDTH;
+    const scaleY = height / CANVAS_HEIGHT;
+
+    // Khi fullscreen thì lấy 100%, khi thoát thì lấy 95% để có lề
+    const newScale = Math.min(scaleX, scaleY) * (document.fullscreenElement ? 1 : 0.95);
+    setScale(newScale);
+  }, []);
+
   useEffect(() => {
-    const handleResize = () => {
-      if (containerRef.current) {
-        const containerWidth = containerRef.current.offsetWidth;
-        const containerHeight = containerRef.current.offsetHeight;
-        const scaleX = containerWidth / CANVAS_WIDTH;
-        const scaleY = containerHeight / CANVAS_HEIGHT;
-        setScale(Math.min(scaleX, scaleY));
-      }
-    };
-    handleResize();
     window.addEventListener("resize", handleResize);
-    return () => window.removeEventListener("resize", handleResize);
-  }, []);
-
-  // Keyboard navigation
-  useEffect(() => {
-    const handleKeyDown = (e) => {
-      if (e.key === "ArrowRight" || e.key === " ") nextSlide();
-      if (e.key === "ArrowLeft") prevSlide();
-      if (e.key === "Escape" && isFullscreen) exitFullscreen();
-      if (e.key === "f" || e.key === "F") toggleFullscreen();
+    const onFullscreenChange = () => {
+      setIsFullscreen(!!document.fullscreenElement);
+      // Gọi nhiều lần để đảm bảo bắt đúng kích thước sau khi trình duyệt render lại layout
+      handleResize();
+      setTimeout(handleResize, 100);
+      setTimeout(handleResize, 400);
     };
-    window.addEventListener("keydown", handleKeyDown);
-    return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [isFullscreen, currentIndex, presentation]);
-
-  // Autoplay timer
-  useEffect(() => {
-    if (!isAutoplay || !presentation) return;
-    const timer = setInterval(() => {
-      setCurrentIndex((prev) => {
-        if (prev >= presentation.slides.length - 1) {
-          setIsAutoplay(false);
-          return prev;
-        }
-        return prev + 1;
-      });
-    }, autoplayInterval * 1000);
-    return () => clearInterval(timer);
-  }, [isAutoplay, autoplayInterval, presentation]);
-
-  // Hide controls after inactivity
-  useEffect(() => {
-    const handleMouseMove = () => {
-      setShowControls(true);
-      if (controlsTimeout.current) clearTimeout(controlsTimeout.current);
-      controlsTimeout.current = setTimeout(() => setShowControls(false), 3000);
+    document.addEventListener("fullscreenchange", onFullscreenChange);
+    handleResize();
+    return () => {
+      window.removeEventListener("resize", handleResize);
+      document.removeEventListener("fullscreenchange", onFullscreenChange);
     };
-    window.addEventListener("mousemove", handleMouseMove);
-    return () => window.removeEventListener("mousemove", handleMouseMove);
-  }, []);
+  }, [handleResize]);
 
-  const nextSlide = () => {
-    if (presentation && currentIndex < presentation.slides.length - 1) {
-      setCurrentIndex(currentIndex + 1);
-    }
-  };
-
-  const prevSlide = () => {
-    if (currentIndex > 0) {
-      setCurrentIndex(currentIndex - 1);
-    }
-  };
-
-  const toggleFullscreen = () => {
-    if (!document.fullscreenElement) {
-      containerRef.current?.requestFullscreen();
-      setIsFullscreen(true);
-    } else {
-      document.exitFullscreen();
-      setIsFullscreen(false);
-    }
-  };
-
-  const exitFullscreen = () => {
-    if (document.fullscreenElement) {
-      document.exitFullscreen();
-    }
-    setIsFullscreen(false);
-  };
-
-  // Play animation for an element
+  // --- LOGIC 4: ANIMATION ---
   const playAnimation = useCallback((element) => {
-    if (!stageRef.current || !element.animation?.enabled) return;
-
+    if (!stageRef.current) return;
     const node = stageRef.current.findOne(`#${element.id}`);
-    if (!node) {
-      console.warn('Animation node not found:', element.id);
-      return;
-    }
-
+    if (!node) return;
     const preset = animationPresets[element.animation.type];
     if (!preset) return;
-
-    // Make element visible (important for both auto-play and click-sequenced)
     node.visible(true);
-
-    // Apply initial state (setup) - this may set opacity to 0
-    if (preset.setup) {
-      preset.setup(node);
-    }
-
-    // Play animation using appropriate method
+    if (preset.setup) preset.setup(node);
     if (preset.konvaTween) {
-      // Konva Tween-based animation
-      const tweenConfig = preset.konvaTween(node, element.animation.duration || 1);
-      const tween = new Konva.Tween(tweenConfig);
-      tween.play();
+      new Konva.Tween(preset.konvaTween(node, element.animation.duration || 1)).play();
     } else if (preset.animate) {
-      // Custom animation function (e.g., typewriter)
-      // First make sure element is visible
       node.opacity(1);
-      preset.animate(node, element.animation.duration || preset.defaultDuration);
+      preset.animate(node, element.animation.duration || 1);
     }
   }, []);
 
-  // Start animations when slide changes
-  useEffect(() => {
-    if (!stageRef.current || !presentation) return;
-
-    const currentSlide = presentation.slides[currentIndex];
-    if (!currentSlide?.elements) return;
-
-    // Reset state
-    setClickSequence(0);
-    setAnimatedElements(new Set());
-
-    // Wait for stage to render, then setup initial visibility and play animations
-    setTimeout(() => {
-      // First, hide all click-sequenced elements
-      currentSlide.elements.forEach(element => {
-        if (element.animation?.enabled && element.animation.appearOnClick) {
-          const node = stageRef.current.findOne(`#${element.id}`);
-          if (node) {
-            node.opacity(0);
-            node.visible(false);
-          }
-        }
-      });
-
-      // Then, play non-click animations
-      const nonClickElements = currentSlide.elements.filter(
-        el => el.animation?.enabled && !el.animation.appearOnClick
-      );
-
-      nonClickElements.forEach(element => {
-        playAnimation(element);
-        setAnimatedElements(prev => new Set([...prev, element.id]));
-      });
-    }, 100); // Reduced delay since we're just manipulating existing nodes
-  }, [currentIndex, presentation, playAnimation]);
-
-  // Handle click for sequenced animations
-  const handleSlideClick = useCallback(() => {
+  // --- LOGIC 5: NAVIGATION ---
+  const handleNextAction = useCallback(() => {
     if (!presentation) return;
-
     const currentSlide = presentation.slides[currentIndex];
-    if (!currentSlide?.elements) return;
-
-    // Get elements that have click animations and haven't been animated yet
     const clickElements = currentSlide.elements
-      .filter(el =>
-        el.animation?.enabled &&
-        el.animation.appearOnClick &&
-        !animatedElements.has(el.id)
+      .filter(
+        (el) =>
+          el.animation?.enabled && el.animation.appearOnClick && !animatedElements.has(el.id),
       )
       .sort((a, b) => (a.animation.clickOrder || 0) - (b.animation.clickOrder || 0));
 
     if (clickElements.length === 0) {
-      // No more animations, go to next slide
-      nextSlide();
-      return;
+      if (currentIndex < presentation.slides.length - 1) {
+        setCurrentIndex((prev) => prev + 1);
+      } else {
+        setIsAutoplay(false);
+      }
+    } else {
+      const nextEl = clickElements[0];
+      playAnimation(nextEl);
+      setAnimatedElements((prev) => new Set([...prev, nextEl.id]));
     }
+  }, [presentation, currentIndex, animatedElements, playAnimation]);
 
-    // Play next animation in sequence
-    const nextElement = clickElements[0];
-    playAnimation(nextElement);
-    setAnimatedElements(prev => new Set([...prev, nextElement.id]));
-    setClickSequence(prev => prev + 1);
-  }, [presentation, currentIndex, clickSequence, playAnimation]);
-
-  const renderElement = (element) => {
-    switch (element.type) {
-      case "rect":
-        return (
-          <Rect
-            key={element.id}
-            id={element.id}
-            x={element.x}
-            y={element.y}
-            width={element.width}
-            height={element.height}
-            fill={element.fill}
-            stroke={element.stroke}
-            strokeWidth={element.strokeWidth}
-            cornerRadius={element.cornerRadius}
-            rotation={element.rotation || 0}
-          />
-        );
-      case "circle":
-        return (
-          <Circle
-            key={element.id}
-            id={element.id}
-            x={element.x}
-            y={element.y}
-            radius={element.radius}
-            fill={element.fill}
-            stroke={element.stroke}
-            strokeWidth={element.strokeWidth}
-            rotation={element.rotation || 0}
-          />
-        );
-      case "line":
-        return (
-          <Line
-            key={element.id}
-            id={element.id}
-            x={element.x}
-            y={element.y}
-            points={element.points}
-            stroke={element.stroke}
-            strokeWidth={element.strokeWidth}
-            lineCap="round"
-            lineJoin="round"
-            rotation={element.rotation || 0}
-          />
-        );
-      case "text":
-        return (
-          <Text
-            key={element.id}
-            id={element.id}
-            x={element.x}
-            y={element.y}
-            text={element.text}
-            fontSize={element.fontSize}
-            fontFamily={element.fontFamily}
-            fill={element.fill}
-            width={element.width}
-            align={element.align}
-            rotation={element.rotation || 0}
-          />
-        );
-      case "image":
-        return <URLImage key={element.id} element={element} />;
-      default:
-        return null;
-    }
+  const prevSlide = () => {
+    if (currentIndex > 0) setCurrentIndex((prev) => prev - 1);
   };
 
-  if (isLoading || !presentation) {
+  // --- LOGIC 6: AUTOPLAY ---
+  useEffect(() => {
+    let interval;
+    if (isAutoplay && presentation) {
+      interval = setInterval(() => {
+        handleNextAction();
+      }, autoplayInterval * 1000);
+    }
+    return () => clearInterval(interval);
+  }, [isAutoplay, presentation, handleNextAction, autoplayInterval]);
+
+  // --- LOGIC 7: KEYBOARD ---
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if (e.key === "ArrowRight" || e.key === " ") {
+        e.preventDefault();
+        handleNextAction();
+      } else if (e.key === "ArrowLeft") {
+        prevSlide();
+      } else if (e.key.toLowerCase() === "f") {
+        if (!document.fullscreenElement) containerRef.current?.requestFullscreen();
+        else document.exitFullscreen();
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [handleNextAction]);
+
+  useEffect(() => {
+    if (!presentation) return;
+    const currentSlide = presentation.slides[currentIndex];
+    setAnimatedElements(new Set());
+    setTimeout(() => {
+      currentSlide.elements.forEach((el) => {
+        const node = stageRef.current?.findOne(`#${el.id}`);
+        if (el.animation?.enabled && el.animation.appearOnClick) {
+          if (node) {
+            node.opacity(0);
+            node.visible(false);
+          }
+        } else if (el.animation?.enabled) {
+          playAnimation(el);
+        }
+      });
+    }, 50);
+  }, [currentIndex, presentation, playAnimation]);
+
+  if (isLoading || !presentation)
     return (
-      <div className="min-h-screen bg-black/95 flex items-center justify-center">
-        <div className="flex flex-col items-center gap-4">
-          <div className="w-12 h-12 border-4 border-blue-500 border-t-transparent rounded-full animate-spin" />
-          <div className="text-white text-xl">
-            {isLoading ? 'Loading content from blockchain...' : 'Preparing presentation...'}
-          </div>
-        </div>
+      <div className="h-screen bg-black flex items-center justify-center text-white font-medium">
+        Loading...
       </div>
     );
-  }
 
   const currentSlide = presentation.slides[currentIndex];
-  const transitionVariant = slideTransitions[currentSlide?.transition] || slideTransitions.fade;
+  const transition = slideTransitions[currentSlide?.transition] || slideTransitions.fade;
 
   return (
     <div
       ref={containerRef}
-      className="min-h-screen bg-black/95 flex items-center justify-center relative overflow-hidden"
+      className={`fixed inset-0 bg-black flex items-center justify-center overflow-hidden transition-all duration-300 ${!showControls ? "cursor-none" : "cursor-default"}`}
     >
       <AnimatePresence mode="wait">
         <motion.div
           key={currentIndex}
-          initial={transitionVariant.initial}
-          animate={transitionVariant.animate}
-          exit={transitionVariant.exit}
-          className="absolute inset-0 flex items-center justify-center"
+          initial={transition.initial}
+          animate={transition.animate}
+          exit={transition.exit}
+          className="relative flex items-center justify-center w-full h-full"
         >
           <Stage
             ref={stageRef}
-            width={CANVAS_WIDTH}
-            height={CANVAS_HEIGHT}
+            width={CANVAS_WIDTH * scale}
+            height={CANVAS_HEIGHT * scale}
             scaleX={scale}
             scaleY={scale}
-            style={{ background: currentSlide?.background || '#1a1a2e' }}
-            onClick={handleSlideClick}
-            onTap={handleSlideClick}
+            onClick={(e) => e.target === e.target.getStage() && handleNextAction()}
+            style={{
+              backgroundColor: currentSlide?.background || "#ffffff",
+              boxShadow: isFullscreen ? "none" : "0 25px 50px -12px rgba(0, 0, 0, 0.5)",
+            }}
           >
             <Layer>
               <Rect
-                x={0}
-                y={0}
                 width={CANVAS_WIDTH}
                 height={CANVAS_HEIGHT}
-                fill={currentSlide?.background || "#1a1a2e"}
-                listening={false}
+                fill={currentSlide?.background || "#ffffff"}
               />
-              {currentSlide?.elements?.map(renderElement)}
+              {currentSlide.elements.map((el) => {
+                // Tách key và các thuộc tính dùng chung
+                const commonProps = {
+                  id: el.id,
+                  x: el.x,
+                  y: el.y,
+                  rotation: el.rotation || 0,
+                };
+
+                if (el.type === "rect")
+                  return (
+                    <Rect
+                      key={el.id}
+                      {...commonProps}
+                      width={el.width}
+                      height={el.height}
+                      fill={el.fill}
+                      cornerRadius={el.cornerRadius}
+                    />
+                  );
+                if (el.type === "circle")
+                  return (
+                    <Circle key={el.id} {...commonProps} radius={el.radius} fill={el.fill} />
+                  );
+                if (el.type === "text")
+                  return (
+                    <Text
+                      key={el.id}
+                      {...commonProps}
+                      text={el.text}
+                      fontSize={el.fontSize}
+                      fill={el.fill}
+                      width={el.width}
+                      align={el.align}
+                    />
+                  );
+                if (el.type === "image") return <URLImage key={el.id} element={el} />;
+                return null;
+              })}
             </Layer>
           </Stage>
         </motion.div>
       </AnimatePresence>
 
-      {/* Access Management Modal */}
-      {location.state?.slide && (
-        <ManageAccessModal
-          isOpen={showAccessModal}
-          onClose={() => setShowAccessModal(false)}
-          slide={location.state.slide}
-        />
-      )}
-
-      {/* Navigation Controls */}
-      {showControls && (
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          exit={{ opacity: 0 }}
-          className="absolute bottom-8 left-1/2 -translate-x-1/2 flex items-center gap-4 bg-black/50 backdrop-blur-md rounded-full px-6 py-3"
+      {/* Control Bar */}
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: showControls ? 1 : 0, y: showControls ? 0 : 20 }}
+        transition={{ duration: 0.4 }}
+        className="absolute bottom-6 left-1/2 -translate-x-1/2 flex items-center gap-4 px-6 py-3 bg-zinc-900/80 backdrop-blur-md border border-white/10 rounded-full z-50 shadow-2xl"
+        style={{ pointerEvents: showControls ? "auto" : "none" }}
+      >
+        <button
+          onClick={prevSlide}
+          className="cursor-pointer text-white hover:text-blue-400 disabled:opacity-30"
+          disabled={currentIndex === 0}
         >
-          {/* Previous */}
-          <button
-            onClick={prevSlide}
-            disabled={currentIndex === 0}
-            className="cursor-pointer p-2 rounded-full hover:bg-white/10 disabled:opacity-30 disabled:cursor-not-allowed text-white transition-colors"
-          >
-            <ChevronLeft className="w-5 h-5" />
-          </button>
+          <ChevronLeft />
+        </button>
+        <span className="text-white text-sm font-mono">
+          {currentIndex + 1} / {presentation.slides.length}
+        </span>
+        <button
+          onClick={handleNextAction}
+          className="cursor-pointer text-white hover:text-blue-400 disabled:opacity-30"
+          disabled={
+            currentIndex === presentation.slides.length - 1 &&
+            animatedElements.size >=
+              currentSlide.elements.filter((e) => e.animation?.appearOnClick).length
+          }
+        >
+          <ChevronRight />
+        </button>
 
-          {/* Slide Counter */}
-          <div className="text-white text-sm font-medium px-2">
-            {currentIndex + 1} / {presentation.slides.length}
-          </div>
+        <div className="w-px h-4 bg-white/20 mx-2" />
 
-          {/* Next */}
-          <button
-            onClick={nextSlide}
-            disabled={currentIndex >= presentation.slides.length - 1}
-            className="cursor-pointer p-2 rounded-full hover:bg-white/10 disabled:opacity-30 disabled:cursor-not-allowed text-white transition-colors"
-          >
-            <ChevronRight className="w-5 h-5" />
-          </button>
+        <button
+          onClick={() => setIsAutoplay(!isAutoplay)}
+          className={`cursor-pointer transition-colors ${isAutoplay ? "text-blue-500" : "text-white"}`}
+        >
+          {isAutoplay ? <Pause size={20} /> : <Play size={20} />}
+        </button>
 
-          {/* Divider */}
-          <div className="w-px h-6 bg-white/20" />
+        <button
+          onClick={() => {
+            if (!document.fullscreenElement) containerRef.current?.requestFullscreen();
+            else document.exitFullscreen();
+          }}
+          className="cursor-pointer text-white hover:text-blue-400"
+        >
+          {isFullscreen ? <Minimize size={20} /> : <Maximize size={20} />}
+        </button>
 
-          {/* Autoplay */}
-          <button
-            onClick={() => setIsAutoplay(!isAutoplay)}
-            className={`cursor-pointer p-2 rounded-full transition-colors ${isAutoplay ? "bg-blue-600 text-white" : "hover:bg-white/10 text-white"
-              }`}
-            title={isAutoplay ? "Stop Autoplay" : "Start Autoplay"}
-          >
-            {isAutoplay ? <Pause className="w-5 h-5" /> : <Play className="w-5 h-5" />}
-          </button>
-
-          {/* Settings */}
-          <button
-            onClick={() => setShowSettings(!showSettings)}
-            className="cursor-pointer p-2 rounded-full hover:bg-white/10 text-white transition-colors"
-            title="Settings"
-          >
-            <Settings className="w-5 h-5" />
-          </button>
-
-          {/* Manage Access (Owner Only) */}
-          {location.state?.slide?.isOwner && location.state?.slide?.suiObjectId && (
-            <button
-              onClick={() => setShowAccessModal(true)}
-              className="cursor-pointer p-2 rounded-full hover:bg-white/10 text-white transition-colors"
-              title="Manage Access"
-            >
-              <ShieldCheck className="w-5 h-5" />
-            </button>
-          )}
-
-          {/* Fullscreen */}
-          <button
-            onClick={toggleFullscreen}
-            className="cursor-pointer p-2 rounded-full hover:bg-white/10 text-white transition-colors"
-          >
-            {isFullscreen ? <Minimize className="w-5 h-5" /> : <Maximize className="w-5 h-5" />}
-          </button>
-
-          {/* Exit */}
-          <button
-            onClick={() => navigate("/my-slide")}
-            className="cursor-pointer p-2 rounded-full hover:bg-white/10 text-white transition-colors"
-          >
-            <X className="w-5 h-5" />
-          </button>
-        </motion.div>
-      )}
-
-      {/* Settings Panel */}
-      {showSettings && (
-        <div className="absolute top-8 right-8 bg-black/70 backdrop-blur-md rounded-lg p-4 text-white">
-          <h3 className="text-lg font-semibold mb-4">Settings</h3>
-          <div className="flex flex-col gap-3">
-            <label className="flex items-center justify-between gap-4">
-              <span className="text-sm">Autoplay Interval (seconds):</span>
-              <input
-                type="number"
-                min="1"
-                max="60"
-                value={autoplayInterval}
-                onChange={(e) => setAutoplayInterval(parseInt(e.target.value) || 5)}
-                className="w-16 px-2 py-1 bg-white/10 rounded text-center"
-              />
-            </label>
-          </div>
-        </div>
-      )}
+        <button
+          onClick={() => navigate("/my-slide")}
+          className="cursor-pointer text-red-400 hover:bg-red-500/10 p-1 rounded"
+        >
+          <X size={20} />
+        </button>
+      </motion.div>
     </div>
   );
 };
 
 export default Slide;
-
