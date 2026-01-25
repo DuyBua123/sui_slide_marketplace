@@ -14,7 +14,7 @@ import { exportToWalrus } from '../exports/exportToWalrus';
  * @param {Array} params.slides - Array of slides
  * @returns {Promise<Object>} { contentUrl, thumbnailUrl, slideData }
  */
-export const prepareSlideDraftData = async ({ title, slides }) => {
+export const prepareSlideDraftData = async ({ title, slides, thumbnail }) => {
     try {
         const slideData = {
             title,
@@ -27,13 +27,26 @@ export const prepareSlideDraftData = async ({ title, slides }) => {
         // Export to Walrus
         const contentUrl = await exportToWalrus(slideData);
 
-        // For now, use a placeholder thumbnail URL
-        // In production, you'd generate an actual thumbnail
-        const thumbnailUrl = contentUrl;
+        let validThumbnailUrl = null;
+
+        if (thumbnail) {
+            // Check if it's already a Walrus/HTTP URL or Data URL
+            if (thumbnail.startsWith('http') || thumbnail.startsWith('walrus')) {
+                validThumbnailUrl = thumbnail;
+            } else if (thumbnail.startsWith('data:')) {
+                // Upload data URL to Walrus
+                const { uploadDataUrlToWalrus } = await import('../../utils/walrus');
+                const result = await uploadDataUrlToWalrus(thumbnail);
+                validThumbnailUrl = result.url;
+            }
+        }
+
+        // Fallback: If no valid thumbnail, avoid setting it to contentUrl (JSON)
+        // Pass empty string or keep it null
 
         return {
             contentUrl,
-            thumbnailUrl,
+            thumbnailUrl: validThumbnailUrl || '',
             slideData,
         };
     } catch (error) {
@@ -55,6 +68,7 @@ export const saveSlideToBlockchain = async ({
     suiObjectId,
     title,
     slides,
+    thumbnail,
     onUpdate,
 }) => {
     try {
@@ -62,6 +76,7 @@ export const saveSlideToBlockchain = async ({
         const { contentUrl, thumbnailUrl } = await prepareSlideDraftData({
             title,
             slides,
+            thumbnail,
         });
 
         if (!suiObjectId) {

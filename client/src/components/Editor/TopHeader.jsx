@@ -44,7 +44,7 @@ export const TopHeader = ({
               title: title || 'Untitled Presentation',
               slideCount: projectData.slides.length,
               data: projectData,
-              thumbnail: null,
+              thumbnail: window.__slideStage?.toDataURL({ pixelRatio: 0.5, mimeType: 'image/jpeg', quality: 0.7 }) || null,
               owner: 'local',
               createdAt: new Date().toISOString(),
               updatedAt: new Date().toISOString(),

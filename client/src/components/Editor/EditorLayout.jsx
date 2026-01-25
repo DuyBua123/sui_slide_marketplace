@@ -40,6 +40,7 @@ export const EditorLayout = () => {
   const [showSellModal, setShowSellModal] = useState(false);
   const [showMintModal, setShowMintModal] = useState(false);
   const [currentSlideData, setCurrentSlideData] = useState(null);
+  const [currentThumbnail, setCurrentThumbnail] = useState(null);
   const [isMinted, setIsMinted] = useState(false);
   const [suiObjectId, setSuiObjectId] = useState(null);
   const [blockchainSaveStatus, setBlockchainSaveStatus] = useState(null); // null | 'saving' | 'success' | 'error'
@@ -239,11 +240,38 @@ export const EditorLayout = () => {
     nudgeSelected,
   ]);
 
-  const handleMintSuccess = ({ txDigest }) => {
+  const handleMintSuccess = ({ txDigest, thumbnailUrl }) => {
     console.log("[EDITOR] Mint Success - Object ID:", txDigest);
-    console.log("[EDITOR] Full transaction digest:", txDigest);
     setIsMinted(true);
     setSuiObjectId(txDigest);
+
+    // Update local storage to reflect mint status
+    if (id) {
+      const savedSlides = JSON.parse(localStorage.getItem("slides") || "[]");
+      const updatedSlides = savedSlides.map(s => {
+        if (s.id === id) {
+          return {
+            ...s,
+            suiObjectId: txDigest,
+            isMinted: true,
+            owner: account?.address,
+            thumbnail: thumbnailUrl || s.thumbnail, // Prefer new Walrus URL
+            updatedAt: new Date().toISOString()
+          };
+        }
+        return s;
+      });
+      localStorage.setItem("slides", JSON.stringify(updatedSlides));
+
+      // Update current tracking data
+      setCurrentSlideData(prev => ({
+        ...prev,
+        suiObjectId: txDigest,
+        isMinted: true,
+        thumbnail: thumbnailUrl || prev?.thumbnail
+      }));
+    }
+
     console.log("[EDITOR] State updated - isMinted: true, suiObjectId:", txDigest);
   };
 
@@ -271,6 +299,7 @@ export const EditorLayout = () => {
         suiObjectId,
         title,
         slides,
+        thumbnail: currentThumbnail || currentSlideData?.thumbnail,
         onUpdate: updateSlide,
       });
 
@@ -290,7 +319,7 @@ export const EditorLayout = () => {
       setBlockchainSaveError(error.message);
       setBlockchainSaveStatus("error");
     }
-  }, [isMinted, suiObjectId, title, slides, updateSlide]);
+  }, [isMinted, suiObjectId, title, slides, updateSlide, currentThumbnail, currentSlideData]);
 
   // Handle version selection (Forking)
   const handleVersionSelect = async (selectedVersion) => {
@@ -348,6 +377,14 @@ export const EditorLayout = () => {
     );
   }
 
+  const handleMintClick = () => {
+    if (window.__slideStage) {
+      const dataUrl = window.__slideStage.toDataURL({ pixelRatio: 0.5, mimeType: "image/jpeg", quality: 0.7 });
+      setCurrentThumbnail(dataUrl);
+    }
+    setShowMintModal(true);
+  };
+
   return (
     <div className="h-screen bg-[#f8f9fa] dark:bg-[#0a0a0f] text-gray-900 dark:text-white flex flex-col overflow-hidden transition-colors duration-300">
       {/* Top Header */}
@@ -358,7 +395,7 @@ export const EditorLayout = () => {
         blockchainSaveStatus={blockchainSaveStatus}
         blockchainSaveError={blockchainSaveError}
         isUpdating={isUpdating}
-        onMintClick={() => setShowMintModal(true)}
+        onMintClick={handleMintClick}
       />
 
       {/* Contextual Toolbar */}
@@ -416,7 +453,7 @@ export const EditorLayout = () => {
         slideData={{
           title: title,
           data: exportToJSON(),
-          thumbnail: currentSlideData?.thumbnail
+          thumbnail: currentThumbnail || currentSlideData?.thumbnail
         }}
         onMintSuccess={handleMintSuccess}
       />

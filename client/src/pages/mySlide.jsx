@@ -7,6 +7,7 @@ import { deleteLocalSlideRecord } from "../utils/deletedSlidesTracker";
 import { ManageAccessModal } from "../components/Editor/ManageAccessModal";
 import { SellSlideModal } from "../components/Editor/SellSlideModal";
 import { fetchFromWalrus } from "../services/exports/exportToWalrus";
+import { getWalrusUrl } from "../utils/walrus";
 import { ShieldCheck, Play, Edit, Trash2, Settings2, Store } from "lucide-react";
 
 /**
@@ -184,7 +185,7 @@ export const MySlide = () => {
             <div key={slide.id} className="group bg-white dark:bg-white/5 border border-gray-200 dark:border-white/5 rounded-[32px] overflow-hidden hover:shadow-2xl transition-all duration-500 flex flex-col">
               <div className="aspect-video relative overflow-hidden bg-gray-100 dark:bg-black/40">
                 {slide.thumbnail ? (
-                  <img src={slide.thumbnail} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" alt="" />
+                  <img src={slide.thumbnail.startsWith('walrus://') ? getWalrusUrl(slide.thumbnail.replace('walrus://', '')) : slide.thumbnail} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" alt="" />
                 ) : (
                   <div className="w-full h-full flex items-center justify-center text-gray-300 dark:text-gray-700"><Settings2 className="w-12 h-12" /></div>
                 )}
