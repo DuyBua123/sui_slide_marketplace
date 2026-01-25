@@ -13,6 +13,17 @@ module 0x0::slide_marketplace {
     const ENotSeller: u64 = 3;
     const ESlideNotForSale: u64 = 4;
     const EAccessRevoked: u64 = 5;
+    const EInvalidDuration: u64 = 6;
+    const ERevocationTooEarly: u64 = 7;
+
+    // ============ Constants ============
+    const DURATION_MONTH: u64 = 2592000000; // 30 days in ms
+    const DURATION_YEAR: u64 = 31536000000;  // 365 days in ms
+    
+    // Duration Types
+    const TYPE_MONTH: u8 = 1;
+    const TYPE_YEAR: u8 = 2;
+    const TYPE_LIFETIME: u8 = 3;
 
     // ============ Structs ============
 
@@ -21,6 +32,12 @@ module 0x0::slide_marketplace {
         version: u64,
         content_url: String,
         timestamp: u64,
+    }
+
+    /// Metadata about a user's license to track 30% rule
+    public struct LicenseRecord has store, drop {
+        issued_at: u64,
+        duration_type: u8,
     }
 
     /// The master slide asset - Shared object
@@ -37,10 +54,14 @@ module 0x0::slide_marketplace {
         published_version: u64,     // Version available on marketplace
         versions: vector<SlideVersion>, // History of published versions
         
-        // Licensing
-        price: u64,
+        // Licensing (Multi-Tier)
+        monthly_price: u64,
+        yearly_price: u64,
+        lifetime_price: u64,
+        
         is_listed: bool,
         blocked_buyers: Table<address, bool>, // Ownership right: revoke/ban specific users
+        active_licenses: Table<address, LicenseRecord>, // Track for 30% rule
 
         // Ownership Sale
         sale_price: u64,
@@ -54,6 +75,9 @@ module 0x0::slide_marketplace {
         version: u64,        // Binds license to a specific version
         slide_title: String,
         buyer: address,
+        issued_at: u64,      // Timestamp ms
+        expires_at: u64,     // Timestamp ms (0 = lifetime)
+        duration_type: u8,   // 1=Month, 2=Year, 3=Lifetime
     }
 
     // ============ Events ============
@@ -76,6 +100,7 @@ module 0x0::slide_marketplace {
         version: u64,
         buyer: address,
         price: u64,
+        duration_type: u8,
     }
 
     public struct OwnershipTransferred has copy, drop {
@@ -97,7 +122,9 @@ module 0x0::slide_marketplace {
         title: String,
         content_url: String,
         thumbnail_url: String,
-        price: u64,
+        monthly_price: u64,
+        yearly_price: u64,
+        lifetime_price: u64,
         sale_price: u64,
         is_for_sale: bool,
         clock: &Clock,
@@ -123,9 +150,12 @@ module 0x0::slide_marketplace {
             thumbnail_url,
             published_version: 1,
             versions,
-            price,
-            is_listed: true,
+            monthly_price,
+            yearly_price,
+            lifetime_price,
+            is_listed: false,
             blocked_buyers: table::new(ctx),
+            active_licenses: table::new(ctx),
             sale_price,
             is_for_sale,
         };
@@ -168,19 +198,41 @@ module 0x0::slide_marketplace {
 
     /// Buy a usage license for the CURRENT published version
     public entry fun buy_license(
-        slide: &SlideObject,
+        slide: &mut SlideObject,
+        duration_type: u8,
         mut payment: Coin<SUI>,
+        clock: &Clock,
         ctx: &mut TxContext
     ) {
         let buyer = ctx.sender();
+        let now = clock::timestamp_ms(clock);
+
+        // Selection
+        let price = if (duration_type == TYPE_MONTH) {
+            slide.monthly_price
+        } else if (duration_type == TYPE_YEAR) {
+            slide.yearly_price
+        } else if (duration_type == TYPE_LIFETIME) {
+            slide.lifetime_price
+        } else {
+            abort EInvalidDuration
+        };
+
+        let expires_at = if (duration_type == TYPE_MONTH) {
+            now + DURATION_MONTH
+        } else if (duration_type == TYPE_YEAR) {
+            now + DURATION_YEAR
+        } else {
+            0 // Lifetime
+        };
 
         // Checks
         assert!(slide.is_listed, ESlideNotListed);
         assert!(!table::contains(&slide.blocked_buyers, buyer), EAccessRevoked);
-        assert!(coin::value(&payment) >= slide.price, EInsufficientPayment);
+        assert!(coin::value(&payment) >= price, EInsufficientPayment);
 
         // Payment
-        let paid = coin::split(&mut payment, slide.price, ctx);
+        let paid = coin::split(&mut payment, price, ctx);
         transfer::public_transfer(paid, slide.owner);
         
         if (coin::value(&payment) > 0) {
@@ -193,17 +245,29 @@ module 0x0::slide_marketplace {
         let license = SlideLicense {
             id: object::new(ctx),
             slide_id: object::id(slide),
-            version: slide.published_version, // Tied to specific version
+            version: slide.published_version,
             slide_title: slide.title,
             buyer,
+            issued_at: now,
+            expires_at,
+            duration_type,
         };
+
+        // Update tracking for 30% rule
+        let record = LicenseRecord { issued_at: now, duration_type };
+        if (table::contains(&slide.active_licenses, buyer)) {
+            let old = table::remove(&mut slide.active_licenses, buyer);
+            let _ = old; // drop it
+        };
+        table::add(&mut slide.active_licenses, buyer, record);
 
         event::emit(LicensePurchased {
             license_id: object::id(&license),
             slide_id: object::id(slide),
             version: slide.published_version,
             buyer,
-            price: slide.price,
+            price,
+            duration_type,
         });
 
         transfer::transfer(license, buyer);
@@ -247,9 +311,28 @@ module 0x0::slide_marketplace {
     public entry fun revoke_access(
         slide: &mut SlideObject,
         target: address,
+        clock: &Clock,
         ctx: &TxContext
     ) {
         assert!(slide.owner == ctx.sender(), ENotOwner);
+
+        // Check 30% rule
+        if (table::contains(&slide.active_licenses, target)) {
+            let record = table::borrow(&slide.active_licenses, target);
+            let now = clock::timestamp_ms(clock);
+            let elapsed = now - record.issued_at;
+            
+            let min_duration = if (record.duration_type == TYPE_MONTH) {
+                (DURATION_MONTH * 30 / 100)
+            } else if (record.duration_type == TYPE_YEAR) {
+                (DURATION_YEAR * 30 / 100)
+            } else {
+                DURATION_YEAR // Lifetime revocation after 1 year as per requirement
+            };
+
+            assert!(elapsed >= min_duration, ERevocationTooEarly);
+        };
+
         if (!table::contains(&slide.blocked_buyers, target)) {
             table::add(&mut slide.blocked_buyers, target, true);
         };
@@ -277,14 +360,18 @@ module 0x0::slide_marketplace {
 
     public entry fun set_listing_status(
         slide: &mut SlideObject,
-        price: u64,
+        monthly_price: u64,
+        yearly_price: u64,
+        lifetime_price: u64,
         is_listed: bool,
         sale_price: u64,
         is_for_sale: bool,
         ctx: &TxContext
     ) {
         assert!(slide.owner == ctx.sender(), ENotOwner);
-        slide.price = price;
+        slide.monthly_price = monthly_price;
+        slide.yearly_price = yearly_price;
+        slide.lifetime_price = lifetime_price;
         slide.is_listed = is_listed;
         slide.sale_price = sale_price;
         slide.is_for_sale = is_for_sale;
@@ -308,9 +395,12 @@ module 0x0::slide_marketplace {
             thumbnail_url: _, 
             published_version: _, 
             versions: _, 
-            price: _, 
+            monthly_price: _, 
+            yearly_price: _, 
+            lifetime_price: _, 
             is_listed: _, 
             blocked_buyers, 
+            active_licenses,
             sale_price: _, 
             is_for_sale: _ 
         } = slide;
@@ -318,6 +408,7 @@ module 0x0::slide_marketplace {
         assert!(owner == ctx.sender(), ENotOwner);
         
         table::drop(blocked_buyers);
+        table::drop(active_licenses);
         object::delete(id);
     }
 }

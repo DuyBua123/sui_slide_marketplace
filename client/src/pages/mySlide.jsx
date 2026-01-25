@@ -8,7 +8,7 @@ import { ManageAccessModal } from "../components/Editor/ManageAccessModal";
 import { SellSlideModal } from "../components/Editor/SellSlideModal";
 import { fetchFromWalrus } from "../services/exports/exportToWalrus";
 import { getWalrusUrl } from "../utils/walrus";
-import { ShieldCheck, Play, Edit, Trash2, Settings2, Store } from "lucide-react";
+import { ShieldCheck, Play, Edit, Trash2, Settings2, Store, Clock } from "lucide-react";
 
 /**
  * My Slides Page - Gallery of user's owned slides (from blockchain + localStorage)
@@ -26,6 +26,21 @@ export const MySlide = () => {
   const [selectedSlideForSale, setSelectedSlideForSale] = useState(null);
   const [showSellModal, setShowSellModal] = useState(false);
 
+  const isExpired = (slide) => {
+    if (!slide.expiresAt || slide.expiresAt === "0") return false;
+    return Date.now() > parseInt(slide.expiresAt);
+  };
+
+  const getTimeRemaining = (slide) => {
+    if (!slide.expiresAt || slide.expiresAt === "0") return "Unlimited";
+    const remaining = parseInt(slide.expiresAt) - Date.now();
+    if (remaining <= 0) return "0h";
+    const days = Math.floor(remaining / (1000 * 60 * 60 * 24));
+    if (days > 0) return `${days}d`;
+    const hours = Math.floor(remaining / (1000 * 60 * 60));
+    return `${hours}h`;
+  };
+
   // Load slides from both blockchain and localStorage
   useEffect(() => {
     const loadSlides = () => {
@@ -40,7 +55,11 @@ export const MySlide = () => {
         const savedSlides = JSON.parse(localStorage.getItem("slides") || "[]");
         const userSlides = savedSlides.filter(
           (s) => s.owner === account?.address || s.owner === "local",
-        );
+        ).map(s => ({
+          ...s,
+          isOwner: true,
+          isLicensed: false
+        }));
         setSlides(userSlides);
         setIsLoading(false);
       }
@@ -191,19 +210,35 @@ export const MySlide = () => {
                 )}
 
                 <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-all flex items-center justify-center gap-3 backdrop-blur-sm">
-                  <button onClick={() => {
-                    if (slide.isLicensed) {
-                      handleFork(slide);
-                    } else {
-                      navigate(`/editor/${slide.id}`, { state: { source: useBlockchain ? 'blockchain' : 'local', slide } });
-                    }
-                  }} className="p-3 bg-blue-600 text-white rounded-xl shadow-lg hover:scale-110 transition-all">
+                  <button
+                    onClick={() => {
+                      if (slide.isExpired) return;
+                      if (slide.isLicensed) {
+                        handleFork(slide);
+                      } else {
+                        navigate(`/editor/${slide.id}`, { state: { source: useBlockchain ? 'blockchain' : 'local', slide } });
+                      }
+                    }}
+                    disabled={slide.isExpired}
+                    title={slide.isExpired ? "License expired" : "Edit slide"}
+                    className={`p-3 text-white rounded-xl shadow-lg transition-all ${slide.isExpired ? 'bg-gray-500/50 cursor-not-allowed' : 'bg-blue-600 hover:scale-110'}`}
+                  >
                     <Edit className="w-5 h-5" />
                   </button>
                   {slide.isOwner && slide.suiObjectId && (
                     <button onClick={() => { setSelectedSlideForAccess(slide); setShowAccessModal(true); }} className="p-3 bg-red-600 text-white rounded-xl shadow-lg hover:scale-110 transition-all"><ShieldCheck className="w-5 h-5" /></button>
                   )}
-                  <button onClick={() => navigate(`/slide/${slide.id}`, { state: { source: useBlockchain ? 'blockchain' : 'local', slide } })} className="p-3 bg-cyan-600 text-white rounded-xl shadow-lg hover:scale-110 transition-all"><Play className="w-5 h-5" /></button>
+                  <button
+                    onClick={() => {
+                      if (slide.isExpired) return;
+                      navigate(`/slide/${slide.id}`, { state: { source: useBlockchain ? 'blockchain' : 'local', slide } });
+                    }}
+                    disabled={slide.isExpired}
+                    title={slide.isExpired ? "License expired" : "Play slide"}
+                    className={`p-3 text-white rounded-xl shadow-lg transition-all ${slide.isExpired ? 'bg-gray-500/50 cursor-not-allowed' : 'bg-cyan-600 hover:scale-110'}`}
+                  >
+                    <Play className="w-5 h-5" />
+                  </button>
                   {slide.isOwner && slide.suiObjectId && (
                     <button onClick={() => { setSelectedSlideForSale(slide); setShowSellModal(true); }} className="p-3 bg-purple-600 text-white rounded-xl shadow-lg hover:scale-110 transition-all"><Store className="w-5 h-5" /></button>
                   )}
@@ -215,10 +250,22 @@ export const MySlide = () => {
                 <div>
                   <div className="flex items-center justify-between gap-3 mb-2">
                     <h3 className="font-black text-gray-900 dark:text-white truncate text-lg tracking-tight">{slide.title}</h3>
-                    <span className={`px-2.5 py-1 rounded-lg text-[9px] font-black uppercase tracking-wider ${slide.isLicensed ? 'bg-cyan-500/10 text-cyan-500' : 'bg-green-500/10 text-green-500'}`}>
-                      {slide.isLicensed ? 'License' : 'Owner'}
+                    <span className={`px-2.5 py-1 rounded-lg text-[9px] font-black uppercase tracking-wider ${slide.isOwner ? 'bg-green-500/10 text-green-500' : 'bg-cyan-500/10 text-cyan-500'}`}>
+                      {slide.isOwner ? 'Owner' : 'License'}
                     </span>
                   </div>
+
+                  {slide.isLicensed && (
+                    <div className="mb-3">
+                      <div className="flex items-center gap-1.5">
+                        <Clock className={`w-3 h-3 ${slide.isExpired ? 'text-red-500' : 'text-cyan-500'}`} />
+                        <span className={`text-[10px] font-black uppercase tracking-widest ${slide.isExpired ? 'text-red-500' : 'text-gray-500'}`}>
+                          {slide.isExpired ? 'Expired' : `Expires in ${slide.remainingDays}d`}
+                        </span>
+                      </div>
+                    </div>
+                  )}
+
                   <p className="text-xs text-gray-500 font-bold">{slide.createdAt ? new Date(slide.createdAt).toLocaleDateString() : 'Active'}</p>
                 </div>
               </div>

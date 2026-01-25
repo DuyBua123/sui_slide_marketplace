@@ -207,6 +207,8 @@ const SlidePreviewCanvas = ({ slide }) => {
   );
 };
 
+import { CheckoutModal } from "../components/Checkout/CheckoutModal";
+
 export const MarketDetail = () => {
   const { id } = useParams();
   const navigate = useNavigate();
@@ -221,6 +223,7 @@ export const MarketDetail = () => {
   const [presentationError, setPresentationError] = useState(null);
   const [previewIndex, setPreviewIndex] = useState(0);
   const isBuying = isBuyingSlide || isBuyingLicense;
+  const [showCheckout, setShowCheckout] = useState(false);
 
   const selectedSlide = useMemo(
     () => slides.find((slide) => normalizeId(slide.id) === normalizeId(id)),
@@ -340,13 +343,16 @@ export const MarketDetail = () => {
       return;
     }
 
+    if (purchaseType === "license") {
+      setShowCheckout(true);
+      return;
+    }
+
     try {
       if (purchaseType === "ownership") {
-        await buySlide(slide);
-      } else {
-        await buyLicense({
+        await buySlide({
           slideId: slide.id,
-          price: slide.price,
+          price: slide.salePrice,
         });
       }
       await refetch();
@@ -354,6 +360,16 @@ export const MarketDetail = () => {
     } catch (err) {
       console.error("Purchase error", err);
       alert(`Purchase failed: ${err.message}`);
+    }
+  };
+
+  const executeLicensePurchase = async ({ slideId, price, durationType }) => {
+    try {
+      const result = await buyLicense({ slideId, price, durationType });
+      await refetch();
+      return result;
+    } catch (err) {
+      throw err;
     }
   };
 
@@ -604,11 +620,10 @@ export const MarketDetail = () => {
                   <button
                     key={slide.id || `preview-${idx}`}
                     onClick={() => setPreviewIndex(idx)}
-                    className={`cursor-pointer rounded-2xl px-4 py-2 text-xs font-bold uppercase tracking-wide transition ${
-                      idx === previewIndex
-                        ? "bg-slate-900 text-white shadow-lg shadow-slate-900/20"
-                        : "bg-gray-100 text-slate-500 hover:bg-gray-200 dark:bg-white/5 dark:text-white/70 dark:hover:bg-white/10"
-                    }`}
+                    className={`cursor-pointer rounded-2xl px-4 py-2 text-xs font-bold uppercase tracking-wide transition ${idx === previewIndex
+                      ? "bg-slate-900 text-white shadow-lg shadow-slate-900/20"
+                      : "bg-gray-100 text-slate-500 hover:bg-gray-200 dark:bg-white/5 dark:text-white/70 dark:hover:bg-white/10"
+                      }`}
                   >
                     Slide {idx + 1}
                   </button>
@@ -663,11 +678,10 @@ export const MarketDetail = () => {
                   return (
                     <div key={slide.id} className="min-w-full flex-shrink-0 px-6 py-8">
                       <div
-                        className={`flex flex-col gap-4 rounded-3xl border p-6 transition duration-300 ${
-                          isActive
-                            ? "border-blue-500 bg-blue-50/60 dark:bg-blue-900/20"
-                            : "border-gray-100 bg-gray-50 dark:bg-white/5 dark:border-white/5"
-                        }`}
+                        className={`flex flex-col gap-4 rounded-3xl border p-6 transition duration-300 ${isActive
+                          ? "border-blue-500 bg-blue-50/60 dark:bg-blue-900/20"
+                          : "border-gray-100 bg-gray-50 dark:bg-white/5 dark:border-white/5"
+                          }`}
                       >
                         <div className="flex flex-col gap-4 sm:flex-row">
                           <div className="sm:w-64 overflow-hidden rounded-2xl bg-slate-900/5">
@@ -736,6 +750,15 @@ export const MarketDetail = () => {
           </div>
         )}
       </section>
+
+      {selectedSlide && (
+        <CheckoutModal
+          isOpen={showCheckout}
+          onClose={() => setShowCheckout(false)}
+          slide={selectedSlide}
+          onPurchaseSuccess={executeLicensePurchase}
+        />
+      )}
     </div>
   );
 };

@@ -22,8 +22,9 @@ export const useBuyLicense = () => {
      * @param {Object} params
      * @param {string} params.slideId - Object ID of the SlideObject
      * @param {number} params.price - License price in MIST
+     * @param {number} params.durationType - 1=Month, 2=Year, 3=Lifetime
      */
-    const buyLicense = async ({ slideId, price }) => {
+    const buyLicense = async ({ slideId, price, durationType = 1 }) => {
         setIsLoading(true);
         setError(null);
         setTxDigest(null);
@@ -33,7 +34,7 @@ export const useBuyLicense = () => {
                 throw new Error('Package ID not configured. Please set VITE_PACKAGE_ID in your .env file.');
             }
 
-            console.log(`[BUY_LICENSE] Purchasing license for slide: ${slideId} at price: ${price} MIST`);
+            console.log(`[BUY_LICENSE] Purchasing license for slide: ${slideId} at price: ${price} MIST, duration: ${durationType}`);
             const tx = new Transaction();
 
             // Split coin for payment
@@ -43,7 +44,9 @@ export const useBuyLicense = () => {
                 target: `${PACKAGE_ID}::slide_marketplace::buy_license`,
                 arguments: [
                     tx.object(slideId),
+                    tx.pure.u8(durationType),
                     coin,
+                    tx.object('0x6'), // Clock
                 ],
             });
 

@@ -22,7 +22,7 @@ export const useUpdateSlide = () => {
      * @param {Object} params
      * @param {Object} params.slideObject - The slide object to update
      * @param {string} params.title - New title for the slide
-     * @param {string} params.contentUrl - New IPFS URL to slide JSON data
+     * @param {string} params.contentUrl - Walrus URL to slide JSON data
      * @param {string} params.thumbnailUrl - New URL to thumbnail image
      */
     const updateSlide = async ({ slideObject, title, contentUrl, thumbnailUrl }) => {

@@ -64,7 +64,10 @@ export const useMySlides = () => {
                                         title: fields.title || 'Untitled Slide',
                                         contentUrl: fields.content_url || '',
                                         thumbnail: fields.thumbnail_url || '',
-                                        price: fields.price || 0,
+                                        price: fields.monthly_price || 0,
+                                        monthlyPrice: fields.monthly_price || 0,
+                                        yearlyPrice: fields.yearly_price || 0,
+                                        lifetimePrice: fields.lifetime_price || 0,
                                         isListed: fields.is_listed || false,
                                         owner: fields.owner,
                                         isOwner: true,
@@ -111,6 +114,12 @@ export const useMySlides = () => {
 
                                 if (slideObj.data?.content?.fields) {
                                     const sFields = slideObj.data.content.fields;
+                                    const now = Date.now();
+                                    const expiresAt = Number(fields.expires_at || 0);
+                                    const isExpired = expiresAt !== 0 && now > expiresAt;
+                                    const remainingMs = expiresAt === 0 ? Infinity : expiresAt - now;
+                                    const remainingDays = expiresAt === 0 ? Infinity : Math.ceil(remainingMs / (1000 * 60 * 60 * 24));
+
                                     parsedLicensedSlides.push({
                                         id: slideId,
                                         licenseId: obj.data.objectId,
@@ -118,10 +127,15 @@ export const useMySlides = () => {
                                         title: sFields.title || fields.slide_title || 'Untitled Slide',
                                         contentUrl: sFields.content_url || '',
                                         thumbnail: sFields.thumbnail_url || '',
-                                        price: sFields.price || 0,
+                                        price: sFields.monthly_price || 0,
                                         owner: sFields.owner,
                                         isOwner: false,
                                         isLicensed: true,
+                                        isExpired,
+                                        remainingDays: remainingDays === Infinity ? '∞' : remainingDays,
+                                        issuedAt: fields.issued_at,
+                                        expiresAt: fields.expires_at,
+                                        durationType: fields.duration_type,
                                         createdAt: new Date().toISOString(),
                                         source: 'blockchain'
                                     });

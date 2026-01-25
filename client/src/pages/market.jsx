@@ -230,8 +230,8 @@ export const Market = () => {
                     key={f}
                     onClick={() => setFilter(f)}
                     className={`cursor-pointer w-full flex items-center justify-between px-4 py-2.5 rounded-xl text-sm font-semibold capitalize transition-all ${filter === f
-                        ? "bg-blue-600 text-white shadow-md shadow-blue-500/20"
-                        : "bg-gray-50 dark:bg-white/5 text-gray-500 hover:bg-gray-100 dark:hover:bg-white/10"
+                      ? "bg-blue-600 text-white shadow-md shadow-blue-500/20"
+                      : "bg-gray-50 dark:bg-white/5 text-gray-500 hover:bg-gray-100 dark:hover:bg-white/10"
                       }`}
                   >
                     {f}
@@ -282,7 +282,8 @@ export const Market = () => {
                     key={slide.id}
                     data-aos="fade-up"
                     data-aos-delay={index * 50}
-                    className="group bg-white dark:bg-slate-900 rounded-3xl p-3 border border-gray-100 dark:border-white/10 shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-300 flex flex-col"
+                    onClick={() => navigate(`/market/${slide.id}`)}
+                    className="group bg-white dark:bg-slate-900 rounded-3xl p-3 border border-gray-100 dark:border-white/10 shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-300 flex flex-col cursor-pointer"
                   >
                     <div
                       className={`aspect-4/3 rounded-[18px] mb-4 relative flex items-center justify-center overflow-hidden ${slide.bgColor || "bg-blue-50 dark:bg-blue-900/20"}`}
@@ -338,42 +339,10 @@ export const Market = () => {
                       </div>
 
                       <div className="flex flex-col gap-2 mt-auto">
-                        {accessStatus === "none" ? (
-                          <>
-                            {slide.isListed && (
-                              <button
-                                onClick={() => handlePurchase(slide, "license")}
-                                disabled={isBuying}
-                                className="cursor-pointer w-full py-2 bg-[#1e293b] text-white rounded-xl font-bold text-xs hover:bg-slate-800 transition-all flex items-center justify-center gap-2"
-                              >
-                                {isBuyingLicense ? "..." : `Buy License (${getPrice(slide)} SUI)`}
-                              </button>
-                            )}
-                            {slide.isForSale && (
-                              <button
-                                onClick={() => handlePurchase(slide, "ownership")}
-                                disabled={isBuying}
-                                className="cursor-pointer w-full py-2 bg-blue-600 text-white rounded-xl font-bold text-xs hover:bg-blue-700 transition-all flex items-center justify-center gap-2"
-                              >
-                                {isBuyingSlide ? "..." : `Buy Ownership (${formatSui(slide.salePrice)} SUI)`}
-                              </button>
-                            )}
-                          </>
-                        ) : (
-                          <button
-                            onClick={() => navigate(`/slide/${slide.id}`)}
-                            className="cursor-pointer w-full py-2.5 bg-blue-600 text-white rounded-xl font-bold text-sm hover:bg-blue-700 transition-all"
-                          >
-                            View Slide
-                          </button>
-                        )}
-
-                        <button
-                          onClick={() => navigate(`/market/${slide.id}`)}
-                          className="cursor-pointer w-full py-2 border border-gray-200 dark:border-white/10 text-slate-600 dark:text-white rounded-xl font-bold text-xs hover:bg-gray-50 dark:hover:bg-white/5 transition-all"
-                        >
-                          View Details
-                        </button>
+                        <div className="flex justify-between items-center text-xs text-slate-500 font-medium">
+                          <span>{accessStatus === "owner" ? "You own this" : accessStatus === "licensed" ? "License Active" : "Click to view details"}</span>
+                          <span className="text-blue-500">→</span>
+                        </div>
                       </div>
                     </div>
                   </div>

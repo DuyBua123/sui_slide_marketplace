@@ -21,7 +21,7 @@ export const useMintSlide = () => {
      * Mint a new slide on the blockchain
      * @param {Object} params
      * @param {string} params.title - Slide title
-     * @param {string} params.contentUrl - IPFS URL to slide JSON data
+     * @param {string} params.contentUrl - Walrus URL to slide JSON data
      * @param {string} params.thumbnailUrl - URL to thumbnail image
      * @param {number} params.price - License price in MIST (1 SUI = 1e9 MIST)
      * @param {number} params.salePrice - Full ownership price in MIST
@@ -41,7 +41,9 @@ export const useMintSlide = () => {
                     tx.pure.string(title),
                     tx.pure.string(contentUrl),
                     tx.pure.string(thumbnailUrl),
-                    tx.pure.u64(price),
+                    tx.pure.u64(0), // monthly_price (initially 0/free or unset)
+                    tx.pure.u64(0), // yearly_price
+                    tx.pure.u64(0), // lifetime_price
                     tx.pure.u64(salePrice),
                     tx.pure.bool(isForSale),
                     tx.object('0x6'), // SUI Clock object
