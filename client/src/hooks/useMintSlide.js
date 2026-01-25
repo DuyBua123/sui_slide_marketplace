@@ -44,6 +44,7 @@ export const useMintSlide = () => {
                     tx.pure.u64(price),
                     tx.pure.u64(salePrice),
                     tx.pure.bool(isForSale),
+                    tx.object('0x6'), // SUI Clock object
                 ],
             });
 

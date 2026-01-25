@@ -1,0 +1,15 @@
+{
+    "network": "testnet",
+    "walrus": {
+        "publisher": "https://publisher.walrus-testnet.walrus.space",
+        "aggregator": "https://aggregator.walrus-testnet.walrus.space"
+    },
+    "auth": {
+        "enokiApiKey": "enoki_public_a43ef1c446c4d26e61860afafab38143",
+        "googleClientId": "50620651125-h9vkt9486o0mpro28n080343e47pvfqq.apps.googleusercontent.com"
+    },
+    "blockchain": {
+        "premiumConfig": "0xa6d365c2c7c278aecadd346b97cd3a83b85657f8bac2ddfdecec587fa8864c48",
+        "adminAddress": "0x3838636b681d458b130153837a877d01d1ffc46e56060f95d993ba83ac5ca5d4"
+    }
+}

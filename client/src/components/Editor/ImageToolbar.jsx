@@ -1,7 +1,7 @@
 import { useRef } from "react";
 import { Upload, FlipHorizontal, FlipVertical, Wand2 } from "lucide-react";
 import { useSlideStore } from "../../store/useSlideStore";
-import { uploadToPinata } from "../../utils/pinata";
+import { uploadToWalrus } from "../../utils/walrus";
 
 /**
  * Image toolbar - shown when image is selected
@@ -21,7 +21,7 @@ export const ImageToolbar = ({ element, onAnimateClick }) => {
     if (!file) return;
 
     try {
-      const result = await uploadToPinata(file, file.name);
+      const result = await uploadToWalrus(file);
       handleChange("src", result.url);
     } catch (error) {
       // Fallback to local
@@ -67,11 +67,10 @@ export const ImageToolbar = ({ element, onAnimateClick }) => {
       <div className="flex items-center gap-1">
         <button
           onClick={toggleFlipX}
-          className={`cursor-pointer p-2 rounded-xl transition-all duration-200 ${
-            element.flipX
-              ? "bg-blue-100 dark:bg-blue-600 text-blue-700 dark:text-white shadow-inner"
-              : "text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-white/10"
-          }`}
+          className={`cursor-pointer p-2 rounded-xl transition-all duration-200 ${element.flipX
+            ? "bg-blue-100 dark:bg-blue-600 text-blue-700 dark:text-white shadow-inner"
+            : "text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-white/10"
+            }`}
           title="Flip Horizontal"
         >
           <FlipHorizontal className="w-4.5 h-4.5" />
@@ -79,11 +78,10 @@ export const ImageToolbar = ({ element, onAnimateClick }) => {
 
         <button
           onClick={toggleFlipY}
-          className={`cursor-pointer p-2 rounded-xl transition-all duration-200 ${
-            element.flipY
-              ? "bg-blue-100 dark:bg-blue-600 text-blue-700 dark:text-white shadow-inner"
-              : "text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-white/10"
-          }`}
+          className={`cursor-pointer p-2 rounded-xl transition-all duration-200 ${element.flipY
+            ? "bg-blue-100 dark:bg-blue-600 text-blue-700 dark:text-white shadow-inner"
+            : "text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-white/10"
+            }`}
           title="Flip Vertical"
         >
           <FlipVertical className="w-4.5 h-4.5" />

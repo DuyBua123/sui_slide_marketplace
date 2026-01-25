@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { PlusCircle } from "lucide-react";
 import { useMintSlide } from "../../hooks/useMintSlide";
+import { usePublishVersion } from "../../hooks/usePublishVersion";
 import { uploadJSONToWalrus, uploadDataUrlToWalrus } from "../../utils/walrus";
 
 /**
@@ -15,6 +16,9 @@ export const MintSlideModal = ({ isOpen, onClose, slideData, onMintSuccess }) =>
   const [objectId, setObjectId] = useState(null);
 
   const { mintSlide } = useMintSlide();
+  const { publishVersion } = usePublishVersion();
+
+  const isAlreadyMinted = !!slideData?.objectId;
 
   if (!isOpen) return null;
 
@@ -60,27 +64,26 @@ export const MintSlideModal = ({ isOpen, onClose, slideData, onMintSuccess }) =>
         thumbnailUrl = slideData.thumbnail;
       }
 
-      // Step 2: Mint on SUI
-      setStep("minting");
-
-      const result = await mintSlide({
-        title: slideData?.title || "Untitled Slide",
-        title: slideData?.title || "Untitled Slide",
-        contentUrl: contentUrl || "",
-        thumbnailUrl: thumbnailUrl || "",
-        price: priceInMist,
-        thumbnailUrl: thumbnailUrl || "",
-        price: priceInMist,
-        salePrice: salePriceInMist,
-        isForSale: isForSale,
-      });
-
-      // Get the created object ID from transaction effects
-      // This is a simplified version - in production you'd parse the effects
-      console.log("[MINT] Transaction Digest:", result.digest);
-      console.log("[MINT] Transaction Result:", result);
-
-      setObjectId(result.digest);
+      // Step 2: Mint or Publish on SUI
+      let result;
+      if (isAlreadyMinted) {
+        setStep("minting"); // We'll reuse the minting UI state for publishing
+        result = await publishVersion(slideData.objectId);
+        console.log("[PUBLISH] Transaction Digest:", result.digest);
+        setObjectId(slideData.objectId); // Keep the same ID
+      } else {
+        setStep("minting");
+        result = await mintSlide({
+          title: slideData?.title || "Untitled Slide",
+          contentUrl: contentUrl || "",
+          thumbnailUrl: thumbnailUrl || "",
+          price: priceInMist,
+          salePrice: salePriceInMist,
+          isForSale: isForSale,
+        });
+        console.log("[MINT] Transaction Digest:", result.digest);
+        setObjectId(result.digest); // Just to show something
+      }
       setStep("success");
 
       // Callback to update parent with mint info
@@ -198,7 +201,7 @@ export const MintSlideModal = ({ isOpen, onClose, slideData, onMintSuccess }) =>
 
             {/* Success Message */}
             <h3 className="text-2xl font-extrabold text-gray-900 dark:text-white mb-2 tracking-tight">
-              Minted Successfully!
+              {isAlreadyMinted ? "Version Published!" : "Minted Successfully!"}
             </h3>
 
             <p className="text-gray-600 dark:text-gray-400 font-medium text-sm">
@@ -227,7 +230,7 @@ export const MintSlideModal = ({ isOpen, onClose, slideData, onMintSuccess }) =>
             {/* Header */}
             <div className="flex items-center justify-between mb-6">
               <h2 className="text-xl font-black text-gray-900 dark:text-white tracking-tight transition-colors">
-                Mint to SUI
+                {isAlreadyMinted ? "Publish New Version" : "Mint to SUI"}
               </h2>
               <button
                 onClick={onClose}
@@ -321,7 +324,7 @@ export const MintSlideModal = ({ isOpen, onClose, slideData, onMintSuccess }) =>
                   </div>
                 )}
                 <p className="text-[10px] text-gray-400 dark:text-gray-500 mt-3 font-medium leading-relaxed">
-                  {isForSale 
+                  {isForSale
                     ? "* Others can purchase full ownership of this slide object."
                     : "* Only licensing is enabled by default."}
                 </p>
@@ -380,8 +383,7 @@ export const MintSlideModal = ({ isOpen, onClose, slideData, onMintSuccess }) =>
                   type="submit"
                   className="cursor-pointer flex-[1.8] px-4 py-4 bg-gray-900 dark:bg-gradient-to-r dark:from-cyan-600 dark:to-blue-600 hover:bg-black dark:hover:from-cyan-500 dark:hover:to-blue-500 text-white rounded-2xl font-black transition-all flex items-center justify-center gap-2 shadow-xl shadow-gray-900/10 dark:shadow-blue-500/25 active:scale-[0.97]"
                 >
-                  <PlusCircle className="w-5 h-5" />
-                  <span>Mint NFT Asset</span>
+                  <span>{isAlreadyMinted ? "Publish Version" : "Mint NFT Asset"}</span>
                 </button>
               </div>
             </form>

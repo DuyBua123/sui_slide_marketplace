@@ -4,7 +4,7 @@ import { Stage, Layer, Rect, Circle, Line, Text, Image as KonvaImage } from 'rea
 import { motion, AnimatePresence } from 'framer-motion';
 import Konva from 'konva';
 import { animationPresets } from '../components/Editor/animationPresets';
-import { fetchFromIPFS } from '../services/exports/exportToIPFS';
+import { fetchFromWalrus } from '../services/exports/exportToWalrus';
 import {
   ChevronLeft,
   ChevronRight,
@@ -104,10 +104,10 @@ export const Slide = () => {
 
       try {
         if (source === 'blockchain' && slideMeta?.contentUrl) {
-          console.log('Fetching from IPFS:', slideMeta.contentUrl);
-          const data = await fetchFromIPFS(slideMeta.contentUrl);
+          console.log('Fetching from Walrus:', slideMeta.contentUrl);
+          const data = await fetchFromWalrus(slideMeta.contentUrl);
           if (data) {
-            console.log('Successfully fetched from IPFS:', data.title);
+            console.log('Successfully fetched from Walrus:', data.title);
             setPresentation(data);
             setIsLoading(false);
             return;

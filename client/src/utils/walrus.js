@@ -33,7 +33,7 @@ export const uploadToWalrus = async (file) => {
         return {
             blobId,
             url: `${AGGREGATOR_URL}/v1/blobs/${blobId}`,
-            // Mimic Pinata response structure for compatibility where needed
+            // Legacy compatibility alias
             hash: blobId,
         };
     } catch (error) {
