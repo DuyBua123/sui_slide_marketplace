@@ -1,5 +1,7 @@
 ﻿import { useState, useEffect, useRef, useCallback } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
+import { useCurrentAccount } from "@mysten/dapp-kit";
+import { ManageAccessModal } from '../components/Editor/ManageAccessModal';
 import { Stage, Layer, Rect, Circle, Line, Text, Image as KonvaImage } from 'react-konva';
 import { motion, AnimatePresence } from 'framer-motion';
 import Konva from 'konva';
@@ -14,6 +16,7 @@ import {
   Play,
   Pause,
   Settings,
+  ShieldCheck,
 } from "lucide-react";
 
 const CANVAS_WIDTH = 960;
@@ -88,6 +91,8 @@ export const Slide = () => {
   const [isAutoplay, setIsAutoplay] = useState(false);
   const [autoplayInterval, setAutoplayInterval] = useState(5);
   const [showSettings, setShowSettings] = useState(false);
+  const [showAccessModal, setShowAccessModal] = useState(false);
+  const account = useCurrentAccount();
   const [clickSequence, setClickSequence] = useState(0);
   const [animatedElements, setAnimatedElements] = useState(new Set());
   const [isLoading, setIsLoading] = useState(true);
@@ -445,6 +450,15 @@ export const Slide = () => {
         </motion.div>
       </AnimatePresence>
 
+      {/* Access Management Modal */}
+      {location.state?.slide && (
+        <ManageAccessModal
+          isOpen={showAccessModal}
+          onClose={() => setShowAccessModal(false)}
+          slide={location.state.slide}
+        />
+      )}
+
       {/* Navigation Controls */}
       {showControls && (
         <motion.div
@@ -497,6 +511,17 @@ export const Slide = () => {
           >
             <Settings className="w-5 h-5" />
           </button>
+
+          {/* Manage Access (Owner Only) */}
+          {location.state?.slide?.isOwner && location.state?.slide?.suiObjectId && (
+            <button
+              onClick={() => setShowAccessModal(true)}
+              className="cursor-pointer p-2 rounded-full hover:bg-white/10 text-white transition-colors"
+              title="Manage Access"
+            >
+              <ShieldCheck className="w-5 h-5" />
+            </button>
+          )}
 
           {/* Fullscreen */}
           <button
