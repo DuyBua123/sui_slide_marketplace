@@ -31,7 +31,7 @@ const defaultProps = {
     text: 'Click to edit',
     fontSize: 24,
     fontFamily: 'Arial',
-    fill: '#ffffff',
+    fill: '#000000',
     width: 200,
     align: 'left',
   },
@@ -50,7 +50,7 @@ const defaultProps = {
 const createEmptySlide = () => ({
   id: uuid(),
   elements: [],
-  background: '#1a1a2e',
+  background: '#ffffff',
   transition: 'fade', // none, fade, pushLeft, pushRight
 });
 
@@ -88,6 +88,22 @@ export const useSlideStore = create(
         const { slides, currentSlideIndex } = get();
         const insertIndex = afterIndex !== null ? afterIndex + 1 : currentSlideIndex + 1;
         const newSlide = createEmptySlide();
+        const newSlides = [...slides];
+        newSlides.splice(insertIndex, 0, newSlide);
+        set({ slides: newSlides, currentSlideIndex: insertIndex, selectedId: null });
+      },
+
+      insertSlide: (slideData, afterIndex = null) => {
+        const { slides, currentSlideIndex } = get();
+        const insertIndex = afterIndex !== null ? afterIndex + 1 : currentSlideIndex + 1;
+
+        // Ensure unique IDs
+        const newSlide = {
+          ...slideData,
+          id: uuid(),
+          elements: slideData.elements.map(el => ({ ...el, id: uuid() })),
+        };
+
         const newSlides = [...slides];
         newSlides.splice(insertIndex, 0, newSlide);
         set({ slides: newSlides, currentSlideIndex: insertIndex, selectedId: null });
@@ -359,7 +375,7 @@ export const useSlideStore = create(
         } else if (data?.elements) {
           // Legacy format - single slide
           set({
-            slides: [{ id: uuid(), elements: data.elements, background: '#1a1a2e', transition: 'fade' }],
+            slides: [{ id: uuid(), elements: data.elements, background: '#ffffff', transition: 'fade' }],
             title: data.title || 'Untitled Slide',
             currentSlideIndex: 0,
             selectedId: null,

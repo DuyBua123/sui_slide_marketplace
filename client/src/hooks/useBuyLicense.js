@@ -21,15 +21,20 @@ export const useBuyLicense = () => {
      * Buy a license for a slide
      * @param {Object} params
      * @param {string} params.slideId - Object ID of the SlideObject
-     * @param {string} params.marketplaceId - Object ID of the Marketplace
      * @param {number} params.price - License price in MIST
+     * @param {number} params.durationType - 1=Month, 2=Year, 3=Lifetime
      */
-    const buyLicense = async ({ slideId, marketplaceId, price }) => {
+    const buyLicense = async ({ slideId, price, durationType = 1 }) => {
         setIsLoading(true);
         setError(null);
         setTxDigest(null);
 
         try {
+            if (!PACKAGE_ID || PACKAGE_ID === '0x0') {
+                throw new Error('Package ID not configured. Please set VITE_PACKAGE_ID in your .env file.');
+            }
+
+            console.log(`[BUY_LICENSE] Purchasing license for slide: ${slideId} at price: ${price} MIST, duration: ${durationType}`);
             const tx = new Transaction();
 
             // Split coin for payment
@@ -38,9 +43,10 @@ export const useBuyLicense = () => {
             tx.moveCall({
                 target: `${PACKAGE_ID}::slide_marketplace::buy_license`,
                 arguments: [
-                    tx.object(marketplaceId),
                     tx.object(slideId),
+                    tx.pure.u8(durationType),
                     coin,
+                    tx.object('0x6'), // Clock
                 ],
             });
 
@@ -49,12 +55,13 @@ export const useBuyLicense = () => {
             });
 
             // Wait for transaction to be confirmed
+            console.log(`[BUY_LICENSE] Transaction submitted: ${result.digest}. Waiting for confirmation...`);
             await client.waitForTransaction({ digest: result.digest });
 
             setTxDigest(result.digest);
             return result;
         } catch (err) {
-            console.error('Buy license error:', err);
+            console.error('[BUY_LICENSE] Error:', err);
             setError(err.message || 'Failed to buy license');
             throw err;
         } finally {

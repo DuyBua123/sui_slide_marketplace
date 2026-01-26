@@ -1,17 +1,21 @@
 import { useState } from "react";
+import { PlusCircle } from "lucide-react";
 import { useMintSlide } from "../../hooks/useMintSlide";
-import { uploadJSONToPinata, uploadDataUrlToPinata } from "../../utils/pinata";
+import { usePublishVersion } from "../../hooks/usePublishVersion";
+import { uploadJSONToWalrus, uploadDataUrlToWalrus } from "../../utils/walrus";
 
 /**
  * Modal for minting a slide to SUI blockchain
  */
 export const MintSlideModal = ({ isOpen, onClose, slideData, onMintSuccess }) => {
-  const [price, setPrice] = useState("1");
   const [step, setStep] = useState("input"); // 'input' | 'uploading' | 'minting' | 'success'
   const [error, setError] = useState(null);
   const [objectId, setObjectId] = useState(null);
 
-  const { mintSlide, isLoading: isMinting } = useMintSlide();
+  const { mintSlide } = useMintSlide();
+  const { publishVersion } = usePublishVersion();
+
+  const isAlreadyMinted = !!slideData?.objectId;
 
   if (!isOpen) return null;
 
@@ -19,57 +23,56 @@ export const MintSlideModal = ({ isOpen, onClose, slideData, onMintSuccess }) =>
     e.preventDefault();
     setError(null);
 
-    const priceInMist = Math.floor(parseFloat(price) * 1_000_000_000);
-
-    if (priceInMist <= 0) {
-      setError("Please enter a valid price");
-      return;
-    }
-
     try {
-      // Step 1: Upload content to IPFS
+      // Step 1: Upload content to Walrus
       setStep("uploading");
 
       let contentUrl = "";
       let thumbnailUrl = "";
 
-      // Upload slide JSON data to IPFS
+      // Upload slide JSON data to Walrus
       if (slideData?.data) {
-        const contentResult = await uploadJSONToPinata(
-          slideData.data,
-          `${slideData.title || "slide"}-content.json`,
+        const contentResult = await uploadJSONToWalrus(
+          slideData.data
         );
         contentUrl = contentResult.url;
       }
 
-      // Upload thumbnail to IPFS if it's a data URL
+      // Upload thumbnail to Walrus if it's a data URL
       if (slideData?.thumbnail && slideData.thumbnail.startsWith("data:")) {
-        const thumbnailResult = await uploadDataUrlToPinata(
-          slideData.thumbnail,
-          `${slideData.title || "slide"}-thumbnail.png`,
+        const thumbnailResult = await uploadDataUrlToWalrus(
+          slideData.thumbnail
         );
         thumbnailUrl = thumbnailResult.url;
       } else if (slideData?.thumbnail) {
         thumbnailUrl = slideData.thumbnail;
       }
 
-      // Step 2: Mint on SUI
-      setStep("minting");
-
-      const result = await mintSlide({
-        title: slideData?.title || "Untitled Slide",
-        contentUrl: contentUrl || "ipfs://placeholder",
-        thumbnailUrl: thumbnailUrl || "",
-        price: priceInMist,
-      });
-
-      // Get the created object ID from transaction effects
-      // This is a simplified version - in production you'd parse the effects
-      setObjectId(result.digest);
+      // Step 2: Mint or Publish on SUI
+      let result;
+      if (isAlreadyMinted) {
+        setStep("minting"); // We'll reuse the minting UI state for publishing
+        result = await publishVersion(slideData.objectId);
+        console.log("[PUBLISH] Transaction Digest:", result.digest);
+        setObjectId(slideData.objectId); // Keep the same ID
+      } else {
+        setStep("minting");
+        result = await mintSlide({
+          title: slideData?.title || "Untitled Slide",
+          contentUrl: contentUrl || "",
+          thumbnailUrl: thumbnailUrl || "",
+          price: 0,
+          salePrice: 0,
+          isForSale: false,
+        });
+        console.log("[MINT] Transaction Digest:", result.digest);
+        setObjectId(result.digest); // Just to show something
+      }
       setStep("success");
 
       // Callback to update parent with mint info
       if (onMintSuccess) {
+        console.log("[MINT] Calling onMintSuccess with txDigest:", result.digest);
         onMintSuccess({
           txDigest: result.digest,
           contentUrl,
@@ -80,7 +83,6 @@ export const MintSlideModal = ({ isOpen, onClose, slideData, onMintSuccess }) =>
       setTimeout(() => {
         onClose();
         setStep("input");
-        setPrice("1");
       }, 3000);
     } catch (err) {
       console.error("Mint failed:", err);
@@ -119,12 +121,12 @@ export const MintSlideModal = ({ isOpen, onClose, slideData, onMintSuccess }) =>
 
             {/* Loading Title */}
             <h3 className="text-xl font-extrabold text-gray-900 dark:text-white mb-2 tracking-tight">
-              Uploading to IPFS...
+              Uploading to Walrus...
             </h3>
 
             {/* Description Text */}
             <p className="text-gray-500 dark:text-gray-400 font-medium text-sm max-w-[280px] mx-auto leading-relaxed">
-              Storing your slide data permanently on the decentralized web
+              Storing your slide data permanently on the decentralized web (Walrus)
             </p>
           </div>
         );
@@ -182,18 +184,18 @@ export const MintSlideModal = ({ isOpen, onClose, slideData, onMintSuccess }) =>
 
             {/* Success Message */}
             <h3 className="text-2xl font-extrabold text-gray-900 dark:text-white mb-2 tracking-tight">
-              Minted Successfully!
+              {isAlreadyMinted ? "Version Published!" : "Minted Successfully!"}
             </h3>
 
             <p className="text-gray-600 dark:text-gray-400 font-medium text-sm">
-              Your slide is now on the SUI blockchain
+              Your slide is now on the SUI blockchain. You can now set your marketplace pricing from "My Assets".
             </p>
 
             {/* Transaction/Object Details Card */}
             {objectId && (
               <div className="mt-6 p-4 bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-xl mx-auto max-w-xs transition-all">
                 <p className="text-[10px] uppercase font-black text-gray-400 dark:text-gray-500 mb-1.5 tracking-[0.15em]">
-                  Object ID
+                  Object ID / TX
                 </p>
                 <div className="flex items-center gap-2">
                   <p className="text-[11px] font-mono text-blue-600 dark:text-blue-400 break-all leading-relaxed font-semibold">
@@ -211,7 +213,7 @@ export const MintSlideModal = ({ isOpen, onClose, slideData, onMintSuccess }) =>
             {/* Header */}
             <div className="flex items-center justify-between mb-6">
               <h2 className="text-xl font-black text-gray-900 dark:text-white tracking-tight transition-colors">
-                Mint to SUI
+                {isAlreadyMinted ? "Publish New Version" : "Mint to SUI"}
               </h2>
               <button
                 onClick={onClose}
@@ -240,37 +242,6 @@ export const MintSlideModal = ({ isOpen, onClose, slideData, onMintSuccess }) =>
 
             {/* Minting Form */}
             <form onSubmit={handleMint}>
-              <div className="mb-6">
-                <label className="block text-[11px] font-black text-gray-500 dark:text-gray-400 mb-2 uppercase tracking-[0.1em]">
-                  License Price (SUI)
-                </label>
-                <div className="relative group">
-                  <input
-                    type="number"
-                    step="0.1"
-                    min="0.1"
-                    value={price}
-                    onChange={(e) => setPrice(e.target.value)}
-                    className="w-full px-5 py-4 bg-white dark:bg-black/30 border-2 border-gray-100 dark:border-white/10 rounded-2xl text-gray-900 dark:text-white text-xl font-black focus:border-blue-500 dark:focus:border-cyan-500 focus:outline-none transition-all shadow-sm focus:shadow-blue-500/10"
-                    placeholder="1.0"
-                  />
-                  <div className="absolute right-4 top-1/2 -translate-y-1/2 flex items-center gap-2 bg-gray-100 dark:bg-black/40 px-3 py-2 rounded-xl border border-gray-200 dark:border-white/5">
-                    <svg
-                      className="w-5 h-5 text-blue-500 dark:text-cyan-400 shadow-sm"
-                      viewBox="0 0 24 24"
-                      fill="currentColor"
-                    >
-                      <circle cx="12" cy="12" r="10" />
-                    </svg>
-                    <span className="text-gray-700 dark:text-gray-300 font-black text-xs">
-                      SUI
-                    </span>
-                  </div>
-                </div>
-                <p className="text-[11px] text-gray-400 dark:text-gray-500 mt-3 italic font-medium leading-relaxed">
-                  * This is the fixed price others pay to license your slide content.
-                </p>
-              </div>
 
               {/* Smart Contract Info Box */}
               <div className="bg-blue-50 dark:bg-cyan-500/10 border border-blue-100 dark:border-cyan-500/20 rounded-2xl p-4 mb-8 transition-all">
@@ -295,8 +266,8 @@ export const MintSlideModal = ({ isOpen, onClose, slideData, onMintSuccess }) =>
                       On-chain Finalization
                     </p>
                     <p className="text-xs text-blue-700/70 dark:text-cyan-400/70 mt-1 leading-relaxed font-medium">
-                      Your slide will be permanently stored on IPFS and minted as a unique SUI
-                      Object. You will gain full ownership and licensing rights.
+                      Your slide will be permanently stored on <b>Walrus</b> and minted as a unique SUI
+                      Object. Marketplace listing is <b>disabled</b> by default after minting.
                     </p>
                   </div>
                 </div>
@@ -325,8 +296,7 @@ export const MintSlideModal = ({ isOpen, onClose, slideData, onMintSuccess }) =>
                   type="submit"
                   className="cursor-pointer flex-[1.8] px-4 py-4 bg-gray-900 dark:bg-gradient-to-r dark:from-cyan-600 dark:to-blue-600 hover:bg-black dark:hover:from-cyan-500 dark:hover:to-blue-500 text-white rounded-2xl font-black transition-all flex items-center justify-center gap-2 shadow-xl shadow-gray-900/10 dark:shadow-blue-500/25 active:scale-[0.97]"
                 >
-                  <PlusCircle className="w-5 h-5" />
-                  <span>Mint NFT Asset</span>
+                  <span>{isAlreadyMinted ? "Publish Version" : "Mint NFT Asset"}</span>
                 </button>
               </div>
             </form>
@@ -337,7 +307,7 @@ export const MintSlideModal = ({ isOpen, onClose, slideData, onMintSuccess }) =>
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center transition-all duration-300">
-      {/* Backdrop với độ mờ khác nhau cho 2 chế độ */}
+      {/* Backdrop with different opacity for 2 modes */}
       <div
         className="absolute inset-0 bg-slate-900/40 dark:bg-black/80 backdrop-blur-sm transition-colors"
         onClick={step === "input" ? onClose : undefined}
@@ -355,7 +325,7 @@ export const MintSlideModal = ({ isOpen, onClose, slideData, onMintSuccess }) =>
         {step === "input" && (
           <div className="mt-8 pt-4 border-t border-gray-100 dark:border-white/5">
             <p className="text-center text-[10px] text-gray-500 dark:text-gray-500 uppercase tracking-[0.15em] font-bold">
-              Secured by SUI Network • Decentralized Storage
+              Secured by SUI Network • Walrus Decentralized Storage
             </p>
           </div>
         )}

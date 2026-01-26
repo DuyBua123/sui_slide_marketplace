@@ -4,7 +4,7 @@ import { useSlideStore } from "../../store/useSlideStore";
 import { v4 as uuid } from "uuid";
 import { exportSlidesToPNG } from "../../utils/exportToPNG";
 import { exportSlidesToPDF } from "../../utils/exportToPDF";
-import { uploadToIPFS } from "../../utils/exportToIPFS";
+import { uploadPresentationToWalrus } from "../../utils/exportToWalrus";
 
 /**
  * Share Modal - Share presentations via link, export, or IPFS
@@ -69,13 +69,13 @@ export const ShareModal = ({ isOpen, onClose }) => {
     setExporting(false);
   };
 
-  const handleUploadIPFS = async () => {
+  const handleUploadWalrus = async () => {
     setUploading(true);
     try {
-      const ipfsUrl = await uploadToIPFS(exportToJSON(), title);
-      setIpfsLink(ipfsUrl);
+      const walrusUrl = await uploadPresentationToWalrus(exportToJSON(), title);
+      setIpfsLink(walrusUrl);
     } catch (error) {
-      alert("IPFS upload failed: " + error.message);
+      alert("Walrus upload failed: " + error.message);
     }
     setUploading(false);
   };
@@ -126,11 +126,10 @@ export const ShareModal = ({ isOpen, onClose }) => {
               <button
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id)}
-                className={`cursor-pointer flex-1 flex items-center justify-center gap-2 px-4 py-3 rounded-2xl transition-all font-black text-xs uppercase tracking-wider ${
-                  isActive
-                    ? "text-purple-600 dark:text-purple-400 bg-white dark:bg-gray-800 shadow-sm"
-                    : "text-gray-500 dark:text-gray-500 hover:text-gray-700 dark:hover:text-gray-300"
-                }`}
+                className={`cursor-pointer flex-1 flex items-center justify-center gap-2 px-4 py-3 rounded-2xl transition-all font-black text-xs uppercase tracking-wider ${isActive
+                  ? "text-purple-600 dark:text-purple-400 bg-white dark:bg-gray-800 shadow-sm"
+                  : "text-gray-500 dark:text-gray-500 hover:text-gray-700 dark:hover:text-gray-300"
+                  }`}
               >
                 <Icon className={`w-4 h-4 ${isActive ? "animate-pulse" : ""}`} />
                 {tab.label}
@@ -148,8 +147,8 @@ export const ShareModal = ({ isOpen, onClose }) => {
                 <h4 className="font-black text-purple-900 dark:text-purple-300 mb-1 uppercase text-sm">
                   Live Presentation Link
                 </h4>
-                <p className="text-sm text-purple-700/60 dark:text-purple-400/60 font-medium">
-                  Share this URL to allow anyone to view your presentation in real-time.
+                <p className="text-xs text-blue-700/70 dark:text-cyan-400/70 mt-1 leading-relaxed font-medium">
+                  Your slide is stored on Walrus decentralized storage. Sharing provides read-only access to others.
                 </p>
               </div>
 
@@ -257,7 +256,7 @@ export const ShareModal = ({ isOpen, onClose }) => {
 
               {!ipfsLink ? (
                 <button
-                  onClick={handleUploadIPFS}
+                  onClick={handleUploadWalrus}
                   disabled={uploading}
                   className="cursor-pointer w-full py-5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-2xl transition-all font-black text-lg disabled:opacity-50 flex items-center justify-center gap-3 shadow-xl shadow-emerald-500/20 active:scale-[0.98]"
                 >

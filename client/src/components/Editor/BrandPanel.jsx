@@ -1,6 +1,6 @@
 import { Upload, Palette, Type, Image as ImageIcon, Plus, Check } from "lucide-react";
 import { useState, useEffect } from "react";
-import { uploadFileToIPFS } from "../../utils/pinata";
+import { uploadToWalrus } from "../../utils/walrus";
 
 const DEFAULT_COLORS = ["#000000", "#ffffff", "#8b5cf6", "#3b82f6", "#10b981"];
 const DEFAULT_FONTS = ["Arial", "Arial Black", "Georgia", "Times New Roman", "Courier New"];
@@ -39,7 +39,7 @@ export const BrandPanel = () => {
 
     setUploading(true);
     try {
-      const result = await uploadFileToIPFS(file);
+      const result = await uploadToWalrus(file);
       saveBrandKit({ ...brandKit, logo: result.url });
     } catch (error) {
       console.error("Logo upload failed:", error);
@@ -178,11 +178,10 @@ export const BrandPanel = () => {
                 <button
                   key={font}
                   onClick={() => handleFontToggle(font)}
-                  className={`cursor-pointer w-full text-left px-3 py-2.5 rounded-lg transition-all flex items-center justify-between group ${
-                    isSelected
-                      ? "bg-purple-600 text-white shadow-md shadow-purple-200 dark:shadow-none"
-                      : "bg-gray-50 dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
-                  }`}
+                  className={`cursor-pointer w-full text-left px-3 py-2.5 rounded-lg transition-all flex items-center justify-between group ${isSelected
+                    ? "bg-purple-600 text-white shadow-md shadow-purple-200 dark:shadow-none"
+                    : "bg-gray-50 dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
+                    }`}
                 >
                   <span className="text-sm font-medium" style={{ fontFamily: font }}>
                     {font}

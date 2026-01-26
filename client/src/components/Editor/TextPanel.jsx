@@ -13,7 +13,7 @@ export const TextPanel = () => {
       text: "Click to edit",
       fontSize: 24,
       fontFamily: "Arial",
-      fill: "#ffffff",
+      fill: "#000000",
       x: 400,
       y: 250,
       width: 200,

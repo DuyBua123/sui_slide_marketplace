@@ -5,4 +5,5 @@ export const ROUTE = {
   SIGN_IN: "sign-in",
   MYSLIDE: "/my-slide",
   SLIDE: "/slide",
+  DASHBOARD: "/dashboard",
 }

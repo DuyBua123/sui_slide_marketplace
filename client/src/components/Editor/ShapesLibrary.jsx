@@ -1,3 +1,4 @@
+import { useState } from "react";
 import {
   Square,
   Circle,
@@ -10,8 +11,13 @@ import {
   Pentagon,
   ArrowRight,
   ArrowDown,
+  Crown,
+  Lock,
 } from "lucide-react";
 import { useSlideStore } from "../../store/useSlideStore";
+import { premiumShapes } from "./premiumShapes";
+import { usePremiumStatus } from "../../hooks/usePremiumStatus";
+import { PremiumModal } from "../PremiumModal";
 
 const shapes = [
   {
@@ -154,44 +160,107 @@ const shapes = [
   },
 ];
 
+// Merge basic shapes with premium shapes
+const allShapes = [...shapes, ...premiumShapes];
+
 /**
- * Extended Shapes Library - 10+ shapes
+ * Extended Shapes Library - 10+ shapes + Premium
  */
 export const ShapesLibrary = () => {
   const { addElement } = useSlideStore();
+  const { isPremium } = usePremiumStatus();
+  const [showPremiumModal, setShowPremiumModal] = useState(false);
 
   const handleAddShape = (shape) => {
-    const elementProps = shape.create();
+    // Check if shape is premium and user is not
+    if (shape.premium && !isPremium) {
+      setShowPremiumModal(true);
+      return;
+    }
+
+    // Execute the create function to get props
+    const elementProps = shape.create ? shape.create() : shape.render();
+
+    // If it's a premium shape from the new file, it might just return props directly or via render() 
+    // The previous implementation used 'create', premiumShapes uses 'render'.
+    // Let's normalize it.
+
     addElement(elementProps.type, elementProps);
   };
 
   return (
-    <div>
-      <h3 className="text-[11px] font-black mb-4 text-gray-500 dark:text-gray-400 uppercase tracking-[0.15em]">
-        Shapes
-      </h3>
-      <div className="grid grid-cols-2 gap-3">
-        {shapes.map((shape) => {
-          const Icon = shape.icon;
-          return (
-            <button
-              key={shape.id}
-              onClick={() => handleAddShape(shape)}
-              className="cursor-pointer group aspect-square rounded-2xl border-2 border-gray-100 dark:border-white/10 hover:border-purple-500 dark:hover:border-purple-500 bg-white dark:bg-gray-800/50 hover:bg-purple-50 dark:hover:bg-purple-500/10 transition-all flex flex-col items-center justify-center gap-2 p-3 shadow-sm hover:shadow-xl hover:shadow-purple-500/10 active:scale-95"
-            >
-              {/* Icon wrapper to manage colors better */}
-              <div className="p-2 rounded-xl group-hover:bg-white dark:group-hover:bg-purple-500/20 transition-all">
-                <Icon className="w-7 h-7 text-gray-400 dark:text-gray-500 group-hover:text-purple-600 dark:group-hover:text-purple-400 transition-colors" />
-              </div>
+    <>
+      <PremiumModal
+        isOpen={showPremiumModal}
+        onClose={() => setShowPremiumModal(false)}
+        onSuccess={() => setShowPremiumModal(false)}
+      />
 
-              <span className="text-[10px] font-black text-gray-500 dark:text-gray-400 group-hover:text-purple-700 dark:group-hover:text-purple-300 transition-colors uppercase tracking-tight">
-                {shape.label}
-              </span>
-            </button>
-          );
-        })}
+      <div>
+        <h3 className="text-[11px] font-black mb-4 text-gray-500 dark:text-gray-400 uppercase tracking-[0.15em]">
+          Shapes
+        </h3>
+        <div className="grid grid-cols-2 gap-3">
+          {allShapes.map((shape) => {
+            const Icon = shape.icon;
+            // Check if shape is premium
+            const isLocked = shape.premium && !isPremium;
+
+            return (
+              <button
+                key={shape.id}
+                onClick={() => handleAddShape(shape)}
+                className={`cursor-pointer group aspect-square rounded-2xl border-2 transition-all flex flex-col items-center justify-center gap-2 p-3 shadow-sm hover:shadow-xl active:scale-95 relative overflow-hidden ${isLocked
+                  ? "border-gray-100 dark:border-white/5 bg-gray-50 dark:bg-gray-900/50 opacity-80"
+                  : "border-gray-100 dark:border-white/10 hover:border-purple-500 dark:hover:border-purple-500 bg-white dark:bg-gray-800/50 hover:bg-purple-50 dark:hover:bg-purple-500/10 hover:shadow-purple-500/10"
+                  }`}
+              >
+                {/* Premium Badge */}
+                {shape.premium && (
+                  <div className="absolute top-2 right-2 z-10">
+                    {isLocked ? (
+                      <div className="bg-black/10 dark:bg-white/10 p-1 rounded-full backdrop-blur-sm">
+                        <Lock className="w-3 h-3 text-gray-500 dark:text-gray-400" />
+                      </div>
+                    ) : (
+                      <Crown className="w-3 h-3 text-yellow-500 fill-yellow-500" />
+                    )}
+                  </div>
+                )}
+
+                {/* Icon wrapper */}
+                <div className={`p-2 rounded-xl transition-all ${isLocked
+                  ? "grayscale opacity-50"
+                  : "group-hover:bg-white dark:group-hover:bg-purple-500/20"
+                  }`}>
+                  {/* Render icon component or string (emoji) */}
+                  {typeof Icon === 'string' ? (
+                    <span className="text-2xl filter drop-shadow-sm leading-none">{Icon}</span>
+                  ) : (
+                    <Icon className={`w-7 h-7 transition-colors ${isLocked
+                      ? "text-gray-400"
+                      : "text-gray-400 dark:text-gray-500 group-hover:text-purple-600 dark:group-hover:text-purple-400"
+                      }`} />
+                  )}
+                </div>
+
+                <span className={`text-[10px] font-black uppercase tracking-tight transition-colors ${isLocked
+                  ? "text-gray-400"
+                  : "text-gray-500 dark:text-gray-400 group-hover:text-purple-700 dark:group-hover:text-purple-300"
+                  }`}>
+                  {shape.label || shape.name}
+                </span>
+
+                {/* Locked Overlay (Optional, but gives better feedback) */}
+                {isLocked && (
+                  <div className="absolute inset-0 bg-gray-100/10 dark:bg-black/20 z-0" />
+                )}
+              </button>
+            );
+          })}
+        </div>
       </div>
-    </div>
+    </>
   );
 };
 

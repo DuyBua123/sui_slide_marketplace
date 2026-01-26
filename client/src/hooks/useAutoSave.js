@@ -43,19 +43,23 @@ export const useAutoSave = (projectId, debounceMs = 2000) => {
                 if (projectId) {
                     const savedSlides = JSON.parse(localStorage.getItem('slides') || '[]');
                     const existingIndex = savedSlides.findIndex((s) => s.id === projectId);
+                    const existingSlide = existingIndex >= 0 ? savedSlides[existingIndex] : null;
 
                     const slideEntry = {
                         id: projectId,
                         title,
                         slideCount: slides.length,
                         data: { title, slides },
-                        thumbnail: null, // Will be updated on explicit save
-                        createdAt: existingIndex >= 0 ? savedSlides[existingIndex].createdAt : new Date().toISOString(),
+                        thumbnail: existingSlide?.thumbnail || null, // Preserve existing thumbnail
+                        createdAt: existingSlide ? existingSlide.createdAt : new Date().toISOString(),
                         updatedAt: new Date().toISOString(),
+                        // Preserve ownership fields
+                        owner: existingSlide?.owner || 'local',
+                        isOwner: existingSlide?.isOwner ?? true
                     };
 
                     if (existingIndex >= 0) {
-                        savedSlides[existingIndex] = { ...savedSlides[existingIndex], ...slideEntry };
+                        savedSlides[existingIndex] = { ...existingSlide, ...slideEntry };
                     } else {
                         savedSlides.push(slideEntry);
                     }

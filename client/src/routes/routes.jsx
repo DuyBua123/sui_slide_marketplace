@@ -2,15 +2,16 @@ import { Home } from "../pages/home";
 import { NotFound } from "../pages/notfound";
 import { Market } from "../pages/market";
 import { SignIn } from "../pages/signin";
-import { SignUp } from "../pages/signup";
 import { Slide } from "../pages/slide";
 import { MarketDetail } from "../pages/marketDetail";
 import { MySlide } from "../pages/mySlide";
 import { Editor } from "../pages/editor/Editor";
 import { ROUTE } from "../constant/routeConfig";
+import WalletDashboard from "../pages/WalletDashboard";
+import { PaymentSuccess } from "../pages/paymentSuccess";
 
 export const publicRoutes = [
-  { path: ROUTE.HOME, component: Home }, // trang chủ
+  { path: ROUTE.HOME, component: MySlide }, //
   { path: "/home", component: Home },
   { path: ROUTE.MARKET, component: Market }, // trang market
   { path: `${ROUTE.MARKET_DETAIL}/:id`, component: MarketDetail }, // trang thông tin chi tiết sản phầm/slide
@@ -25,5 +26,7 @@ export const privateRoutes = [
   { path: "/editor/:id", component: Editor, isHeaderFooter: false }, // trang chỉnh sửa slide
   { path: "/my-slide", component: MySlide }, // trang xem slide sở hữu
   { path: `${ROUTE.SLIDE}/:id`, component: Slide, isHeaderFooter: false }, // trang chỉnh sửa slide
-  { path: ROUTE.MYSLIDE, component: MySlide }, // trang xem slide sở hữu
+  { path: ROUTE.MYSLIDE, component: Home }, // trang xem slide sở hữu
+  { path: ROUTE.DASHBOARD, component: WalletDashboard }, // trang dashboard
+  { path: "/payment-success", component: PaymentSuccess, isHeaderFooter: false },
 ];

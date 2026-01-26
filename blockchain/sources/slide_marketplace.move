@@ -1,344 +1,414 @@
-/// SUI Slide Marketplace - Smart Contract
-/// 
-/// This module implements a decentralized marketplace for slide presentations.
-/// Users can:
-/// - Mint slides as NFT-like objects (SlideObject)
-/// - Sell usage licenses (SlideLicense) without transferring ownership
-/// - List slides for sale (full ownership transfer)
-/// - Update their own slides
-module slide_marketplace::slide_marketplace {
+module 0x0::slide_marketplace {
     use std::string::String;
     use sui::coin::{Self, Coin};
     use sui::sui::SUI;
     use sui::event;
+    use sui::table::{Self, Table};
+    use sui::clock::{Self, Clock};
 
     // ============ Errors ============
     const ENotOwner: u64 = 0;
     const EInsufficientPayment: u64 = 1;
     const ESlideNotListed: u64 = 2;
     const ENotSeller: u64 = 3;
+    const ESlideNotForSale: u64 = 4;
+    const EAccessRevoked: u64 = 5;
+    const EInvalidDuration: u64 = 6;
+    const ERevocationTooEarly: u64 = 7;
+
+    // ============ Constants ============
+    const DURATION_MONTH: u64 = 2592000000; // 30 days in ms
+    const DURATION_YEAR: u64 = 31536000000;  // 365 days in ms
+    
+    // Duration Types
+    const TYPE_MONTH: u8 = 1;
+    const TYPE_YEAR: u8 = 2;
+    const TYPE_LIFETIME: u8 = 3;
 
     // ============ Structs ============
 
-    /// The master slide asset - only owner can edit
+    /// Represents a snapshot of a slide version
+    public struct SlideVersion has store, drop {
+        version: u64,
+        content_url: String,
+        timestamp: u64,
+    }
+
+    /// Metadata about a user's license to track 30% rule
+    public struct LicenseRecord has store, drop {
+        issued_at: u64,
+        duration_type: u8,
+    }
+
+    /// The master slide asset - Shared object
     public struct SlideObject has key, store {
         id: UID,
-        creator: address,
+        owner: address,
         title: String,
-        content_url: String,  // IPFS hash pointing to JSON data
+        
+        // Draft/Current State
+        content_url: String,  
         thumbnail_url: String,
-        price: u64,           // Price for a usage license in MIST
-        is_listed: bool,      // Whether available for license purchase
+        
+        // Versioning
+        published_version: u64,     // Version available on marketplace
+        versions: vector<SlideVersion>, // History of published versions
+        
+        // Licensing (Multi-Tier)
+        monthly_price: u64,
+        yearly_price: u64,
+        lifetime_price: u64,
+        
+        is_listed: bool,
+        blocked_buyers: Table<address, bool>, // Ownership right: revoke/ban specific users
+        active_licenses: Table<address, LicenseRecord>, // Track for 30% rule
+
+        // Ownership Sale
+        sale_price: u64,
+        is_for_sale: bool,
     }
 
-    /// Usage license token - allows viewing/presenting but not editing
+    /// Usage license token
     public struct SlideLicense has key, store {
         id: UID,
-        slide_id: ID,         // Reference to original SlideObject
-        slide_title: String,  // Cached for display
+        slide_id: ID,
+        version: u64,        // Binds license to a specific version
+        slide_title: String,
         buyer: address,
-    }
-
-    /// Marketplace Listing - Shared object for full ownership transfer
-    /// Wraps SlideObject while listed for sale
-    public struct Listing has key {
-        id: UID,
-        slide: SlideObject,
-        seller: address,
-        price: u64,           // Price for full ownership transfer in MIST
+        issued_at: u64,      // Timestamp ms
+        expires_at: u64,     // Timestamp ms (0 = lifetime)
+        duration_type: u8,   // 1=Month, 2=Year, 3=Lifetime
     }
 
     // ============ Events ============
 
     public struct SlideMinted has copy, drop {
         slide_id: ID,
-        creator: address,
+        owner: address,
         title: String,
+    }
+
+    public struct VersionPublished has copy, drop {
+        slide_id: ID,
+        version: u64,
+        content_url: String,
     }
 
     public struct LicensePurchased has copy, drop {
         license_id: ID,
         slide_id: ID,
+        version: u64,
         buyer: address,
         price: u64,
+        duration_type: u8,
     }
 
-    public struct SlideUpdated has copy, drop {
+    public struct OwnershipTransferred has copy, drop {
         slide_id: ID,
-        new_content_url: String,
-    }
-
-    public struct SlideListed has copy, drop {
-        listing_id: ID,
-        slide_id: ID,
-        seller: address,
+        old_owner: address,
+        new_owner: address,
         price: u64,
     }
 
-    public struct SlideSold has copy, drop {
-        listing_id: ID,
+    public struct AccessRevoked has copy, drop {
         slide_id: ID,
-        seller: address,
-        buyer: address,
-        price: u64,
+        target: address,
     }
 
-    public struct SlideDelisted has copy, drop {
-        listing_id: ID,
-        slide_id: ID,
-        seller: address,
-    }
+    // ============ Functions ============
 
-    // ============ Mint & License Functions ============
-
-    /// Mint a new slide as a SUI Object
+    /// Mint a new slide. Initializes with Version 1 published.
     public entry fun mint_slide(
         title: String,
         content_url: String,
         thumbnail_url: String,
-        price: u64,
+        monthly_price: u64,
+        yearly_price: u64,
+        lifetime_price: u64,
+        sale_price: u64,
+        is_for_sale: bool,
+        clock: &Clock,
         ctx: &mut TxContext
     ) {
         let sender = ctx.sender();
         
+        // Create initial version
+        let v1 = SlideVersion {
+            version: 1,
+            content_url: content_url,
+            timestamp: clock::timestamp_ms(clock),
+        };
+
+        let mut versions = vector::empty();
+        vector::push_back(&mut versions, v1);
+
         let slide = SlideObject {
             id: object::new(ctx),
-            creator: sender,
+            owner: sender,
             title,
-            content_url,
+            content_url, // Current draft matches v1
             thumbnail_url,
-            price,
-            is_listed: true,
+            published_version: 1,
+            versions,
+            monthly_price,
+            yearly_price,
+            lifetime_price,
+            is_listed: false,
+            blocked_buyers: table::new(ctx),
+            active_licenses: table::new(ctx),
+            sale_price,
+            is_for_sale,
         };
 
         event::emit(SlideMinted {
             slide_id: object::id(&slide),
-            creator: sender,
+            owner: sender,
             title: slide.title,
         });
 
-        transfer::transfer(slide, sender);
+        transfer::share_object(slide);
     }
 
-    /// Buy a license to view/present a slide (does not transfer ownership)
+    /// Publish the current content_url as a new version for the marketplace
+    public entry fun publish_version(
+        slide: &mut SlideObject,
+        clock: &Clock,
+        ctx: &TxContext
+    ) {
+        assert!(slide.owner == ctx.sender(), ENotOwner);
+
+        // Increment version
+        let new_version_num = slide.published_version + 1;
+
+        let new_version = SlideVersion {
+            version: new_version_num,
+            content_url: slide.content_url,
+            timestamp: clock::timestamp_ms(clock),
+        };
+
+        vector::push_back(&mut slide.versions, new_version);
+        slide.published_version = new_version_num;
+
+        event::emit(VersionPublished {
+            slide_id: object::id(slide),
+            version: new_version_num,
+            content_url: slide.content_url,
+        });
+    }
+
+    /// Buy a usage license for the CURRENT published version
     public entry fun buy_license(
-        slide: &SlideObject,
+        slide: &mut SlideObject,
+        duration_type: u8,
         mut payment: Coin<SUI>,
+        clock: &Clock,
         ctx: &mut TxContext
     ) {
-        // Check slide is listed for licensing
-        assert!(slide.is_listed, ESlideNotListed);
-        
-        // Check payment is sufficient
-        assert!(coin::value(&payment) >= slide.price, EInsufficientPayment);
-
         let buyer = ctx.sender();
+        let now = clock::timestamp_ms(clock);
+
+        // Selection
+        let price = if (duration_type == TYPE_MONTH) {
+            slide.monthly_price
+        } else if (duration_type == TYPE_YEAR) {
+            slide.yearly_price
+        } else if (duration_type == TYPE_LIFETIME) {
+            slide.lifetime_price
+        } else {
+            abort EInvalidDuration
+        };
+
+        let expires_at = if (duration_type == TYPE_MONTH) {
+            now + DURATION_MONTH
+        } else if (duration_type == TYPE_YEAR) {
+            now + DURATION_YEAR
+        } else {
+            0 // Lifetime
+        };
+
+        // Checks
+        assert!(slide.is_listed, ESlideNotListed);
+        assert!(!table::contains(&slide.blocked_buyers, buyer), EAccessRevoked);
+        assert!(coin::value(&payment) >= price, EInsufficientPayment);
+
+        // Payment
+        let paid = coin::split(&mut payment, price, ctx);
+        transfer::public_transfer(paid, slide.owner);
         
-        // Split exact amount if overpaid
-        let paid = coin::split(&mut payment, slide.price, ctx);
-        
-        // Transfer payment to creator
-        transfer::public_transfer(paid, slide.creator);
-        
-        // Return change if any
         if (coin::value(&payment) > 0) {
             transfer::public_transfer(payment, buyer);
         } else {
             coin::destroy_zero(payment);
         };
 
-        // Create license for buyer
+        // Mint License
         let license = SlideLicense {
             id: object::new(ctx),
             slide_id: object::id(slide),
+            version: slide.published_version,
             slide_title: slide.title,
             buyer,
+            issued_at: now,
+            expires_at,
+            duration_type,
         };
+
+        // Update tracking for 30% rule
+        let record = LicenseRecord { issued_at: now, duration_type };
+        if (table::contains(&slide.active_licenses, buyer)) {
+            let old = table::remove(&mut slide.active_licenses, buyer);
+            let _ = old; // drop it
+        };
+        table::add(&mut slide.active_licenses, buyer, record);
 
         event::emit(LicensePurchased {
             license_id: object::id(&license),
             slide_id: object::id(slide),
+            version: slide.published_version,
             buyer,
-            price: slide.price,
+            price,
+            duration_type,
         });
 
         transfer::transfer(license, buyer);
     }
 
-    // ============ Marketplace Functions (Full Ownership Transfer) ============
-
-    /// List a slide for sale (full ownership transfer)
-    /// The slide is wrapped into a shared Listing object
-    public entry fun list_slide(
-        slide: SlideObject,
-        price: u64,
-        ctx: &mut TxContext
-    ) {
-        let seller = ctx.sender();
-        let slide_id = object::id(&slide);
-
-        let listing = Listing {
-            id: object::new(ctx),
-            slide,
-            seller,
-            price,
-        };
-
-        event::emit(SlideListed {
-            listing_id: object::id(&listing),
-            slide_id,
-            seller,
-            price,
-        });
-
-        // Share the listing so anyone can buy
-        transfer::share_object(listing);
-    }
-
-    /// Buy a listed slide (full ownership transfer from seller to buyer)
-    public entry fun buy_slide(
-        listing: Listing,
+    /// Buy Full Ownership
+    public entry fun buy_ownership(
+        slide: &mut SlideObject,
         mut payment: Coin<SUI>,
         ctx: &mut TxContext
     ) {
-        let Listing { id, mut slide, seller, price } = listing;
-        
-        // Check payment is sufficient
-        assert!(coin::value(&payment) >= price, EInsufficientPayment);
+        assert!(slide.is_for_sale, ESlideNotForSale);
+        assert!(coin::value(&payment) >= slide.sale_price, EInsufficientPayment);
 
         let buyer = ctx.sender();
-        
-        // Split exact amount if overpaid
+        let seller = slide.owner;
+        let price = slide.sale_price;
+
         let paid = coin::split(&mut payment, price, ctx);
-        
-        // Transfer payment to seller
         transfer::public_transfer(paid, seller);
         
-        // Return change if any
         if (coin::value(&payment) > 0) {
             transfer::public_transfer(payment, buyer);
         } else {
             coin::destroy_zero(payment);
         };
 
-        // Update slide creator to new owner
-        slide.creator = buyer;
+        // Transfer Ownership
+        slide.owner = buyer;
+        slide.is_for_sale = false; // Reset sale status
 
-        event::emit(SlideSold {
-            listing_id: object::uid_to_inner(&id),
-            slide_id: object::id(&slide),
-            seller,
-            buyer,
+        event::emit(OwnershipTransferred {
+            slide_id: object::id(slide),
+            old_owner: seller,
+            new_owner: buyer,
             price,
         });
-
-        // Delete the listing object
-        object::delete(id);
-
-        // Transfer slide to buyer
-        transfer::transfer(slide, buyer);
     }
 
-    /// Delist a slide and return it to the seller
-    public entry fun delist_slide(
-        listing: Listing,
+    /// Owner: Revoke access for a specific buyer (Bans them from future license buys or validity checks)
+    public entry fun revoke_access(
+        slide: &mut SlideObject,
+        target: address,
+        clock: &Clock,
         ctx: &TxContext
     ) {
-        let Listing { id, slide, seller, price: _ } = listing;
-        
-        // Only seller can delist
-        assert!(seller == ctx.sender(), ENotSeller);
+        assert!(slide.owner == ctx.sender(), ENotOwner);
 
-        event::emit(SlideDelisted {
-            listing_id: object::uid_to_inner(&id),
-            slide_id: object::id(&slide),
-            seller,
+        // Check 30% rule
+        if (table::contains(&slide.active_licenses, target)) {
+            let record = table::borrow(&slide.active_licenses, target);
+            let now = clock::timestamp_ms(clock);
+            let elapsed = now - record.issued_at;
+            
+            let min_duration = if (record.duration_type == TYPE_MONTH) {
+                (DURATION_MONTH * 30 / 100)
+            } else if (record.duration_type == TYPE_YEAR) {
+                (DURATION_YEAR * 30 / 100)
+            } else {
+                DURATION_YEAR // Lifetime revocation after 1 year as per requirement
+            };
+
+            assert!(elapsed >= min_duration, ERevocationTooEarly);
+        };
+
+        if (!table::contains(&slide.blocked_buyers, target)) {
+            table::add(&mut slide.blocked_buyers, target, true);
+        };
+
+        event::emit(AccessRevoked {
+            slide_id: object::id(slide),
+            target,
         });
-
-        // Delete the listing object
-        object::delete(id);
-
-        // Return slide to seller
-        transfer::transfer(slide, seller);
     }
 
-    // ============ Update Functions ============
-
-    /// Update slide content (only owner)
-    public entry fun update_slide(
+    /// Owner: Update Draft Logic (Only updates local state, doesn't publish)
+    public entry fun update_slide_content(
         slide: &mut SlideObject,
+        new_title: String,
         new_content_url: String,
         new_thumbnail_url: String,
         ctx: &TxContext
     ) {
-        assert!(slide.creator == ctx.sender(), ENotOwner);
-        
+        assert!(slide.owner == ctx.sender(), ENotOwner);
+        slide.title = new_title;
         slide.content_url = new_content_url;
         slide.thumbnail_url = new_thumbnail_url;
-
-        event::emit(SlideUpdated {
-            slide_id: object::id(slide),
-            new_content_url,
-        });
+        // Does NOT auto-publish version
     }
 
-    /// Update slide license price (only owner)
-    public entry fun update_price(
+    public entry fun set_listing_status(
         slide: &mut SlideObject,
-        new_price: u64,
+        monthly_price: u64,
+        yearly_price: u64,
+        lifetime_price: u64,
+        is_listed: bool,
+        sale_price: u64,
+        is_for_sale: bool,
         ctx: &TxContext
     ) {
-        assert!(slide.creator == ctx.sender(), ENotOwner);
-        slide.price = new_price;
-    }
-
-    /// Toggle listing status for licenses (only owner)
-    public entry fun toggle_listing(
-        slide: &mut SlideObject,
-        ctx: &TxContext
-    ) {
-        assert!(slide.creator == ctx.sender(), ENotOwner);
-        slide.is_listed = !slide.is_listed;
+        assert!(slide.owner == ctx.sender(), ENotOwner);
+        slide.monthly_price = monthly_price;
+        slide.yearly_price = yearly_price;
+        slide.lifetime_price = lifetime_price;
+        slide.is_listed = is_listed;
+        slide.sale_price = sale_price;
+        slide.is_for_sale = is_for_sale;
     }
 
     // ============ View Functions ============
 
-    public fun get_slide_info(slide: &SlideObject): (address, String, String, String, u64, bool) {
-        (
-            slide.creator,
-            slide.title,
-            slide.content_url,
-            slide.thumbnail_url,
-            slide.price,
-            slide.is_listed
-        )
+    public fun get_latest_version(slide: &SlideObject): u64 {
+        slide.published_version
     }
 
-    public fun get_license_info(license: &SlideLicense): (ID, String, address) {
-        (
-            license.slide_id,
-            license.slide_title,
-            license.buyer
-        )
+    public fun is_blocked(slide: &SlideObject, user: address): bool {
+        table::contains(&slide.blocked_buyers, user)
     }
+    public entry fun delete_slide(slide: SlideObject, ctx: &TxContext) {
+        let SlideObject { 
+            id, 
+            owner, 
+            title: _, 
+            content_url: _, 
+            thumbnail_url: _, 
+            published_version: _, 
+            versions: _, 
+            monthly_price: _, 
+            yearly_price: _, 
+            lifetime_price: _, 
+            is_listed: _, 
+            blocked_buyers, 
+            active_licenses,
+            sale_price: _, 
+            is_for_sale: _ 
+        } = slide;
 
-    public fun get_listing_info(listing: &Listing): (address, u64, String) {
-        (
-            listing.seller,
-            listing.price,
-            listing.slide.title
-        )
-    }
-
-    public fun get_slide_price(slide: &SlideObject): u64 {
-        slide.price
-    }
-
-    public fun is_slide_listed(slide: &SlideObject): bool {
-        slide.is_listed
-    }
-
-    public fun get_listing_price(listing: &Listing): u64 {
-        listing.price
+        assert!(owner == ctx.sender(), ENotOwner);
+        
+        table::drop(blocked_buyers);
+        table::drop(active_licenses);
+        object::delete(id);
     }
 }
