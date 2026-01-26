@@ -16,6 +16,8 @@ export const TetEventPage = () => {
   const { boxes, assets, tokenBalance, isLoading, buyBox, openBox, craftEpicAsset } =
     useTetEvent();
 
+  console.log(boxes);
+
   const [openingBoxId, setOpeningBoxId] = useState(null);
   const [showResult, setShowResult] = useState(null);
   const [selectedAssets, setSelectedAssets] = useState([]);
@@ -31,6 +33,7 @@ export const TetEventPage = () => {
 
   const handleOpenBox = async (boxId) => {
     setOpeningBoxId(boxId);
+    console.log(boxId);
     try {
       await openBox.mutateAsync(boxId);
       setShowResult({ success: true });
@@ -151,7 +154,7 @@ export const TetEventPage = () => {
         >
           🏆 My Assets ({assets.length})
         </button>
-        <button
+        {/* <button
           onClick={() => setActiveTab("fusion")}
           className={`px-6 py-3 rounded-xl font-bold transition-all ${
             activeTab === "fusion"
@@ -160,7 +163,7 @@ export const TetEventPage = () => {
           }`}
         >
           🔥 Fusion Lab
-        </button>
+        </button> */}
       </div>
 
       {/* Lucky Boxes Tab */}
@@ -218,14 +221,14 @@ export const TetEventPage = () => {
               <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
                 {boxes.map((box) => (
                   <div
-                    key={box.id.id}
+                    key={box.id}
                     className={`bg-gradient-to-br from-red-500 to-orange-400 rounded-xl p-4 text-center ${
                       openingBoxId === box.id ? "animate-pulse" : ""
                     }`}
                   >
                     <div className="text-5xl mb-3">🎁</div>
                     <button
-                      onClick={() => handleOpenBox(box.id.id)}
+                      onClick={() => handleOpenBox(box.id)}
                       disabled={openingBoxId === box.id}
                       className="w-full py-2 bg-white text-red-600 font-bold rounded-lg hover:bg-yellow-100 transition-all disabled:opacity-70"
                     >
@@ -253,7 +256,7 @@ export const TetEventPage = () => {
             <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
               {assets.map((asset) => (
                 <div
-                  key={asset.id.id}
+                  key={asset.id}
                   className={`bg-white dark:bg-white/5 rounded-xl p-4 border-2 transition-all ${
                     asset.rarity === "Legendary"
                       ? "border-yellow-400 shadow-lg shadow-yellow-400/20"
@@ -333,8 +336,8 @@ export const TetEventPage = () => {
               <div className="grid grid-cols-3 md:grid-cols-5 lg:grid-cols-6 gap-3">
                 {rareAssets.map((asset) => (
                   <div
-                    key={asset.id.id}
-                    onClick={() => handleSelectAsset(asset.id.id)}
+                    key={asset.id}
+                    onClick={() => handleSelectAsset(asset.id)}
                     className={`bg-white dark:bg-white/5 rounded-xl p-3 text-center cursor-pointer transition-all border-2 ${
                       selectedAssets.includes(asset.id)
                         ? "border-purple-500 ring-2 ring-purple-500/30"
