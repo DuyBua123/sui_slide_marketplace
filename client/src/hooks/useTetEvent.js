@@ -2,6 +2,7 @@ import { useSuiClient, useCurrentAccount, useSignAndExecuteTransaction } from '@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Transaction } from '@mysten/sui/transactions';
 import { normalizeSuiAddress } from '@mysten/sui/utils';
+import { getWalrusUrl } from '../utils/walrus';
 
 // Package and module configuration
 const PACKAGE_ID = import.meta.env.VITE_PACKAGE_ID || '0x0';
@@ -39,6 +40,7 @@ export const useTetEvent = () => {
                 ...obj.data?.content?.fields,
                 id: obj.data?.objectId,
                 display: obj.data?.display?.data,
+                // LuckyBox doesn't have url usually, but if it did:
             }));
         },
         enabled: !!account?.address,
@@ -58,6 +60,19 @@ export const useTetEvent = () => {
                 ...obj.data?.content?.fields,
                 id: obj.data?.objectId,
                 display: obj.data?.display?.data,
+                // Normalize String fields
+                name: (obj.data?.content?.fields?.name?.fields?.bytes)
+                    ? new TextDecoder().decode(new Uint8Array(obj.data.content.fields.name.fields.bytes))
+                    : obj.data?.content?.fields?.name,
+                asset_type: (obj.data?.content?.fields?.asset_type?.fields?.bytes)
+                    ? new TextDecoder().decode(new Uint8Array(obj.data.content.fields.asset_type.fields.bytes))
+                    : obj.data?.content?.fields?.asset_type,
+                rarity: (obj.data?.content?.fields?.rarity?.fields?.bytes)
+                    ? new TextDecoder().decode(new Uint8Array(obj.data.content.fields.rarity.fields.bytes))
+                    : obj.data?.content?.fields?.rarity,
+
+                url: getWalrusUrl(obj.data?.content?.fields?.url),
+                image_url: getWalrusUrl(obj.data?.content?.fields?.url || obj.data?.display?.data?.image_url),
             }));
         },
         enabled: !!account?.address,

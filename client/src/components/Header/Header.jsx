@@ -35,6 +35,12 @@ export const Header = () => {
             Marketplace
           </Link>
           <Link
+            to="/assets-market"
+            className="text-gray-600 dark:text-gray-400 hover:text-blue-600 dark:hover:text-white transition-colors text-sm font-medium"
+          >
+            Asset Market
+          </Link>
+          <Link
             to={ROUTE.MYSLIDE}
             className="text-gray-600 dark:text-gray-400 hover:text-blue-600 dark:hover:text-white transition-colors text-sm font-medium"
           >
@@ -106,6 +112,13 @@ export const Header = () => {
             className="p-4 hover:bg-gray-100 dark:hover:bg-white/5 rounded-xl text-gray-700 dark:text-gray-300 transition-colors"
           >
             Marketplace
+          </Link>
+          <Link
+            to="/assets-market"
+            onClick={closeMenu}
+            className="p-4 hover:bg-gray-100 dark:hover:bg-white/5 rounded-xl text-gray-700 dark:text-gray-300 transition-colors"
+          >
+            Asset Market
           </Link>
           <Link
             to={ROUTE.MYSLIDE}

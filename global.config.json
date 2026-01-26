@@ -11,8 +11,8 @@
     "blockchain": {
         "premiumConfig": "0xa08b0efa656b07745dd04c64b787bed055f7013d1278fcacd1f52947ac0a8c06",
         "adminAddress": "0x8adb25330e748d1b5ae2359dd89eaaf49701f2c386b012188371091d365a8763",
-        "gameConfig": "0xd76a79a6a617a96ddbeb9870eb3ccc038ab8da13b6c58e03ffcd06f8013c0608",
+        "gameConfig": "0xe637815e41b9a20f1eb7de2f802a9b1d16673c84564972f8782f7513687f8964",
         "eventTracker": "0x88f091629153fba96b35375d4545b42580343ad81814747f5f1f2f24b77099e0",
-        "eventMarketplace": "0x6f7973f64c005a5ab3f8840b14561ee1a210d1e58997f58c0a462e95243162e6"
+        "eventMarketplace": "0x63633dd8b8f38f5964e3d4b3d698ea6196099eddccd3f496af6a6ea556009067"
     }
 }

@@ -7,6 +7,7 @@ import { VideoLibrary } from "./VideoLibrary";
 import { AudioLibrary } from "./AudioLibrary";
 import { ThreeDLibrary } from "./ThreeDLibrary";
 import { PhotosLibrary } from "./PhotosLibrary";
+import { StickersLibrary } from "./StickersLibrary";
 
 /**
  * Enhanced Elements Panel - Canva-style with categories
@@ -66,10 +67,11 @@ export const ElementsPanel = () => {
               {activeCategory === "videos" && <VideoLibrary />}
               {activeCategory === "audio" && <AudioLibrary />}
               {activeCategory === "3d" && <ThreeDLibrary />}
+              {activeCategory === "stickers" && <StickersLibrary />}
               {activeCategory === "photos" && <PhotosLibrary />}
 
               {/* Fallback for Coming Soon categories */}
-              {!["shapes", "graphics", "videos", "audio", "3d", "photos"].includes(activeCategory) && (
+              {!["shapes", "graphics", "videos", "audio", "3d", "photos", "stickers"].includes(activeCategory) && (
                 <div className="text-[11px] text-gray-500 dark:text-gray-400 text-center py-16 flex flex-col items-center gap-4 border-2 border-dashed border-gray-100 dark:border-white/5 rounded-2xl bg-gray-50/50 dark:bg-transparent px-4">
                   <div className="w-12 h-12 rounded-full bg-white dark:bg-gray-800 flex items-center justify-center shadow-sm">
                     <span className="text-xl">✨</span>

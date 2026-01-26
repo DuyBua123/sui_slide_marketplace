@@ -9,6 +9,7 @@ import {
   Wand2,
   Music,
   Smile,
+  Gift,
 } from "lucide-react";
 
 const categories = [
