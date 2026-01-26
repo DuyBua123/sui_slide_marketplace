@@ -45,6 +45,8 @@ const envVars = {
     // Blockchain
     'VITE_PACKAGE_ID': packageId || process.env.VITE_PACKAGE_ID || '', // Prioritize Published.toml
     'VITE_PREMIUM_CONFIG': globalConfig.blockchain?.premiumConfig || '',
+    'VITE_GAME_CONFIG_ID': globalConfig.blockchain?.gameConfig || '',
+    'VITE_EVENT_TRACKER_ID': globalConfig.blockchain?.eventTracker || '',
     'VITE_ADMIN_ADDRESS': globalConfig.blockchain?.adminAddress || '',
     'VITE_SUI_NETWORK': globalConfig.network || 'testnet',
 
