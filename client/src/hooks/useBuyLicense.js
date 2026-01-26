@@ -37,6 +37,8 @@ export const useBuyLicense = () => {
             console.log(`[BUY_LICENSE] Purchasing license for slide: ${slideId} at price: ${price} MIST, duration: ${durationType}`);
             const tx = new Transaction();
 
+            const EVENT_TRACKER_ID = import.meta.env.VITE_EVENT_TRACKER_ID || '0x0';
+
             // Split coin for payment
             const [coin] = tx.splitCoins(tx.gas, [tx.pure.u64(price)]);
 
@@ -44,6 +46,7 @@ export const useBuyLicense = () => {
                 target: `${PACKAGE_ID}::slide_marketplace::buy_license`,
                 arguments: [
                     tx.object(slideId),
+                    tx.object(EVENT_TRACKER_ID),
                     tx.pure.u8(durationType),
                     coin,
                     tx.object('0x6'), // Clock

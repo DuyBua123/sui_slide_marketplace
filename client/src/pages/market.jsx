@@ -178,11 +178,11 @@ export const Market = () => {
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
               </svg>
             </div>
-              <p className="text-amber-800 dark:text-amber-400 font-bold text-sm">Blockchain connection not configured</p>
-              <p className="text-amber-700/80 dark:text-amber-400/60 text-xs mt-0.5 font-medium leading-relaxed">
-                The marketplace is currently in preview mode. To see live slides from others, please configure the <code>VITE_PACKAGE_ID</code> in your <code>.env</code> file.
-              </p>
-            </div>
+            <p className="text-amber-800 dark:text-amber-400 font-bold text-sm">Blockchain connection not configured</p>
+            <p className="text-amber-700/80 dark:text-amber-400/60 text-xs mt-0.5 font-medium leading-relaxed">
+              The marketplace is currently in preview mode. To see live slides from others, please configure the <code>VITE_PACKAGE_ID</code> in your <code>.env</code> file.
+            </p>
+          </div>
         )}
       </div>
 
@@ -372,32 +372,10 @@ export const Market = () => {
                         </div>
 
                         <div className="flex flex-wrap gap-2">
-                          {canBuyLicense && (
-                            <button
-                              className="flex-1 min-w-[160px] px-3 py-2 text-xs font-bold rounded-xl border border-slate-200 dark:border-white/10 text-slate-700 dark:text-white hover:border-blue-500 hover:text-blue-600 transition disabled:opacity-50 disabled:pointer-events-none"
-                              onClick={(event) => {
-                                event.preventDefault();
-                                event.stopPropagation();
-                                initiatePurchase(slide, "license");
-                              }}
-                              disabled={isBuying}
-                            >
-                              Buy License
-                            </button>
-                          )}
-                          {canBuyOwnership && (
-                            <button
-                              className="flex-1 min-w-[160px] px-3 py-2 text-xs font-bold rounded-xl bg-blue-600 text-white shadow-sm hover:bg-blue-700 transition disabled:opacity-50 disabled:pointer-events-none"
-                              onClick={(event) => {
-                                event.preventDefault();
-                                event.stopPropagation();
-                                initiatePurchase(slide, "ownership");
-                              }}
-                              disabled={isBuying}
-                            >
-                              Buy Ownership
-                            </button>
-                          )}
+                          {/* Buttons removed per request. Click card to view details. */}
+                          <div className="text-xs text-gray-400 italic">
+                            Tap to view details
+                          </div>
                           {!canBuyLicense && !canBuyOwnership && (
                             <span className="text-xs font-semibold text-slate-400 dark:text-slate-500">
                               Not available for purchase right now

@@ -110,7 +110,7 @@ export const TetEventPage = () => {
                     <div className="bg-white dark:bg-black/30 rounded-xl p-4 border border-amber-200 dark:border-amber-700/30">
                         <div className="text-3xl mb-2">📤</div>
                         <h3 className="font-bold text-gray-900 dark:text-white mb-1">Sell Slides</h3>
-                        <p className="text-sm text-gray-600 dark:text-gray-400">Sell your Tet-themed slides to unique buyers</p>
+                        <p className="text-sm text-gray-600 dark:text-gray-400">Sell your slides to unique buyers</p>
                     </div>
                     <div className="bg-white dark:bg-black/30 rounded-xl p-4 border border-amber-200 dark:border-amber-700/30">
                         <div className="text-3xl mb-2">👥</div>
@@ -130,8 +130,8 @@ export const TetEventPage = () => {
                 <button
                     onClick={() => setActiveTab('boxes')}
                     className={`px-6 py-3 rounded-xl font-bold transition-all ${activeTab === 'boxes'
-                            ? 'bg-red-600 text-white shadow-lg shadow-red-500/30'
-                            : 'bg-gray-100 dark:bg-white/5 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-white/10'
+                        ? 'bg-red-600 text-white shadow-lg shadow-red-500/30'
+                        : 'bg-gray-100 dark:bg-white/5 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-white/10'
                         }`}
                 >
                     🎁 Lucky Boxes
@@ -139,8 +139,8 @@ export const TetEventPage = () => {
                 <button
                     onClick={() => setActiveTab('assets')}
                     className={`px-6 py-3 rounded-xl font-bold transition-all ${activeTab === 'assets'
-                            ? 'bg-red-600 text-white shadow-lg shadow-red-500/30'
-                            : 'bg-gray-100 dark:bg-white/5 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-white/10'
+                        ? 'bg-red-600 text-white shadow-lg shadow-red-500/30'
+                        : 'bg-gray-100 dark:bg-white/5 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-white/10'
                         }`}
                 >
                     🏆 My Assets ({assets.length})
@@ -148,8 +148,8 @@ export const TetEventPage = () => {
                 <button
                     onClick={() => setActiveTab('fusion')}
                     className={`px-6 py-3 rounded-xl font-bold transition-all ${activeTab === 'fusion'
-                            ? 'bg-red-600 text-white shadow-lg shadow-red-500/30'
-                            : 'bg-gray-100 dark:bg-white/5 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-white/10'
+                        ? 'bg-red-600 text-white shadow-lg shadow-red-500/30'
+                        : 'bg-gray-100 dark:bg-white/5 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-white/10'
                         }`}
                 >
                     🔥 Fusion Lab
@@ -226,8 +226,8 @@ export const TetEventPage = () => {
                                 <div
                                     key={asset.id}
                                     className={`bg-white dark:bg-white/5 rounded-xl p-4 border-2 transition-all ${asset.rarity === 'Legendary' ? 'border-yellow-400 shadow-lg shadow-yellow-400/20' :
-                                            asset.rarity === 'Epic' ? 'border-purple-400' :
-                                                asset.rarity === 'Rare' ? 'border-blue-400' : 'border-gray-200 dark:border-white/10'
+                                        asset.rarity === 'Epic' ? 'border-purple-400' :
+                                            asset.rarity === 'Rare' ? 'border-blue-400' : 'border-gray-200 dark:border-white/10'
                                         }`}
                                 >
                                     <div className="text-5xl text-center mb-3">
@@ -239,8 +239,8 @@ export const TetEventPage = () => {
                                     <div className="flex items-center justify-between">
                                         <span className="text-xs text-gray-500">{asset.asset_type}</span>
                                         <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${asset.rarity === 'Legendary' ? 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400' :
-                                                asset.rarity === 'Epic' ? 'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400' :
-                                                    asset.rarity === 'Rare' ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400' : 'bg-gray-100 text-gray-600'
+                                            asset.rarity === 'Epic' ? 'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400' :
+                                                asset.rarity === 'Rare' ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400' : 'bg-gray-100 text-gray-600'
                                             }`}>
                                             {asset.rarity}
                                         </span>
@@ -288,8 +288,8 @@ export const TetEventPage = () => {
                                         key={asset.id}
                                         onClick={() => handleSelectAsset(asset.id)}
                                         className={`bg-white dark:bg-white/5 rounded-xl p-3 text-center cursor-pointer transition-all border-2 ${selectedAssets.includes(asset.id)
-                                                ? 'border-purple-500 ring-2 ring-purple-500/30'
-                                                : 'border-gray-200 dark:border-white/10 hover:border-purple-300'
+                                            ? 'border-purple-500 ring-2 ring-purple-500/30'
+                                            : 'border-gray-200 dark:border-white/10 hover:border-purple-300'
                                             }`}
                                     >
                                         <div className="text-4xl mb-2">

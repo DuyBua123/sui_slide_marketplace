@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
-import { CheckCircle2, ArrowUpRight, Wallet, Copy, ShieldCheck } from "lucide-react";
+import { CheckCircle2, ArrowUpRight, Wallet, Copy, ShieldCheck, ArrowLeft } from "lucide-react";
 import AOS from "aos";
 import "aos/dist/aos.css";
 

@@ -28,7 +28,7 @@ export const useMintSlide = () => {
      * @param {boolean} params.isForSale - Whether available for sale initially
      * @param {boolean} params.hasTetContent - Whether slide contains Tet Event assets
      */
-    const mintSlide = async ({ title, contentUrl, thumbnailUrl, price, salePrice = 0, isForSale = false, hasTetContent = false }) => {
+    const mintSlide = async ({ title, contentUrl, thumbnailUrl, price, salePrice = 0, isForSale = false }) => {
         setIsLoading(true);
         setError(null);
         setTxDigest(null);
@@ -47,7 +47,6 @@ export const useMintSlide = () => {
                     tx.pure.u64(0), // lifetime_price
                     tx.pure.u64(salePrice),
                     tx.pure.bool(isForSale),
-                    tx.pure.bool(hasTetContent), // New argument
                     tx.object('0x6'), // SUI Clock object
                 ],
             });
