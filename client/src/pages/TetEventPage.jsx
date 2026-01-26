@@ -136,34 +136,31 @@ export const TetEventPage = () => {
       <div className="flex gap-2 mb-6">
         <button
           onClick={() => setActiveTab("boxes")}
-          className={`px-6 py-3 rounded-xl font-bold transition-all ${
-            activeTab === "boxes"
+          className={`px-6 py-3 rounded-xl font-bold transition-all ${activeTab === "boxes"
               ? "bg-red-600 text-white shadow-lg shadow-red-500/30"
               : "bg-gray-100 dark:bg-white/5 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-white/10"
-          }`}
+            }`}
         >
           🎁 Lucky Boxes
         </button>
         <button
           onClick={() => setActiveTab("assets")}
-          className={`px-6 py-3 rounded-xl font-bold transition-all ${
-            activeTab === "assets"
+          className={`px-6 py-3 rounded-xl font-bold transition-all ${activeTab === "assets"
               ? "bg-red-600 text-white shadow-lg shadow-red-500/30"
               : "bg-gray-100 dark:bg-white/5 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-white/10"
-          }`}
+            }`}
         >
           🏆 My Assets ({assets.length})
         </button>
-        {/* <button
+        <button
           onClick={() => setActiveTab("fusion")}
-          className={`px-6 py-3 rounded-xl font-bold transition-all ${
-            activeTab === "fusion"
+          className={`px-6 py-3 rounded-xl font-bold transition-all ${activeTab === "fusion"
               ? "bg-red-600 text-white shadow-lg shadow-red-500/30"
               : "bg-gray-100 dark:bg-white/5 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-white/10"
-          }`}
+            }`}
         >
           🔥 Fusion Lab
-        </button> */}
+        </button>
       </div>
 
       {/* Lucky Boxes Tab */}
@@ -222,9 +219,8 @@ export const TetEventPage = () => {
                 {boxes.map((box) => (
                   <div
                     key={box.id}
-                    className={`bg-gradient-to-br from-red-500 to-orange-400 rounded-xl p-4 text-center ${
-                      openingBoxId === box.id ? "animate-pulse" : ""
-                    }`}
+                    className={`bg-gradient-to-br from-red-500 to-orange-400 rounded-xl p-4 text-center ${openingBoxId === box.id ? "animate-pulse" : ""
+                      }`}
                   >
                     <div className="text-5xl mb-3">🎁</div>
                     <button
@@ -257,15 +253,14 @@ export const TetEventPage = () => {
               {assets.map((asset) => (
                 <div
                   key={asset.id}
-                  className={`bg-white dark:bg-white/5 rounded-xl p-4 border-2 transition-all ${
-                    asset.rarity === "Legendary"
+                  className={`bg-white dark:bg-white/5 rounded-xl p-4 border-2 transition-all ${asset.rarity === "Legendary"
                       ? "border-yellow-400 shadow-lg shadow-yellow-400/20"
                       : asset.rarity === "Epic"
                         ? "border-purple-400"
                         : asset.rarity === "Rare"
                           ? "border-blue-400"
                           : "border-gray-200 dark:border-white/10"
-                  }`}
+                    }`}
                 >
                   <div className="text-5xl text-center mb-3">
                     {asset.asset_type === "Sticker" && "🐲"}
@@ -278,15 +273,14 @@ export const TetEventPage = () => {
                   <div className="flex items-center justify-between">
                     <span className="text-xs text-gray-500">{asset.asset_type}</span>
                     <span
-                      className={`text-xs font-bold px-2 py-0.5 rounded-full ${
-                        asset.rarity === "Legendary"
+                      className={`text-xs font-bold px-2 py-0.5 rounded-full ${asset.rarity === "Legendary"
                           ? "bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400"
                           : asset.rarity === "Epic"
                             ? "bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400"
                             : asset.rarity === "Rare"
                               ? "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400"
                               : "bg-gray-100 text-gray-600"
-                      }`}
+                        }`}
                     >
                       {asset.rarity}
                     </span>
@@ -338,11 +332,10 @@ export const TetEventPage = () => {
                   <div
                     key={asset.id}
                     onClick={() => handleSelectAsset(asset.id)}
-                    className={`bg-white dark:bg-white/5 rounded-xl p-3 text-center cursor-pointer transition-all border-2 ${
-                      selectedAssets.includes(asset.id)
+                    className={`bg-white dark:bg-white/5 rounded-xl p-3 text-center cursor-pointer transition-all border-2 ${selectedAssets.includes(asset.id)
                         ? "border-purple-500 ring-2 ring-purple-500/30"
                         : "border-gray-200 dark:border-white/10 hover:border-purple-300"
-                    }`}
+                      }`}
                   >
                     <div className="text-4xl mb-2">
                       {asset.asset_type === "Sticker" && "🐲"}
