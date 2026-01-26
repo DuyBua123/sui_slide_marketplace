@@ -13,6 +13,8 @@ import {
   Path,
 } from "react-konva";
 import { motion, AnimatePresence } from "framer-motion";
+import { VideoElement } from "./VideoElement";
+import { MediaOverlay } from "./MediaOverlay";
 import { useSlideStore } from "../../store/useSlideStore";
 
 // Aspect ratio 16:9
@@ -109,9 +111,6 @@ export const Canvas = ({ readOnly = false }) => {
   const stageRef = useRef(null);
   const transformerRef = useRef(null);
   const containerRef = useRef(null);
-  const [scale, setScale] = useState(1);
-  const [showGuidelines, setShowGuidelines] = useState({ vertical: false, horizontal: false });
-
   const {
     slides,
     currentSlideIndex,
@@ -121,26 +120,99 @@ export const Canvas = ({ readOnly = false }) => {
     toggleSelectElement,
     clearSelection,
     updateElement,
+    zoom,
+    setZoom,
+    drawingSettings,
+    addElement,
   } = useSlideStore();
+
+  const [showGuidelines, setShowGuidelines] = useState({ vertical: false, horizontal: false });
+  const [currentLine, setCurrentLine] = useState(null); // { points, color, size, opacity }
+  const isDrawing = useRef(false);
 
   const currentSlide = slides[currentSlideIndex];
   const elements = currentSlide?.elements || [];
   const background = currentSlide?.background || "#1a1a2e";
   const transition = currentSlide?.transition || "fade";
 
-  // Responsive scaling
+  const handleMouseDown = (e) => {
+    if (readOnly || !drawingSettings.enabled) {
+      if (e.target === e.target.getStage()) {
+        clearSelection();
+      }
+      return;
+    }
+
+    isDrawing.current = true;
+    const pos = e.target.getStage().getPointerPosition();
+    // Scale position back to 100% canvas coordinates
+    const x = pos.x / zoom;
+    const y = pos.y / zoom;
+
+    setCurrentLine({
+      points: [x, y],
+      color: drawingSettings.color,
+      size: drawingSettings.brushSize,
+      opacity: drawingSettings.opacity,
+    });
+  };
+
+  const handleMouseMove = (e) => {
+    if (!isDrawing.current || !drawingSettings.enabled) {
+      if (!readOnly && !drawingSettings.enabled && selectedId) {
+        // Existing snap logic handleDragMove is separate, but we could add more here
+      }
+      return;
+    }
+
+    const stage = e.target.getStage();
+    const pos = stage.getPointerPosition();
+    const x = pos.x / zoom;
+    const y = pos.y / zoom;
+
+    setCurrentLine((prev) => ({
+      ...prev,
+      points: [...prev.points, x, y],
+    }));
+  };
+
+  const handleMouseUp = () => {
+    if (!isDrawing.current) return;
+    isDrawing.current = false;
+
+    if (currentLine && currentLine.points.length > 2) {
+      addElement("line", {
+        points: currentLine.points,
+        stroke: currentLine.color,
+        strokeWidth: currentLine.size,
+        opacity: currentLine.opacity,
+        tension: 0.5,
+      });
+    }
+    setCurrentLine(null);
+  };
+
+  // Responsive initial scaling (Fit to container)
   useEffect(() => {
     const handleResize = () => {
-      if (containerRef.current) {
+      if (containerRef.current && zoom === 1) { // Only auto-fit if at 100% or initial
         const containerWidth = containerRef.current.offsetWidth;
-        const newScale = Math.min(containerWidth / CANVAS_WIDTH, 1);
-        setScale(newScale);
+        const containerHeight = containerRef.current.offsetHeight;
+        const padding = 40;
+        const availableWidth = containerWidth - padding;
+        const availableHeight = containerHeight - padding;
+
+        const scaleW = availableWidth / CANVAS_WIDTH;
+        const scaleH = availableHeight / CANVAS_HEIGHT;
+        const fitScale = Math.min(scaleW, scaleH, 1);
+
+        setZoom(fitScale);
       }
     };
     handleResize();
     window.addEventListener("resize", handleResize);
     return () => window.removeEventListener("resize", handleResize);
-  }, []);
+  }, [setZoom]); // Remove zoom from dependency to avoid loop if zoom changes manually
 
   // Update transformer when selection changes
   useEffect(() => {
@@ -153,15 +225,8 @@ export const Canvas = ({ readOnly = false }) => {
     transformerRef.current.getLayer()?.batchDraw();
   }, [selectedId, selectedIds, elements, readOnly, currentSlideIndex]);
 
-  const handleStageClick = (e) => {
-    if (readOnly) return;
-    if (e.target === e.target.getStage()) {
-      clearSelection();
-    }
-  };
-
   const handleElementClick = (e, id) => {
-    if (readOnly) return;
+    if (readOnly || drawingSettings.enabled) return;
     if (e.evt?.shiftKey) {
       toggleSelectElement(id);
     } else {
@@ -235,7 +300,7 @@ export const Canvas = ({ readOnly = false }) => {
       // Reset scale to 1 (font size handles the sizing now)
       node.scaleX(1);
       node.scaleY(1);
-    } else if (element.type === "rect" || element.type === "image") {
+    } else if (element.type === "rect" || element.type === "image" || element.type === "video" || element.type === "threeD") {
       updates.width = Math.max(20, node.width() * scaleX);
       updates.height = Math.max(20, node.height() * scaleY);
       node.scaleX(1);
@@ -288,18 +353,18 @@ export const Canvas = ({ readOnly = false }) => {
       document.body.appendChild(textarea);
 
       const areaPosition = {
-        x: stageBox.left + textPosition.x * scale,
-        y: stageBox.top + textPosition.y * scale,
+        x: stageBox.left + textPosition.x * zoom,
+        y: stageBox.top + textPosition.y * zoom,
       };
 
       textarea.value = element.text;
       textarea.style.position = "fixed";
       textarea.style.top = `${areaPosition.y}px`;
       textarea.style.left = `${areaPosition.x}px`;
-      textarea.style.width = `${(element.width || 200) * scale + 10}px`;
+      textarea.style.width = `${(element.width || 200) * zoom + 10}px`;
       textarea.style.height = "auto";
-      textarea.style.minHeight = `${(element.fontSize || 24) * scale * 1.5}px`;
-      textarea.style.fontSize = `${(element.fontSize || 24) * scale}px`;
+      textarea.style.minHeight = `${(element.fontSize || 24) * zoom * 1.5}px`;
+      textarea.style.fontSize = `${(element.fontSize || 24) * zoom}px`;
       textarea.style.fontFamily = element.fontFamily || "Arial";
       textarea.style.fontWeight = element.fontWeight || "normal";
       textarea.style.fontStyle = element.fontStyle || "normal";
@@ -350,7 +415,7 @@ export const Canvas = ({ readOnly = false }) => {
         }
       });
     },
-    [readOnly, scale, updateElement],
+    [readOnly, zoom, updateElement],
   );
 
   const renderElement = (element) => {
@@ -400,6 +465,7 @@ export const Canvas = ({ readOnly = false }) => {
             strokeWidth={element.strokeWidth}
             lineCap="round"
             lineJoin="round"
+            tension={element.tension || 0}
           />
         );
       case "text":
@@ -467,6 +533,42 @@ export const Canvas = ({ readOnly = false }) => {
             readOnly={readOnly}
           />
         );
+      case "video":
+        return (
+          <VideoElement
+            key={element.id}
+            element={element}
+            onSelect={(e) => handleElementClick(e, element.id)}
+            onDragMove={handleDragMove}
+            onDragEnd={(e) => handleDragEnd(e, element.id)}
+            onTransformEnd={(e) => handleTransformEnd(e, element.id)}
+            readOnly={readOnly}
+          />
+        );
+      case "audio":
+        return (
+          <Rect
+            {...commonProps}
+            width={48}
+            height={48}
+            fill="#6366f1"
+            cornerRadius={12}
+            shadowBlur={10}
+            shadowOpacity={0.2}
+          />
+        );
+      case "threeD":
+        return (
+          <Rect
+            {...commonProps}
+            width={element.width}
+            height={element.height}
+            fill="#06b6d4"
+            opacity={0.5}
+            cornerRadius={12}
+            dash={[10, 5]}
+          />
+        );
       default:
         return null;
     }
@@ -487,8 +589,14 @@ export const Canvas = ({ readOnly = false }) => {
   return (
     <div
       ref={containerRef}
-      className="flex items-center justify-center bg-white rounded-xl p-4 overflow-hidden"
-      style={{ minHeight: CANVAS_HEIGHT * scale + 40 }}
+      className="flex items-center justify-center bg-white rounded-xl p-4 overflow-auto custom-scrollbar"
+      style={{
+        minHeight: '100%',
+        height: '100%',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center'
+      }}
     >
       <AnimatePresence mode="wait">
         <motion.div
@@ -496,21 +604,28 @@ export const Canvas = ({ readOnly = false }) => {
           initial={transitionVariant.initial}
           animate={transitionVariant.animate}
           exit={transitionVariant.exit}
-          className="rounded-lg overflow-hidden"
+          className="rounded-lg overflow-hidden shadow-2xl origin-center"
           style={{
-            width: CANVAS_WIDTH * scale,
-            height: CANVAS_HEIGHT * scale,
+            width: CANVAS_WIDTH * zoom,
+            height: CANVAS_HEIGHT * zoom,
+            transformOrigin: '50% 50%'
           }}
         >
           <Stage
             ref={stageRef}
-            width={CANVAS_WIDTH}
-            height={CANVAS_HEIGHT}
-            scaleX={scale}
-            scaleY={scale}
-            style={{ background, cursor: readOnly ? "default" : "crosshair" }}
-            onClick={handleStageClick}
-            onTap={handleStageClick}
+            width={CANVAS_WIDTH * zoom}
+            height={CANVAS_HEIGHT * zoom}
+            scale={{ x: zoom, y: zoom }}
+            style={{
+              background,
+              cursor: readOnly ? "default" : drawingSettings.enabled ? "crosshair" : "default"
+            }}
+            onMouseDown={handleMouseDown}
+            onMouseMove={handleMouseMove}
+            onMouseUp={handleMouseUp}
+            onTouchStart={handleMouseDown}
+            onTouchMove={handleMouseMove}
+            onTouchEnd={handleMouseUp}
           >
             <Layer>
               <Rect
@@ -523,7 +638,7 @@ export const Canvas = ({ readOnly = false }) => {
               />
 
               {/* Smart Guidelines */}
-              {showGuidelines.vertical && (
+              {!drawingSettings.enabled && showGuidelines.vertical && (
                 <Line
                   points={[CANVAS_WIDTH / 2, 0, CANVAS_WIDTH / 2, CANVAS_HEIGHT]}
                   stroke="#f43f5e"
@@ -532,7 +647,7 @@ export const Canvas = ({ readOnly = false }) => {
                   listening={false}
                 />
               )}
-              {showGuidelines.horizontal && (
+              {!drawingSettings.enabled && showGuidelines.horizontal && (
                 <Line
                   points={[0, CANVAS_HEIGHT / 2, CANVAS_WIDTH, CANVAS_HEIGHT / 2]}
                   stroke="#f43f5e"
@@ -544,7 +659,20 @@ export const Canvas = ({ readOnly = false }) => {
 
               {elements.map(renderElement)}
 
-              {!readOnly && (
+              {/* Active Drawing Preview */}
+              {currentLine && (
+                <Line
+                  points={currentLine.points}
+                  stroke={currentLine.color}
+                  strokeWidth={currentLine.size}
+                  opacity={currentLine.opacity}
+                  lineCap="round"
+                  lineJoin="round"
+                  tension={0.5}
+                />
+              )}
+
+              {!readOnly && !drawingSettings.enabled && (
                 <Transformer
                   ref={transformerRef}
                   boundBoxFunc={(oldBox, newBox) => {
@@ -561,6 +689,7 @@ export const Canvas = ({ readOnly = false }) => {
               )}
             </Layer>
           </Stage>
+          <MediaOverlay zoom={zoom} readOnly={readOnly} />
         </motion.div>
       </AnimatePresence>
     </div>

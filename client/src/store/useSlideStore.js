@@ -44,6 +44,23 @@ const defaultProps = {
     width: 200,
     height: 150,
   },
+  video: {
+    width: 320,
+    height: 180,
+    autoPlay: true,
+    loop: true,
+    muted: true,
+  },
+  audio: {
+    width: 48,
+    height: 48,
+    autoPlay: false,
+    loop: true,
+  },
+  threeD: {
+    width: 200,
+    height: 200,
+  },
 };
 
 // Create a new empty slide
@@ -62,6 +79,14 @@ const initialState = {
   selectedId: null,
   selectedIds: [], // For multi-select
   clipboard: null, // For copy/paste
+  zoom: 1, // 1.0 = 100%
+  viewMode: 'filmstrip', // 'filmstrip' | 'grid'
+  drawingSettings: {
+    enabled: false,
+    color: '#000000',
+    brushSize: 5,
+    opacity: 1,
+  },
 };
 
 // Create store with temporal middleware for undo/redo
@@ -390,6 +415,16 @@ export const useSlideStore = create(
           slides: [createEmptySlide()],
         });
       },
+
+      // ============ UI State Actions ============
+
+      setZoom: (zoom) => set({ zoom: Math.max(0.1, Math.min(2.0, zoom)) }),
+
+      setViewMode: (viewMode) => set({ viewMode }),
+
+      updateDrawingSettings: (updates) => set((state) => ({
+        drawingSettings: { ...state.drawingSettings, ...updates }
+      })),
     }),
     {
       // Temporal middleware options

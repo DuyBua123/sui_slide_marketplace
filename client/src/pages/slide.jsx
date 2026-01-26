@@ -4,6 +4,7 @@ import { Stage, Layer, Rect, Circle, Line, Text, Image as KonvaImage } from "rea
 import { motion, AnimatePresence } from "framer-motion";
 import Konva from "konva";
 import { animationPresets } from "../components/Editor/animationPresets";
+import { MediaOverlay } from "../components/Editor/MediaOverlay";
 import { ChevronLeft, ChevronRight, X, Maximize, Minimize, Play, Pause, ShieldCheck } from "lucide-react";
 import { fetchFromWalrus } from "../services/exports/exportToWalrus";
 import { ManageAccessModal } from "../components/Editor/ManageAccessModal";
@@ -321,6 +322,7 @@ export const Slide = () => {
               })}
             </Layer>
           </Stage>
+          <MediaOverlay zoom={scale} readOnly={true} elements={currentSlide.elements} />
         </motion.div>
       </AnimatePresence>
 
