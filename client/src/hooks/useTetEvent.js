@@ -1,6 +1,7 @@
 import { useSuiClient, useCurrentAccount, useSignAndExecuteTransaction } from '@mysten/dapp-kit';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Transaction } from '@mysten/sui/transactions';
+import { normalizeSuiAddress } from '@mysten/sui/utils';
 
 // Package and module configuration
 const PACKAGE_ID = import.meta.env.VITE_PACKAGE_ID || '0x0';
@@ -35,8 +36,8 @@ export const useTetEvent = () => {
                 options: { showContent: true, showDisplay: true },
             });
             return objects.data.map(obj => ({
-                id: obj.data?.objectId,
                 ...obj.data?.content?.fields,
+                id: obj.data?.objectId,
                 display: obj.data?.display?.data,
             }));
         },
@@ -54,8 +55,8 @@ export const useTetEvent = () => {
                 options: { showContent: true, showDisplay: true },
             });
             return objects.data.map(obj => ({
-                id: obj.data?.objectId,
                 ...obj.data?.content?.fields,
+                id: obj.data?.objectId,
                 display: obj.data?.display?.data,
             }));
         },
@@ -128,18 +129,40 @@ export const useTetEvent = () => {
     // Open Box (uses Random and GameConfig)
     const openBox = useMutation({
         mutationFn: async (boxId) => {
-            if (GAME_CONFIG_ID === '0x0') throw new Error("Game Config ID not set");
+            console.log("Attempting to open box:", boxId, typeof boxId);
+
+            if (!boxId) throw new Error("Box ID is missing (undefined/null)");
+
+            if (GAME_CONFIG_ID === '0x0') {
+                console.error("GameConfig ID is missing!");
+                throw new Error("Game Config ID not set");
+            }
+
+            const normalizedGameConfig = normalizeSuiAddress(String(GAME_CONFIG_ID));
+            const normalizedRandom = normalizeSuiAddress(String(RANDOM_ID));
+            const normalizedBoxId = normalizeSuiAddress(String(boxId));
+
+            console.log("Normalized IDs:", { normalizedGameConfig, normalizedRandom, normalizedBoxId });
 
             const tx = new Transaction();
+            tx.setGasBudget(100000000);
+
             tx.moveCall({
                 target: `${PACKAGE_ID}::${MODULE_LUCKY_BOX}::open_box`,
                 arguments: [
-                    tx.object(boxId),
-                    tx.object(RANDOM_ID),
-                    tx.object(GAME_CONFIG_ID),
+                    tx.object(normalizedBoxId),
+                    tx.object(normalizedRandom),
+                    tx.object(normalizedGameConfig),
                 ],
             });
-            return await signAndExecute({ transaction: tx });
+
+            console.log("Transaction constructed, requesting signature...");
+            const result = await signAndExecute({ transaction: tx });
+            console.log("Transaction result:", result);
+            return result;
+        },
+        onError: (err) => {
+            console.error("Open Box Logic Error:", err);
         },
         onSuccess: async () => {
             await new Promise((resolve) => setTimeout(resolve, 500));
