@@ -50,7 +50,7 @@ module 0x0::lucky_box {
             ],
             vector[
                 b"Tet Lucky Box".to_string(),
-                b"ipfs://tet-lucky-box-closed".to_string(),
+                b"RaZZHkUAfSKo21Jjrqe00AP73t-sujkvfCKh28ESp4U".to_string(), // Lucky Box Image
                 b"A mysterious box containing Tet rewards!".to_string(),
             ],
             ctx
@@ -123,7 +123,7 @@ module 0x0::lucky_box {
             let asset = asset::mint_asset(
                 string::utf8(b"Golden Dragon Sticker"),
                 string::utf8(b"Sticker"),
-                string::utf8(b"ipfs://tet-dragon-sticker"),
+                string::utf8(b"cuhKgk0O_fZvJZL_cpJDUeM72XC4U4pwqY3UP5_FfDE"),
                 string::utf8(b"Rare"),
                 ctx
             );
@@ -134,7 +134,7 @@ module 0x0::lucky_box {
              let asset = asset::mint_asset(
                 string::utf8(b"Fireworks Loop"),
                 string::utf8(b"Animation"),
-                string::utf8(b"ipfs://tet-fireworks-anim"),
+                string::utf8(b"LF0izLZBNlFlE_bKObqX17GVtkfMfbzu9RBPavmkMSU"),
                 string::utf8(b"Epic"),
                 ctx
             );
@@ -145,7 +145,7 @@ module 0x0::lucky_box {
             let asset = asset::mint_asset(
                 string::utf8(b"Happy New Year Intro"),
                 string::utf8(b"Video"),
-                string::utf8(b"ipfs://tet-intro-video"),
+                string::utf8(b"LF0izLZBNlFlE_bKObqX17GVtkfMfbzu9RBPavmkMSU"), // Reusing for demo
                 string::utf8(b"Legendary"),
                 ctx
             );

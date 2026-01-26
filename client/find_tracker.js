@@ -1,29 +1,34 @@
 import { getFullnodeUrl, SuiClient } from '@mysten/sui/client';
 
-const ADMIN_ADDRESS = '0x8adb25330e748d1b5ae2359dd89eaaf49701f2c386b012188371091d365a8763';
-const client = new SuiClient({ url: getFullnodeUrl('testnet') });
+// Search by AdminCap instead of TreasuryCap
+const INPUT_OBJ = '0x6ab68fffed6655745c134bb708d319410dd79d89738c64b7cb1200395b93a175';
 
 async function main() {
-    console.log(`Checking Admin: ${ADMIN_ADDRESS}`);
+    const client = new SuiClient({ url: getFullnodeUrl('testnet') });
 
-    // Look for recent created objects
+    console.log(`Searching for TX using InputObject: ${INPUT_OBJ}...`);
     const txs = await client.queryTransactionBlocks({
-        filter: { FromAddress: ADMIN_ADDRESS },
-        options: { showObjectChanges: true },
-        limit: 10,
-        order: 'descending'
+        filter: { InputObject: INPUT_OBJ },
+        options: { showEffects: true, showObjectChanges: true }
     });
 
-    for (const tx of txs.data) {
-        if (tx.objectChanges) {
-            for (const change of tx.objectChanges) {
-                if (change.type === 'created') {
-                    console.log(`\n[CREATED] ${change.objectType}`);
-                    console.log(`ID: ${change.objectId}`);
-                }
-            }
+    if (txs.data.length === 0) {
+        console.log("No usage found for TreasuryCap.");
+        return;
+    }
+
+    const tx = txs.data[0];
+    console.log("Found TX:", tx.digest);
+
+    if (tx.objectChanges) {
+        const tracker = tx.objectChanges.find(c =>
+            c.objectType && c.objectType.includes('::event::EventTracker')
+        );
+        if (tracker) {
+            console.log("TRACKER ID:", tracker.objectId);
+        } else {
+            console.log("Changes:", JSON.stringify(tx.objectChanges, null, 2));
         }
     }
 }
-
-main().catch(console.error);
+main();

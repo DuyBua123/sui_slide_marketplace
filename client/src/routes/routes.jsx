@@ -12,6 +12,8 @@ import { PaymentSuccess } from "../pages/paymentSuccess";
 import { TetEventPage } from "../pages/TetEventPage";
 import { Terms } from "../pages/terms";
 
+import { AssetMarketplace } from "../pages/AssetMarketplace";
+
 export const publicRoutes = [
   { path: ROUTE.HOME, component: MySlide }, //
   { path: "/home", component: Home },
@@ -20,6 +22,7 @@ export const publicRoutes = [
   { path: ROUTE.SIGN_IN, component: SignIn, isHeaderFooter: false }, // trang đăng nhập
   { path: `${ROUTE.SLIDE}/:id`, component: Slide, isHeaderFooter: false }, // trang xem slide (presentation) - public
   { path: "/tet-event", component: TetEventPage }, // Tet Lunar New Year Event Page
+  { path: "/assets-market", component: AssetMarketplace }, // Asset Marketplace
   { path: ROUTE.TERMS, component: Terms }, // trang điều khoản & dịch vụ
   // { path: "/sign-up", component: SignUp, isHeaderFooter: false }, // trang đăng ký
   { path: "*", component: NotFound, isHeaderFooter: false }, // trang not found

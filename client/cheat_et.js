@@ -6,8 +6,8 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 
 // Valid Addresses from Debugging Session
-const PACKAGE_ID = '0x60de183a3fa705dd407977e16d800ea656ffebefe89f05d9af85507aa0e93b52';
-const TRACKER_ID = '0x88f091629153fba96b35375d4545b42580343ad81814747f5f1f2f24b77099e0';
+const PACKAGE_ID = '0xdcd1be38d1ce61af308a575ed1c1616875647db8b9b6297013d4bcab5645a248';
+const TRACKER_ID = '0x3387c6d4b7db26cc66de7354ec9d96a2a8084e3187367661cd3442281bae421c';
 const MODULE_NAME = 'event';
 const FUNCTION_NAME = 'record_event_sale';
 
