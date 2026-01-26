@@ -15,8 +15,11 @@ import { DesignPanel } from "./DesignPanel";
 import { BrandPanel } from "./BrandPanel";
 import { AnimatePanel } from "./AnimatePanel";
 import { ChartsPanel } from "./ChartsPanel";
+import { DrawPanel } from "./DrawPanel";
 import { SellSlideModal } from "./SellSlideModal";
+import { SlideGridView } from "./SlideGridView";
 import { MintSlideModal } from "./MintSlideModal";
+import { MediaOverlay } from "./MediaOverlay";
 import { useSlideStore, useTemporalStore } from "../../store/useSlideStore";
 import { useAutoSave } from "../../hooks/useAutoSave";
 import { useUpdateSlide } from "../../hooks/useUpdateSlide";
@@ -72,6 +75,13 @@ export const EditorLayout = () => {
     copySelected,
     paste,
     nudgeSelected,
+    zoom,
+    setZoom,
+    viewMode,
+    setViewMode,
+    drawingSettings,
+    updateDrawingSettings,
+    addElement,
   } = useSlideStore();
 
   const { saveStatus } = useAutoSave(id, 2000);
@@ -448,6 +458,7 @@ export const EditorLayout = () => {
                 {activeTab === "brand" && <BrandPanel isBlocked={isExpired} />}
                 {activeTab === "animate" && <AnimatePanel isBlocked={isExpired} />}
                 {activeTab === "charts" && <ChartsPanel isBlocked={isExpired} />}
+                {activeTab === "draw" && <DrawPanel />}
               </div>
             </div>
           </div>
@@ -457,7 +468,7 @@ export const EditorLayout = () => {
         <div className="flex-1 flex flex-col overflow-hidden bg-[#f0f2f5] dark:bg-[#0a0a0f]">
           {/* Canvas container with Rulers */}
           <div className="flex-1 relative">
-            <CanvasWithRulers isBlocked={isExpired} />
+            <CanvasWithRulers isBlocked={isExpired} readOnly={viewMode === 'preview'} />
           </div>
         </div>
       </div>
@@ -485,6 +496,8 @@ export const EditorLayout = () => {
         slideId={suiObjectId}
         slideTitle={title}
       />
+
+      {viewMode === "grid" && <SlideGridView />}
 
       <VersionSelectionModal
         isOpen={showVersionModal}

@@ -6,4 +6,5 @@ export const ROUTE = {
   MYSLIDE: "/my-slide",
   SLIDE: "/slide",
   DASHBOARD: "/dashboard",
+  TERMS: "/terms",
 }

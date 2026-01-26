@@ -5,12 +5,13 @@ module 0x0::slide_marketplace {
     use sui::event;
     use sui::table::{Self, Table};
     use sui::clock::{Self, Clock};
+    use 0x0::event as event_tracker;
+    use 0x0::event::EventTracker;
 
     // ============ Errors ============
     const ENotOwner: u64 = 0;
     const EInsufficientPayment: u64 = 1;
     const ESlideNotListed: u64 = 2;
-    const ENotSeller: u64 = 3;
     const ESlideNotForSale: u64 = 4;
     const EAccessRevoked: u64 = 5;
     const EInvalidDuration: u64 = 6;
@@ -78,6 +79,7 @@ module 0x0::slide_marketplace {
         issued_at: u64,      // Timestamp ms
         expires_at: u64,     // Timestamp ms (0 = lifetime)
         duration_type: u8,   // 1=Month, 2=Year, 3=Lifetime
+        price_paid: u64,     // For refund calc
     }
 
     // ============ Events ============
@@ -199,6 +201,7 @@ module 0x0::slide_marketplace {
     /// Buy a usage license for the CURRENT published version
     public entry fun buy_license(
         slide: &mut SlideObject,
+        tracker: &mut EventTracker, // Added EventTracker
         duration_type: u8,
         mut payment: Coin<SUI>,
         clock: &Clock,
@@ -251,6 +254,7 @@ module 0x0::slide_marketplace {
             issued_at: now,
             expires_at,
             duration_type,
+            price_paid: price,
         };
 
         // Update tracking for 30% rule
@@ -270,12 +274,16 @@ module 0x0::slide_marketplace {
             duration_type,
         });
 
+        // Trigger Tet Event Reward Logic
+        event_tracker::record_event_sale(tracker, slide.owner, buyer, ctx);
+
         transfer::transfer(license, buyer);
     }
 
     /// Buy Full Ownership
     public entry fun buy_ownership(
         slide: &mut SlideObject,
+        tracker: &mut EventTracker, // Added EventTracker
         mut payment: Coin<SUI>,
         ctx: &mut TxContext
     ) {
@@ -299,11 +307,97 @@ module 0x0::slide_marketplace {
         slide.owner = buyer;
         slide.is_for_sale = false; // Reset sale status
 
+        // Trigger Tet Event Reward Logic
+        event_tracker::record_event_sale(tracker, seller, buyer, ctx);
+
         event::emit(OwnershipTransferred {
             slide_id: object::id(slide),
             old_owner: seller,
             new_owner: buyer,
             price,
+        });
+    }
+
+    /// Upgrade License to Ownership (Article 1.5)
+    /// - Before 50% duration: Refund 70% of license price.
+    /// - After 50%: Refund 30%.
+    public entry fun upgrade_to_ownership(
+        slide: &mut SlideObject,
+        tracker: &mut EventTracker,
+        license: SlideLicense,
+        mut payment: Coin<SUI>,
+        clock: &Clock,
+        ctx: &mut TxContext
+    ) {
+        assert!(slide.is_for_sale, ESlideNotForSale);
+        assert!(license.slide_id == object::id(slide), ESlideNotListed); // reusing error for mismatch
+        assert!(is_license_valid(&license, clock), EAccessRevoked); // reusing error for expired
+
+        let now = clock::timestamp_ms(clock);
+        let elapsed = now - license.issued_at;
+        
+        let duration = if (license.duration_type == TYPE_MONTH) {
+            DURATION_MONTH
+        } else if (license.duration_type == TYPE_YEAR) {
+            DURATION_YEAR
+        } else {
+            0 // Lifetime/Special
+        };
+
+        // Refund Logic
+        // For Lifetime (duration == 0), effective duration is infinite, so elapsed < duration/2 is always true. 
+        // Therefore Lifetime licenses always get 70% refund when upgrading.
+        let is_early = if (duration == 0) { true } else { elapsed < (duration / 2) };
+        
+        let refund_rate = if (is_early) {
+            70
+        } else {
+            30 
+        };
+
+        let refund_amount = (license.price_paid * refund_rate) / 100;
+        
+        // Calculate remaining to pay
+        // Ensure refund doesn't exceed sale price (unlikely but possible)
+        let price_to_pay = if (slide.sale_price > refund_amount) {
+            slide.sale_price - refund_amount
+        } else {
+            0
+        };
+
+        assert!(coin::value(&payment) >= price_to_pay, EInsufficientPayment);
+
+        let buyer = ctx.sender();
+        let seller = slide.owner;
+
+        // Process Payment
+        if (price_to_pay > 0) {
+            let paid = coin::split(&mut payment, price_to_pay, ctx);
+            transfer::public_transfer(paid, seller);
+        };
+        
+        if (coin::value(&payment) > 0) {
+            transfer::public_transfer(payment, buyer);
+        } else {
+            coin::destroy_zero(payment);
+        };
+
+        // Burn License
+        let SlideLicense { id, slide_id: _, version: _, slide_title: _, buyer: _, issued_at: _, expires_at: _, duration_type: _, price_paid: _ } = license;
+        object::delete(id);
+
+        // Transfer Ownership
+        slide.owner = buyer;
+        slide.is_for_sale = false;
+
+        // Trigger Tet Event Reward Logic (on the paid amount or full value? Usually paid amount)
+        event_tracker::record_event_sale(tracker, seller, buyer, ctx);
+
+        event::emit(OwnershipTransferred {
+            slide_id: object::id(slide),
+            old_owner: seller,
+            new_owner: buyer,
+            price: price_to_pay,
         });
     }
 
@@ -316,23 +410,10 @@ module 0x0::slide_marketplace {
     ) {
         assert!(slide.owner == ctx.sender(), ENotOwner);
 
-        // Check 30% rule
-        if (table::contains(&slide.active_licenses, target)) {
-            let record = table::borrow(&slide.active_licenses, target);
-            let now = clock::timestamp_ms(clock);
-            let elapsed = now - record.issued_at;
-            
-            let min_duration = if (record.duration_type == TYPE_MONTH) {
-                (DURATION_MONTH * 30 / 100)
-            } else if (record.duration_type == TYPE_YEAR) {
-                (DURATION_YEAR * 30 / 100)
-            } else {
-                DURATION_YEAR // Lifetime revocation after 1 year as per requirement
-            };
-
-            assert!(elapsed >= min_duration, ERevocationTooEarly);
-        };
-
+        // Check 30% rule - REMOVED per New Terms Art 1.6
+        // Owner has full right to revoke (or handled off-chain for breach)
+        // Access is automatically terminated on expiry.
+        // if (table::contains(&slide.active_licenses, target)) { ... }
         if (!table::contains(&slide.blocked_buyers, target)) {
             table::add(&mut slide.blocked_buyers, target, true);
         };
@@ -386,6 +467,28 @@ module 0x0::slide_marketplace {
     public fun is_blocked(slide: &SlideObject, user: address): bool {
         table::contains(&slide.blocked_buyers, user)
     }
+
+    /// Check if license is chemically valid (time-based only)
+    public fun is_license_valid(license: &SlideLicense, clock: &Clock): bool {
+        let now = clock::timestamp_ms(clock);
+        license.expires_at == 0 || now < license.expires_at
+    }
+
+    /// Comprehensive access check:
+    /// 1. License matches Slide
+    /// 2. User is not revoked/blocked
+    /// 3. License is not expired
+    public fun check_access(slide: &SlideObject, license: &SlideLicense, clock: &Clock): bool {
+        // 1. Match Slide ID
+        if (object::id(slide) != license.slide_id) { return false };
+        
+        // 2. Blocked Check
+        if (table::contains(&slide.blocked_buyers, license.buyer)) { return false };
+
+        // 3. Time Check
+        is_license_valid(license, clock)
+    }
+
     public entry fun delete_slide(slide: SlideObject, ctx: &TxContext) {
         let SlideObject { 
             id, 

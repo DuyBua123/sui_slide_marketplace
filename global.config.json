@@ -9,7 +9,10 @@
         "googleClientId": "50620651125-h9vkt9486o0mpro28n080343e47pvfqq.apps.googleusercontent.com"
     },
     "blockchain": {
-        "premiumConfig": "0xa6d365c2c7c278aecadd346b97cd3a83b85657f8bac2ddfdecec587fa8864c48",
-        "adminAddress": "0x3838636b681d458b130153837a877d01d1ffc46e56060f95d993ba83ac5ca5d4"
+        "premiumConfig": "0xa08b0efa656b07745dd04c64b787bed055f7013d1278fcacd1f52947ac0a8c06",
+        "adminAddress": "0x8adb25330e748d1b5ae2359dd89eaaf49701f2c386b012188371091d365a8763",
+        "gameConfig": "0xe637815e41b9a20f1eb7de2f802a9b1d16673c84564972f8782f7513687f8964",
+        "eventTracker": "0x88f091629153fba96b35375d4545b42580343ad81814747f5f1f2f24b77099e0",
+        "eventMarketplace": "0x63633dd8b8f38f5964e3d4b3d698ea6196099eddccd3f496af6a6ea556009067"
     }
 }

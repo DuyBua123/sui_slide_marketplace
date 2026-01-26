@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { ArrowLeft, FileText, Expand, Share2, Play, Users, Check, AlertCircle, Save, Clock, Crown } from "lucide-react";
+import { ArrowLeft, FileText, Expand, Share2, Play, Users, Check, AlertCircle, Save, Clock, Crown, Eye, EyeOff } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useSlideStore } from "../../store/useSlideStore";
 import { useAutoSave } from "../../hooks/useAutoSave";
@@ -22,7 +22,7 @@ export const TopHeader = ({
   onMintClick
 }) => {
   const navigate = useNavigate();
-  const { title, setTitle } = useSlideStore();
+  const { title, setTitle, viewMode, setViewMode } = useSlideStore();
   const [showShareModal, setShowShareModal] = useState(false);
   const [showPremiumModal, setShowPremiumModal] = useState(false);
   const { isPremium, refetch: refetchPremium } = usePremiumStatus();
@@ -113,6 +113,17 @@ export const TopHeader = ({
         <button className="cursor-pointer flex items-center gap-1.5 px-3 py-1.5 text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-white/10 rounded-lg text-[11px] font-bold uppercase tracking-tight transition-colors">
           <FileText className="w-3.5 h-3.5" />
           Templates
+        </button>
+
+        <button
+          onClick={() => setViewMode(viewMode === 'preview' ? 'edit' : 'preview')}
+          className={`cursor-pointer flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[11px] font-bold uppercase tracking-tight transition-all ${viewMode === 'preview'
+              ? 'bg-purple-100 dark:bg-purple-500/20 text-purple-600 dark:text-purple-300 ring-2 ring-purple-500/50'
+              : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-white/10'
+            }`}
+        >
+          {viewMode === 'preview' ? <Eye className="w-3.5 h-3.5" /> : <EyeOff className="w-3.5 h-3.5" />}
+          {viewMode === 'preview' ? 'Exit Preview' : 'Preview'}
         </button>
 
         {/* Auto-save Status */}
