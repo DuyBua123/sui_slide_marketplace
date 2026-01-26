@@ -208,6 +208,8 @@ export const useListSlide = () => {
     return { listSlide, updateListing: listSlide, isLoading, error };
 };
 
+const EVENT_TRACKER_ID = import.meta.env.VITE_EVENT_TRACKER_ID || '0x0';
+
 /**
  * Hook to buy full ownership of a slide
  */
@@ -230,6 +232,7 @@ export const useBuySlide = () => {
                 target: `${PACKAGE_ID}::slide_marketplace::buy_ownership`,
                 arguments: [
                     tx.object(slideId),
+                    tx.object(EVENT_TRACKER_ID),
                     coin,
                 ],
             });
