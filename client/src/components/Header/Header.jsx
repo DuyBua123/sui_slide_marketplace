@@ -47,6 +47,10 @@ export const Header = () => {
             Dashboard
           </Link>
           <Link
+            to="/tet-event"
+            className="relative px-4 py-1.5 bg-gradient-to-r from-red-600 to-orange-500 text-white text-sm font-bold rounded-full shadow-lg shadow-red-500/30 hover:shadow-red-500/50 hover:scale-105 transition-all animate-pulse"
+          >
+            🐉 Tết Event
             to={ROUTE.TERMS}
             className="text-gray-600 dark:text-gray-400 hover:text-blue-600 dark:hover:text-white transition-colors text-sm font-medium"
           >
@@ -116,6 +120,11 @@ export const Header = () => {
             Dashboard
           </Link>
           <Link
+            to="/tet-event"
+            onClick={closeMenu}
+            className="p-4 bg-gradient-to-r from-red-600 to-orange-500 rounded-xl text-white font-bold flex items-center gap-2"
+          >
+            🐉 Tết Event
             to={ROUTE.TERMS}
             onClick={closeMenu}
             className="p-4 hover:bg-gray-100 dark:hover:bg-white/5 rounded-xl text-gray-700 dark:text-gray-300 transition-colors"
