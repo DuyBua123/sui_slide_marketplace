@@ -46,6 +46,12 @@ export const Header = () => {
           >
             Dashboard
           </Link>
+          <Link
+            to={ROUTE.TERMS}
+            className="text-gray-600 dark:text-gray-400 hover:text-blue-600 dark:hover:text-white transition-colors text-sm font-medium"
+          >
+            Terms
+          </Link>
         </nav>
 
         <div className="flex items-center gap-2 md:gap-4">
@@ -108,6 +114,13 @@ export const Header = () => {
             className="p-4 hover:bg-gray-100 dark:hover:bg-white/5 rounded-xl text-gray-700 dark:text-gray-300 transition-colors"
           >
             Dashboard
+          </Link>
+          <Link
+            to={ROUTE.TERMS}
+            onClick={closeMenu}
+            className="p-4 hover:bg-gray-100 dark:hover:bg-white/5 rounded-xl text-gray-700 dark:text-gray-300 transition-colors"
+          >
+            Terms
           </Link>
         </div>
       </div>

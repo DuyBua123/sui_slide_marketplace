@@ -9,6 +9,7 @@ import { Editor } from "../pages/editor/Editor";
 import { ROUTE } from "../constant/routeConfig";
 import WalletDashboard from "../pages/WalletDashboard";
 import { PaymentSuccess } from "../pages/paymentSuccess";
+import { Terms } from "../pages/terms";
 
 export const publicRoutes = [
   { path: ROUTE.HOME, component: MySlide }, //
@@ -17,6 +18,7 @@ export const publicRoutes = [
   { path: `${ROUTE.MARKET_DETAIL}/:id`, component: MarketDetail }, // trang thông tin chi tiết sản phầm/slide
   { path: ROUTE.SIGN_IN, component: SignIn, isHeaderFooter: false }, // trang đăng nhập
   { path: `${ROUTE.SLIDE}/:id`, component: Slide, isHeaderFooter: false }, // trang xem slide (presentation) - public
+  { path: ROUTE.TERMS, component: Terms }, // trang điều khoản & dịch vụ
   // { path: "/sign-up", component: SignUp, isHeaderFooter: false }, // trang đăng ký
   { path: "*", component: NotFound, isHeaderFooter: false }, // trang not found
 ];
