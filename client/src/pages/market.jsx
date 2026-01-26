@@ -114,7 +114,11 @@ export const Market = () => {
     try {
       if (purchaseType === "ownership") {
         // Buy full ownership
-        await buySlide(slide); // slide already has .id and .salePrice
+        const salePrice = slide?.salePrice ?? slide?.sale_price ?? slide?.price ?? 0; // fall back to any available price
+        await buySlide({
+          slideId: slide?.id,
+          price: salePrice,
+        });
 
         await refetch();
         alert(`Successfully purchased full ownership of "${slide.title}"!`);
@@ -298,6 +302,8 @@ export const Market = () => {
               {filteredSlides.map((slide, index) => {
                 const price = getPrice(slide);
                 const accessStatus = getAccessStatus(slide);
+                const canBuyLicense = Boolean(slide?.isListed);
+                const canBuyOwnership = Boolean(slide?.isForSale);
                 return (
                   <div
                     key={slide.id}
@@ -365,29 +371,38 @@ export const Market = () => {
                           <span className="text-blue-500">→</span>
                         </div>
 
-                        <div className="flex gap-2">
-                          <button
-                            className="flex-1 px-3 py-2 text-xs font-bold rounded-xl border border-slate-200 dark:border-white/10 text-slate-700 dark:text-white hover:border-blue-500 hover:text-blue-600 transition disabled:opacity-50 disabled:pointer-events-none"
-                            onClick={(event) => {
-                              event.preventDefault();
-                              event.stopPropagation();
-                              initiatePurchase(slide, "license");
-                            }}
-                            disabled={isBuying}
-                          >
-                            Buy License
-                          </button>
-                          <button
-                            className="flex-1 px-3 py-2 text-xs font-bold rounded-xl bg-blue-600 text-white shadow-sm hover:bg-blue-700 transition disabled:opacity-50 disabled:pointer-events-none"
-                            onClick={(event) => {
-                              event.preventDefault();
-                              event.stopPropagation();
-                              initiatePurchase(slide, "ownership");
-                            }}
-                            disabled={isBuying}
-                          >
-                            Buy Ownership
-                          </button>
+                        <div className="flex flex-wrap gap-2">
+                          {canBuyLicense && (
+                            <button
+                              className="flex-1 min-w-[160px] px-3 py-2 text-xs font-bold rounded-xl border border-slate-200 dark:border-white/10 text-slate-700 dark:text-white hover:border-blue-500 hover:text-blue-600 transition disabled:opacity-50 disabled:pointer-events-none"
+                              onClick={(event) => {
+                                event.preventDefault();
+                                event.stopPropagation();
+                                initiatePurchase(slide, "license");
+                              }}
+                              disabled={isBuying}
+                            >
+                              Buy License
+                            </button>
+                          )}
+                          {canBuyOwnership && (
+                            <button
+                              className="flex-1 min-w-[160px] px-3 py-2 text-xs font-bold rounded-xl bg-blue-600 text-white shadow-sm hover:bg-blue-700 transition disabled:opacity-50 disabled:pointer-events-none"
+                              onClick={(event) => {
+                                event.preventDefault();
+                                event.stopPropagation();
+                                initiatePurchase(slide, "ownership");
+                              }}
+                              disabled={isBuying}
+                            >
+                              Buy Ownership
+                            </button>
+                          )}
+                          {!canBuyLicense && !canBuyOwnership && (
+                            <span className="text-xs font-semibold text-slate-400 dark:text-slate-500">
+                              Not available for purchase right now
+                            </span>
+                          )}
                         </div>
                       </div>
                     </div>
@@ -568,7 +583,7 @@ export const Market = () => {
                   onClick={confirmPurchaseWithTerms}
                   disabled={!hasAcceptedTerms || isBuying}
                 >
-                  {isBuying ? "Đang xử lý..." : "Chấp nhận &amp; Thanh toán"}
+                  {isBuying ? "Đang xử lý..." : "Chấp nhận điều khoản và Thanh toán"}
                 </button>
               </div>
             </div>
