@@ -2,9 +2,9 @@
 module 0x0::lucky_box {
     use std::string::{Self, String};
     use sui::coin::{Self, Coin};
-    use sui::sui::SUI;
     use sui::event;
     use 0x0::asset; // Import Asset module
+    use 0x0::event_token::EVENT_TOKEN; // Import Event Token
     
     use sui::random::{Self, Random};
     use 0x0::game_config::{Self, GameConfig};
@@ -16,7 +16,8 @@ module 0x0::lucky_box {
     const EInsufficientPayment: u64 = 0;
 
     // ============ Constants ============
-    const BOX_PRICE: u64 = 50_000_000; // 0.05 SUI
+    /// Price in Event Token (ET has 0 decimals, so 1 = 1 ET)
+    const BOX_PRICE_ET: u64 = 1; // 1 ET per box
 
     // ============ Structs ============
 
@@ -62,16 +63,17 @@ module 0x0::lucky_box {
 
     // ============ Functions ============
 
-    /// Buy a Lucky Box for 0.05 SUI
+    /// Buy a Lucky Box for 1 Event Token (ET)
+    /// Users earn ET by selling slides to unique buyers.
     public entry fun buy_box(
-        payment: &mut Coin<SUI>,
+        payment: &mut Coin<EVENT_TOKEN>,
         ctx: &mut TxContext
     ) {
-        assert!(coin::value(payment) >= BOX_PRICE, EInsufficientPayment);
+        assert!(coin::value(payment) >= BOX_PRICE_ET, EInsufficientPayment);
 
-        // Split payment & Burn
-        let paid = coin::split(payment, BOX_PRICE, ctx);
-        transfer::public_transfer(paid, @0x0); // Burn address
+        // Split payment & Send to zero address (effective burn)
+        let paid = coin::split(payment, BOX_PRICE_ET, ctx);
+        transfer::public_transfer(paid, @0x0); // Transfer to zero address (burn)
 
         let box = LuckyBox {
             id: object::new(ctx)

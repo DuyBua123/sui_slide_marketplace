@@ -1,0 +1,371 @@
+.tet-event-panel {
+    background: linear-gradient(135deg, #8b0000 0%, #dc143c 50%, #ff4500 100%);
+    border-radius: 20px;
+    padding: 24px;
+    color: #fff;
+    position: relative;
+    overflow: hidden;
+}
+
+.tet-event-panel::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath fill='%23FFD700' fill-opacity='0.1' d='M50,50 L150,50 L150,150 L50,150 Z'/%3E%3C/svg%3E");
+    pointer-events: none;
+}
+
+/* Header */
+.tet-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 24px;
+    position: relative;
+    z-index: 1;
+}
+
+.tet-logo {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.dragon-icon {
+    font-size: 2.5rem;
+    animation: float 3s ease-in-out infinite;
+}
+
+@keyframes float {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-10px); }
+}
+
+.tet-logo h2 {
+    font-size: 1.75rem;
+    font-weight: 700;
+    text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+    background: linear-gradient(to right, #ffd700, #ffec8b);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
+.token-balance {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: rgba(255,215,0,0.2);
+    padding: 12px 20px;
+    border-radius: 50px;
+    border: 2px solid #ffd700;
+}
+
+.token-icon {
+    font-size: 1.5rem;
+}
+
+.balance-value {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: #ffd700;
+}
+
+.balance-label {
+    font-size: 0.875rem;
+    opacity: 0.8;
+}
+
+/* Buy Section */
+.buy-section {
+    display: flex;
+    gap: 24px;
+    align-items: center;
+    background: rgba(0,0,0,0.2);
+    padding: 24px;
+    border-radius: 16px;
+    margin-bottom: 24px;
+    position: relative;
+    z-index: 1;
+}
+
+.box-preview {
+    flex-shrink: 0;
+}
+
+.lucky-box-3d {
+    width: 100px;
+    height: 100px;
+    perspective: 500px;
+}
+
+.box-face {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 4rem;
+    animation: wiggle 2s ease-in-out infinite;
+}
+
+@keyframes wiggle {
+    0%, 100% { transform: rotate(-3deg); }
+    50% { transform: rotate(3deg); }
+}
+
+.buy-info h3 {
+    font-size: 1.5rem;
+    margin-bottom: 8px;
+}
+
+.buy-info .price {
+    font-size: 1.25rem;
+    color: #ffd700;
+    font-weight: 600;
+    margin-bottom: 4px;
+}
+
+.buy-info .hint {
+    font-size: 0.875rem;
+    opacity: 0.8;
+    margin-bottom: 16px;
+}
+
+.buy-btn {
+    background: linear-gradient(to right, #ffd700, #ffa500);
+    color: #8b0000;
+    border: none;
+    padding: 12px 32px;
+    font-size: 1rem;
+    font-weight: 700;
+    border-radius: 50px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 15px rgba(255,215,0,0.4);
+}
+
+.buy-btn:hover:not(:disabled) {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(255,215,0,0.6);
+}
+
+.buy-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+/* Owned Boxes */
+.owned-boxes, .won-assets {
+    margin-bottom: 24px;
+    position: relative;
+    z-index: 1;
+}
+
+.owned-boxes h3, .won-assets h3 {
+    font-size: 1.25rem;
+    margin-bottom: 16px;
+}
+
+.boxes-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+    gap: 16px;
+}
+
+.box-card {
+    background: rgba(255,255,255,0.1);
+    border-radius: 12px;
+    padding: 16px;
+    text-align: center;
+    transition: all 0.3s ease;
+}
+
+.box-card:hover {
+    background: rgba(255,255,255,0.2);
+}
+
+.box-card.opening {
+    animation: shake 0.5s ease-in-out infinite;
+}
+
+@keyframes shake {
+    0%, 100% { transform: translateX(0); }
+    25% { transform: translateX(-5px); }
+    75% { transform: translateX(5px); }
+}
+
+.box-icon {
+    font-size: 3rem;
+    margin-bottom: 12px;
+}
+
+.open-btn {
+    background: #fff;
+    color: #8b0000;
+    border: none;
+    padding: 8px 20px;
+    font-size: 0.875rem;
+    font-weight: 600;
+    border-radius: 20px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.open-btn:hover:not(:disabled) {
+    background: #ffd700;
+}
+
+.open-btn:disabled {
+    opacity: 0.7;
+}
+
+/* Assets Grid */
+.assets-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+    gap: 16px;
+}
+
+.asset-card {
+    background: rgba(255,255,255,0.1);
+    border-radius: 12px;
+    padding: 16px;
+    text-align: center;
+    border: 2px solid transparent;
+    transition: all 0.3s ease;
+}
+
+.asset-card.rare { border-color: #4169e1; }
+.asset-card.epic { border-color: #9932cc; }
+.asset-card.legendary { border-color: #ffd700; }
+
+.asset-image {
+    font-size: 3rem;
+    margin-bottom: 12px;
+}
+
+.asset-name {
+    display: block;
+    font-size: 0.875rem;
+    font-weight: 600;
+    margin-bottom: 8px;
+}
+
+.rarity-badge {
+    display: inline-block;
+    padding: 4px 12px;
+    border-radius: 20px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    text-transform: uppercase;
+}
+
+.rarity-badge.common { background: #808080; }
+.rarity-badge.rare { background: #4169e1; }
+.rarity-badge.epic { background: #9932cc; }
+.rarity-badge.legendary { background: linear-gradient(to right, #ffd700, #ffa500); color: #000; }
+
+/* Probabilities */
+.probabilities {
+    background: rgba(0,0,0,0.2);
+    border-radius: 12px;
+    padding: 16px;
+    position: relative;
+    z-index: 1;
+}
+
+.probabilities h4 {
+    font-size: 1rem;
+    margin-bottom: 12px;
+}
+
+.prob-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.prob-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 8px 12px;
+    border-radius: 8px;
+    font-size: 0.875rem;
+}
+
+.prob-item.miss { background: rgba(128,128,128,0.3); }
+.prob-item.common { background: rgba(255,255,255,0.2); }
+.prob-item.rare { background: rgba(65,105,225,0.3); }
+.prob-item.epic { background: rgba(153,50,204,0.3); }
+.prob-item.legendary { background: rgba(255,215,0,0.3); }
+
+/* Result Modal */
+.result-modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0,0,0,0.8);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+    animation: fadeIn 0.3s ease;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+.result-content {
+    background: linear-gradient(135deg, #8b0000, #dc143c);
+    padding: 48px;
+    border-radius: 20px;
+    text-align: center;
+    border: 3px solid #ffd700;
+}
+
+.fireworks {
+    font-size: 5rem;
+    animation: pulse 0.5s ease-in-out infinite;
+}
+
+@keyframes pulse {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.2); }
+}
+
+.result-content h3 {
+    font-size: 2rem;
+    color: #ffd700;
+    margin: 16px 0;
+}
+
+/* Loading State */
+.tet-event-panel.loading {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: 300px;
+}
+
+.loading-spinner {
+    width: 50px;
+    height: 50px;
+    border: 4px solid rgba(255,215,0,0.3);
+    border-top-color: #ffd700;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    to { transform: rotate(360deg); }
+}

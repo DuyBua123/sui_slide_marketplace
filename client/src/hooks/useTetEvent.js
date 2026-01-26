@@ -2,22 +2,21 @@ import { useSuiClient, useCurrentAccount, useSignAndExecuteTransaction } from '@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Transaction } from '@mysten/sui/transactions';
 
-// TODO: Update with deployed package ID
+// Package and module configuration
 const PACKAGE_ID = import.meta.env.VITE_PACKAGE_ID || '0x0';
 const MODULE_LUCKY_BOX = 'lucky_box';
 const MODULE_ASSET = 'asset';
 const MODULE_FUSION = 'fusion_system';
 const MODULE_EVENT_TOKEN = 'event_token';
 
+// Type definitions for querying owned objects
 const TYPE_LUCKY_BOX = `${PACKAGE_ID}::${MODULE_LUCKY_BOX}::LuckyBox`;
 const TYPE_TET_ASSET = `${PACKAGE_ID}::${MODULE_ASSET}::Asset`;
 const TYPE_EVENT_TOKEN = `${PACKAGE_ID}::${MODULE_EVENT_TOKEN}::EVENT_TOKEN`;
 
-// Shared Objects (Need to be updated with actual IDs after deployment)
-const EVENT_TRACKER_ID = import.meta.env.VITE_EVENT_TRACKER_ID || '0x0';
-const TREASURY_CAP_ID = import.meta.env.VITE_TREASURY_CAP_ID || '0x0';
+// Shared Objects (Updated automatically via sync-config.js after deployment)
 const GAME_CONFIG_ID = import.meta.env.VITE_GAME_CONFIG_ID || '0x0';
-const RANDOM_ID = '0x8'; // SUI Random Object ID
+const RANDOM_ID = '0x8'; // SUI Random Object ID (constant)
 
 export const useTetEvent = () => {
     const client = useSuiClient();
@@ -25,9 +24,105 @@ export const useTetEvent = () => {
     const { mutateAsync: signAndExecute } = useSignAndExecuteTransaction();
     const queryClient = useQueryClient();
 
-    // ... fetch queries ...
+    // 1. Fetch Owned Lucky Boxes
+    const { data: boxes, isLoading: boxesLoading } = useQuery({
+        queryKey: ['ownedLuckyBoxes', account?.address],
+        queryFn: async () => {
+            if (!account?.address || PACKAGE_ID === '0x0') return [];
+            const objects = await client.getOwnedObjects({
+                owner: account.address,
+                filter: { StructType: TYPE_LUCKY_BOX },
+                options: { showContent: true, showDisplay: true },
+            });
+            return objects.data.map(obj => ({
+                id: obj.data?.objectId,
+                ...obj.data?.content?.fields,
+                display: obj.data?.display?.data,
+            }));
+        },
+        enabled: !!account?.address,
+    });
 
-    // Open Box (Now uses Random(0x8) and GameConfig)
+    // 2. Fetch Owned Tet Assets (Stickers, Videos, Animations)
+    const { data: assets, isLoading: assetsLoading } = useQuery({
+        queryKey: ['ownedTetAssets', account?.address],
+        queryFn: async () => {
+            if (!account?.address || PACKAGE_ID === '0x0') return [];
+            const objects = await client.getOwnedObjects({
+                owner: account.address,
+                filter: { StructType: TYPE_TET_ASSET },
+                options: { showContent: true, showDisplay: true },
+            });
+            return objects.data.map(obj => ({
+                id: obj.data?.objectId,
+                ...obj.data?.content?.fields,
+                display: obj.data?.display?.data,
+            }));
+        },
+        enabled: !!account?.address,
+    });
+
+    // 3. Fetch Event Token Balance
+    const { data: tokenBalance, isLoading: balanceLoading } = useQuery({
+        queryKey: ['eventTokenBalance', account?.address],
+        queryFn: async () => {
+            if (!account?.address || PACKAGE_ID === '0x0') return '0';
+            try {
+                const balance = await client.getBalance({
+                    owner: account.address,
+                    coinType: TYPE_EVENT_TOKEN,
+                });
+                return balance.totalBalance;
+            } catch {
+                return '0';
+            }
+        },
+        enabled: !!account?.address,
+    });
+
+    // 4. Fetch Event Token Coins (for spending)
+    const { data: tokenCoins } = useQuery({
+        queryKey: ['eventTokenCoins', account?.address],
+        queryFn: async () => {
+            if (!account?.address || PACKAGE_ID === '0x0') return [];
+            const coins = await client.getCoins({
+                owner: account.address,
+                coinType: TYPE_EVENT_TOKEN,
+            });
+            return coins.data;
+        },
+        enabled: !!account?.address,
+    });
+
+    // ============ Actions ============
+
+    // Buy Lucky Box (costs 1 ET - Event Token)
+    const buyBox = useMutation({
+        mutationFn: async () => {
+            if (!tokenCoins || tokenCoins.length === 0) {
+                throw new Error("You don't have any Event Tokens. Sell slides to unique buyers to earn ET!");
+            }
+
+            const tx = new Transaction();
+
+            // Get the first ET coin and use it for payment
+            const etCoin = tokenCoins[0];
+
+            tx.moveCall({
+                target: `${PACKAGE_ID}::${MODULE_LUCKY_BOX}::buy_box`,
+                arguments: [tx.object(etCoin.coinObjectId)],
+            });
+
+            return await signAndExecute({ transaction: tx });
+        },
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['ownedLuckyBoxes'] });
+            queryClient.invalidateQueries({ queryKey: ['eventTokenBalance'] });
+            queryClient.invalidateQueries({ queryKey: ['eventTokenCoins'] });
+        },
+    });
+
+    // Open Box (uses Random and GameConfig)
     const openBox = useMutation({
         mutationFn: async (boxId) => {
             if (GAME_CONFIG_ID === '0x0') throw new Error("Game Config ID not set");
@@ -44,12 +139,12 @@ export const useTetEvent = () => {
             return await signAndExecute({ transaction: tx });
         },
         onSuccess: () => {
-            queryClient.invalidateQueries(['ownedLuckyBoxes']);
-            queryClient.invalidateQueries(['ownedTetAssets']);
+            queryClient.invalidateQueries({ queryKey: ['ownedLuckyBoxes'] });
+            queryClient.invalidateQueries({ queryKey: ['ownedTetAssets'] });
         }
     });
 
-    // Craft Epic Asset (Now uses Random(0x8))
+    // Craft Epic Asset (combine 5 assets)
     const craftEpicAsset = useMutation({
         mutationFn: async (assetIds) => {
             if (assetIds.length !== 5) throw new Error("Need exactly 5 assets");
@@ -65,76 +160,21 @@ export const useTetEvent = () => {
             return await signAndExecute({ transaction: tx });
         },
         onSuccess: () => {
-            queryClient.invalidateQueries(['ownedTetAssets']);
+            queryClient.invalidateQueries({ queryKey: ['ownedTetAssets'] });
         }
     });
 
-    // 2. Fetch Owned Tet Assets (Stickers, Videos, Animations)
-    const { data: assets, isLoading: assetsLoading } = useQuery({
-        queryKey: ['ownedTetAssets', account?.address],
-        queryFn: async () => {
-            if (!account?.address || PACKAGE_ID === '0x0') return [];
-            const objects = await client.getOwnedObjects({
-                owner: account.address,
-                filter: { StructType: TYPE_TET_ASSET },
-                options: { showContent: true, showDisplay: true },
-            });
-            return objects.data.map(obj => ({
-                id: obj.data?.objectId,
-                ...obj.data?.content?.fields,
-            }));
-        },
-        enabled: !!account?.address,
-    });
-
-    // 3. Fetch Event Token Balance
-    const { data: tokenBalance, isLoading: balanceLoading } = useQuery({
-        queryKey: ['eventTokenBalance', account?.address],
-        queryFn: async () => {
-            if (!account?.address || PACKAGE_ID === '0x0') return '0';
-            const balance = await client.getBalance({
-                owner: account.address,
-                coinType: TYPE_EVENT_TOKEN,
-            });
-            return balance.totalBalance;
-        },
-        enabled: !!account?.address,
-    });
-
-    // 4. Actions
-    // Buy Lucky Box (0.05 SUI)
-    const buyBox = useMutation({
-        mutationFn: async () => {
-            const tx = new Transaction();
-            const [coin] = tx.splitCoins(tx.gas, [50000000]); // 0.05 SUI
-            // Assuming there is a shared 'Shop' object or we just transfer to admin? 
-            // Checking lucky_box.move: public fun buy_box(payment: Coin<SUI>, ctx: &mut TxContext)
-            // It just takes payment. But where does it go? 
-            // In lucky_box.move, buy_box(payment: Coin<SUI>) transfers to sender? No, that's open_box return.
-            // Wait, lucky_box.move buy_box implementation:
-            // public fun buy_box(payment: Coin<SUI>, ctx: &mut TxContext) { 
-            //    assert!(coin::value(&payment) == BOX_PRICE, EInsufficientPayment);
-            //    transfer::public_transfer(payment, @ADMIN); // or similar?
-            //    let box = ...; transfer::public_transfer(box, sender);
-            // }
-            // So we need to call `moveCall`.
-            tx.moveCall({
-                target: `${PACKAGE_ID}::${MODULE_LUCKY_BOX}::buy_box`,
-                arguments: [coin],
-            });
-            return await signAndExecute({ transaction: tx });
-        },
-        onSuccess: () => {
-            queryClient.invalidateQueries(['ownedLuckyBoxes']);
-        },
-    });
-
-
     return {
+        // Data
         boxes: boxes || [],
         assets: assets || [],
         tokenBalance: tokenBalance || '0',
+        tokenCoins: tokenCoins || [],
+
+        // Loading states
         isLoading: boxesLoading || assetsLoading || balanceLoading,
+
+        // Actions
         buyBox,
         openBox,
         craftEpicAsset,
