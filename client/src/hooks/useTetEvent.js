@@ -116,10 +116,13 @@ export const useTetEvent = () => {
 
             return await signAndExecute({ transaction: tx });
         },
-        onSuccess: () => {
-            queryClient.invalidateQueries({ queryKey: ['ownedLuckyBoxes'] });
-            queryClient.invalidateQueries({ queryKey: ['eventTokenBalance'] });
-            queryClient.invalidateQueries({ queryKey: ['eventTokenCoins'] });
+        onSuccess: async () => {
+            await new Promise((resolve) => setTimeout(resolve, 500));
+            await Promise.all([
+                queryClient.invalidateQueries({ queryKey: ['ownedLuckyBoxes'] }),
+                queryClient.invalidateQueries({ queryKey: ['eventTokenBalance'] }),
+                queryClient.invalidateQueries({ queryKey: ['eventTokenCoins'] })
+            ]);
         },
     });
 
@@ -161,8 +164,8 @@ export const useTetEvent = () => {
         onError: (err) => {
             console.error("Open Box Logic Error:", err);
         },
-        onSuccess: () => {
-            console.log("Box opened successfully!");
+        onSuccess: async () => {
+            await new Promise((resolve) => setTimeout(resolve, 500));
             queryClient.invalidateQueries({ queryKey: ['ownedLuckyBoxes'] });
             queryClient.invalidateQueries({ queryKey: ['ownedTetAssets'] });
         }
